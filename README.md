@@ -3,7 +3,6 @@
 **「見えない成長に、光をあてる。不安な毎日を、自信に変える。」**  
 Google ADK × Gemini 2.5 Flash powered AI子育て支援システム
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Node.js 20+](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org/)
 [![Next.js 15](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
@@ -363,23 +362,6 @@ tail -f backend/adk.log
 - [ ] 多言語対応（英語・中国語等）
 - [ ] 専門医との連携機能
 
-## 🤝 コントリビューション
-
-1. Forkしてブランチを作成
-2. 変更を実装（CLAUDE.mdの開発ガイドラインに従う）
-3. テストを実行
-4. Pull Requestを作成
-
-### 開発ガイドライン
-
-- Import文は必ずファイル先頭に配置
-- ADKファーストアプローチを採用
-- 型アノテーションを適切に使用
-- 構造化ログを活用
-
-## 📝 ライセンス
-
-[MIT License](LICENSE)
 
 ## 🆘 サポート
 
