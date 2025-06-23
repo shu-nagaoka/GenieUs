@@ -1,0 +1,680 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## 開発コマンド
+
+### アプリケーション起動
+```bash
+# クイックスタート（推奨）
+./scripts/start-dev.sh        # 開発環境起動
+./scripts/stop_dev.sh         # 全サービス停止
+
+# 代替方法: Docker Compose
+docker-compose -f docker-compose.dev.yml up -d    # 開発環境
+docker-compose -f docker-compose.yml up -d        # 本番環境
+```
+
+### バックエンド開発
+```bash
+cd backend
+uv sync                      # 依存関係インストール
+uv run uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload  # 手動起動
+uv run pytest              # テスト実行
+uv run pytest tests/test_specific.py  # 単体テスト実行
+uv run ruff check           # リンター実行
+uv run ruff format          # コードフォーマット
+```
+
+### フロントエンド開発
+```bash
+cd frontend
+npm install                 # 依存関係インストール
+npm run dev                 # 開発サーバー起動（Turbopack使用）
+npm run build               # 本番ビルド（Prisma migrations含む）
+npm run test                # Jestテスト実行
+npm run test:coverage       # カバレッジ付きテスト実行
+npm run test:e2e            # Playwright E2Eテスト実行
+npm run lint                # ESLint実行
+npm run lint:fix            # リント問題の自動修正
+npm run format              # Prettierフォーマット
+```
+
+### アクセスポイント
+- **フロントエンドアプリ**: http://localhost:3000
+- **チャット画面**: http://localhost:3000/chat
+- **バックエンドAPI**: http://localhost:8000
+- **API仕様書**: http://localhost:8000/docs
+- **ADK Web UI**: http://localhost:8001
+
+## アーキテクチャ概要
+
+### アプリケーション構造
+Google ADKを使用したAI子育て支援フルスタックアプリケーション:
+
+**バックエンド** (`backend/`):
+- **フレームワーク**: FastAPI (Python 3.12+)
+- **AIエンジン**: Google Agent Development Kit (ADK) + Geminiモデル
+- **アーキテクチャパターン**: 複雑なビジネスロジックにはヘキサゴナルアーキテクチャ、シンプルなエージェントにはADKネイティブ
+- **主要コンポーネント**:
+  - `src/agents/childcare/` - ADKベースの子育て相談エージェント
+  - `src/application/usecases/` - ビジネスロジック層
+  - `src/infrastructure/adapters/` - 外部サービス統合
+  - `src/presentation/api/` - FastAPIエンドポイント
+
+**フロントエンド** (`frontend/`):
+- **フレームワーク**: Next.js 15 + TypeScript
+- **UI**: Tailwind CSS + shadcn/uiコンポーネント
+- **主要機能**: リアルタイムチャット、レスポンシブデザイン
+- **認証**: NextAuth.js（設定済みだが未完全実装）
+
+### Agent Development Kit (ADK) 統合
+バックエンドは「ADKファースト」アプローチでGoogle ADKフレームワークを使用:
+
+#### **基本エージェント構造**
+- シンプルなADKネイティブエージェントから開始 (`src/agents/childcare/childcare.py`)
+- 複雑性が必要な場合のみヘキサゴナルアーキテクチャを適用
+- ユーザーコンテキスト（年齢、緊急度）に基づく動的指示生成
+- 安全性評価、年齢検出、アドバイス生成用のカスタムツール
+
+#### **Router Agent System** (`src/agents/childcare/router_agent.py`)
+専門エージェントによる分散処理システム:
+- **SleepSpecialist**: 睡眠関連の相談
+- **FeedingSpecialist**: 栄養・授乳指導  
+- **DevelopmentSpecialist**: 成長・発達追跡
+- **TriageAgent**: 緊急度評価（内部処理）
+- **CoordinatorAgent**: マスターオーケストレーター
+
+#### **V2 Architecture** (`src/agents/v2_architecture.py`)
+次世代マルチモーダルエージェント:
+- **Gemini統合**: 音声・画像・動画解析機能
+- **予測インサイト**: 子どもの行動パターン予測
+- **努力肯定モジュール**: 親への評価・励ましシステム
+- **ゼロエフォート記録**: 自然な入力からの自動データ抽出
+
+#### **AgentGateway Pattern** (`src/infrastructure/adapters/google_cloud/adk_gateway.py`)
+- **動的エージェント発見**: 実行時エージェント登録・発見
+- **ADK Runner統合**: セッション管理とランナー制御
+- **構造化応答解析**: エラーハンドリングとメタデータ抽出
+- **エージェントメタデータ**: デバッグ・監視情報の収集
+
+### 主要設計パターン
+1. **動的エージェント指示**: ユーザー入力に基づくコンテキスト適応型指示生成
+2. **ツールベースアーキテクチャ**: 安全性チェック、年齢検出、アドバイス生成の専用ツール
+3. **段階的アーキテクチャ採用**: シンプルから始めて必要に応じて複雑化
+4. **セキュリティファースト開発**: 入力検証、エラーハンドリング、安全なセッション管理
+5. **Repository Pattern**: `src/infrastructure/adapters/persistence/`でのメモリベースリポジトリ実装
+6. **コンテキスト伝播システム**: ツール間でのセッション状態とファミリーコンテキストの共有
+7. **レイヤード・フォールバック**: プライマリ→セカンダリ→フォールバック応答の段階的エラー処理
+
+## 一般的な開発ワークフロー
+
+### 新しいエージェントの追加
+1. `src/agents/{domain}/`にエージェントファイルを作成
+2. まずADKネイティブエージェントを実装
+3. 必要に応じて`src/agents/tools/`にカスタムツールを追加
+4. `AgentGateway.discover_agents()`で自動登録されるか確認
+5. 対応するAPIエンドポイントを`src/presentation/api/routes/`に追加
+6. Router Agentパターンが必要な場合は専門エージェントとして実装
+
+#### **エージェント実装パターン**
+```python
+# src/agents/{domain}/{domain}_agent.py
+from google.adk import Agent
+from google.adk.tools import FunctionTool
+from src.agents.tools.{domain}_tools import create_domain_tools
+
+def create_{domain}_agent() -> Agent:
+    """ドメイン固有エージェントの作成"""
+    tools = create_domain_tools()
+    
+    return Agent(
+        name="{domain}_specialist",
+        instruction=create_dynamic_instruction,
+        tools=tools
+    )
+
+def create_dynamic_instruction(context: dict) -> str:
+    """コンテキスト適応型指示の生成"""
+    # 年齢、緊急度、履歴に基づく動的指示生成
+    pass
+```
+
+### 新しいツールの開発
+このプロジェクトのコーディング原則に従い、以下の手順でツールを開発してください:
+
+1. **Protocol定義**: `src/application/interface/protocols/`にPython Protocolを定義
+   ```python
+   # src/application/interface/protocols/new_service.py
+   from typing import Protocol, Dict, Any, Optional
+   from dataclasses import dataclass
+   
+   @dataclass
+   class ServiceResult:
+       """サービス実行結果のデータクラス"""
+       result: str
+       status: str
+       metadata: Dict[str, Any]
+   
+   class NewServiceProtocol(Protocol):
+       """新しいサービスのプロトコル"""
+       
+       def execute_operation(self, query: str, context: Optional[Dict[str, Any]] = None) -> ServiceResult:
+           """操作を実行する
+           
+           Args:
+               query: 入力クエリ
+               context: 追加のコンテキスト情報
+               
+           Returns:
+               ServiceResult: 実行結果
+           """
+           ...
+   ```
+
+2. **Infrastructure層実装**: `src/infrastructure/adapters/{service_name}/`に具体的な実装クラスを追加
+   ```python
+   # src/infrastructure/adapters/new_service/new_service_adapter.py
+   import logging
+   from typing import Dict, Any, Optional
+   from src.application.interface.protocols.new_service import NewServiceProtocol, ServiceResult
+   
+   class NewServiceAdapter(NewServiceProtocol):
+       """新しいサービスの実装クラス"""
+       
+       def __init__(self, logger: logging.Logger):
+           self.logger = logger
+       
+       def execute_operation(self, query: str, context: Optional[Dict[str, Any]] = None) -> ServiceResult:
+           """操作の具体的な実装"""
+           try:
+               # 実装ロジック
+               result = self._process_query(query, context)
+               
+               return ServiceResult(
+                   result=result,
+                   status="success",
+                   metadata={"processed_at": "timestamp"}
+               )
+           except Exception as e:
+               self.logger.error(f"Service execution error: {e}")
+               return ServiceResult(
+                   result="処理中にエラーが発生しました",
+                   status="error", 
+                   metadata={"error": str(e)}
+               )
+   ```
+
+3. **FunctionTool化**: ADKのFunctionToolとして公開
+   ```python
+   from google.adk.tools import FunctionTool
+   from src.infrastructure.adapters.new_service.new_service_adapter import NewServiceAdapter
+   from src.share.logger import setup_logger
+   
+   # アダプターインスタンス作成
+   logger = setup_logger(__name__)
+   service_adapter = NewServiceAdapter(logger)
+   
+   def new_service_function(query: str) -> dict:
+       """ADK用のツール関数"""
+       result = service_adapter.execute_operation(query)
+       return {
+           "result": result.result,
+           "status": result.status
+       }
+   
+   # ツール定義
+   new_service_tool = FunctionTool(func=new_service_function)
+   ```
+
+4. **エージェントへの統合**: `src/agents/{domain}/`でツールを追加
+   ```python
+   # src/agents/childcare/childcare.py
+   from google.adk.tools import FunctionTool
+   
+   agent = Agent(
+       tools=[safety_tool, age_tool, advice_tool, new_service_tool, google_search],
+       # その他の設定
+   )
+   ```
+
+### コーディング原則のポイント
+- **型アノテーション**: すべての関数・メソッドに型ヒントを追加
+- **dataclass使用**: 結果データの構造化にdataclassを使用
+- **エラーハンドリング**: 段階的フォールバック応答を実装
+- **構造化ログ**: `src.share.logger`で統一されたログ記録
+- **Protocol パターン**: `typing.Protocol`でインターフェース定義
+- **Import文の配置**: 必ずファイルのトップレベルにimport文を配置し、関数内でのimportは避ける
+
+### 新しいUIコンポーネントの追加
+1. 再利用可能なUI要素は`src/components/ui/`に作成
+2. ドメイン固有のコンポーネントは`src/components/features/`を使用
+3. shadcn/ui + Tailwind CSSの既存パターンに従う
+4. TypeScriptインターフェースを`src/types/types.ts`に追加
+5. `src/__tests__/components/`にユニットテストを記述
+
+### データベース・依存関係
+- バックエンドはPythonパッケージ管理に`uv`を使用（pipより高速）
+- フロントエンドはpackage-lock.json付きのnpmを使用
+- データベースは現在未実装（後でPostgreSQL/Redisを追加可能）
+- 開発・本番環境の両方でDockerサポート
+
+## 開発ガイドライン
+
+### バックエンドコードスタイル
+- `DEVELOPMENT_GUIDELINES.md`のADKファースト開発パターンに従う
+- 設定済みロガーで構造化ログを使用
+- フォールバック応答付きの適切なエラーハンドリングを実装
+- Ruffリンティングルール（`pyproject.toml`で設定）を適用
+
+### Import文の配置規約（重要）
+**すべてのimport文はファイルの先頭に配置し、関数内やクラス内でのimportは禁止**
+
+```python
+# ✅ 正しい例
+from typing import Dict, Any, Optional
+from dataclasses import dataclass
+from google.adk.tools import FunctionTool
+from src.application.interface.protocols.new_service import NewServiceProtocol
+
+def my_function():
+    # 関数の実装
+    pass
+
+# ❌ 避けるべき例
+def my_function():
+    from google.adk.tools import FunctionTool  # これは禁止
+    from typing import Dict  # これも禁止
+    pass
+```
+
+**理由:**
+- 依存関係の明確化：ファイルを開いた瞬間にすべての依存関係が把握できる
+- パフォーマンス向上：関数呼び出しのたびにimportが実行されることを防ぐ
+- コードの可読性：import部分とロジック部分が明確に分離される
+- 静的解析の支援：linterやIDEがより効果的に動作する
+
+### フロントエンドコードスタイル
+- TypeScript strict mode有効
+- ESLint + Prettierでコードフォーマット
+- shadcn/uiパターンでのコンポーネント構成
+- Tailwind CSSでレスポンシブデザイン
+- **Import文は必ずファイル先頭に配置** - React/TypeScript でも同じ規約を適用
+
+```typescript
+// ✅ 正しい例
+'use client'
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { MessageCircle, Send } from 'lucide-react'
+
+export default function MyComponent() {
+  // コンポーネントの実装
+}
+
+// ❌ 避けるべき例
+export default function MyComponent() {
+  const [loading, setLoading] = useState(false)
+  
+  const handleSubmit = () => {
+    import('@/lib/api').then(api => {  // これは避ける
+      // 実装
+    })
+  }
+}
+```
+
+### テスト戦略
+- バックエンド: pytest（ユニット・統合テスト）
+- フロントエンド: Jest（ユニットテスト）、Playwright（E2Eテスト）
+- `npm run test:coverage`でテストカバレッジレポート利用可能
+
+### 環境設定
+- バックエンド: `.env.dev`ファイル使用（コミット対象外）
+- フロントエンド: `.env.local`ファイル使用（コミット対象外）
+- Docker設定で環境変数を自動処理
+
+## Context7ライブラリ参照
+
+### Context7の使用方法
+技術的な質問や実装に関してライブラリのドキュメントが必要な場合は、Context7を使用してください:
+
+```
+# Google ADKに関する質問の場合
+Context7でGoogle ADKのドキュメントを参照
+
+# Next.jsに関する質問の場合  
+Context7でNext.js（/vercel/next.js）のドキュメントを参照
+
+# FastAPIに関する質問の場合
+Context7でFastAPIのドキュメントを参照
+
+# Tailwind CSSに関する質問の場合
+Context7でTailwind CSSのドキュメントを参照
+```
+
+### よく使用するライブラリID
+- **Google ADK**: `/google/adk`（推測）
+- **Next.js**: `/vercel/next.js`
+- **FastAPI**: `/tiangolo/fastapi`
+- **Tailwind CSS**: `/tailwindlabs/tailwindcss`
+- **shadcn/ui**: `/shadcn/ui`
+- **TypeScript**: `/microsoft/typescript`
+- **React**: `/facebook/react`
+- **Playwright**: `/microsoft/playwright`
+- **Prisma**: `/prisma/prisma`
+
+### Context7使用のベストプラクティス
+1. **実装前の調査**: 新機能実装前にContext7で最新のベストプラクティスを確認
+2. **エラー解決**: 技術的問題が発生した際にContext7で公式ドキュメントを参照
+3. **API変更の確認**: ライブラリアップデート時にContext7で変更点を確認
+4. **パフォーマンス最適化**: Context7で最新の最適化手法を調査
+
+### 優先順位
+1. まず`DEVELOPMENT_GUIDELINES.md`のプロジェクト固有のルールを確認
+2. 技術的詳細や最新情報はContext7のライブラリドキュメントを参照
+3. プロジェクト特有の実装パターンを維持しながら公式推奨事項を適用
+
+## 高度なアーキテクチャパターン
+
+### Repository Pattern Implementation
+```python
+# src/infrastructure/adapters/persistence/memory_repositories.py
+class MemorySessionRepository(SessionRepositoryProtocol):
+    """メモリベースのセッションリポジトリ実装"""
+    
+    def __init__(self):
+        self._sessions: Dict[str, SessionEntity] = {}
+    
+    async def save_session(self, session: SessionEntity) -> None:
+        """セッション保存"""
+        self._sessions[session.session_id] = session
+    
+    async def get_session(self, session_id: str) -> Optional[SessionEntity]:
+        """セッション取得"""
+        return self._sessions.get(session_id)
+```
+
+### エラーハンドリング戦略
+このプロジェクトは3段階のフォールバック応答システムを実装:
+1. **プライマリ応答**: 正常なエージェント処理結果
+2. **セカンダリ応答**: エラー発生時の代替案提供
+3. **フォールバック応答**: システム障害時の最小限サポート
+
+```python
+# src/application/usecases/chat_usecase.py での実装例
+try:
+    # プライマリ処理
+    response = await self.agent_gateway.send_message(request)
+except Exception as e:
+    # セカンダリ処理
+    response = self._create_fallback_response(request, str(e))
+```
+
+### マルチモーダル統合パターン（V2アーキテクチャ）
+```python
+# src/agents/v2_architecture.py
+class MultimodalChildcareAgent:
+    """音声・画像・動画を統合処理するエージェント"""
+    
+    async def process_voice(self, audio_data: bytes) -> PredictionResponse:
+        """音声からの感情・行動パターン分析"""
+        
+    async def process_image(self, image_data: bytes) -> InsightResponse:
+        """画像からの食事量・表情分析"""
+        
+    async def process_video(self, video_data: bytes) -> TimelineResponse:
+        """動画からの発達マイルストーン検出"""
+```
+
+### 予測エンジン実装
+```python
+def generate_daily_prediction(historical_data: List[Record], child_context: ChildContext) -> PredictionResponse:
+    """
+    行動パターン分析による日次予測:
+    - 睡眠パターン予測
+    - 機嫌・情緒の変化予測  
+    - 食事のタイミング・量予測
+    - 発達マイルストーンの進捗予測
+    """
+```
+
+## 重要な実装パターン（現在のコードベースから）
+
+### 実際のマルチエージェント構成
+現在のプロジェクトでは以下のエージェント構成を採用：
+
+#### **専門エージェント構造**
+```python
+# src/agents/childcare/router_agent.py より
+sleep_agent = Agent(
+    model="gemini-2.5-flash-preview-05-20",
+    name="SleepSpecialist",
+    instruction="睡眠問題専門の親しみやすいAI"
+)
+
+feeding_agent = Agent(
+    model="gemini-2.5-flash-preview-05-20", 
+    name="FeedingSpecialist",
+    instruction="授乳・離乳食専門AI"
+)
+
+development_agent = Agent(
+    model="gemini-2.5-flash-preview-05-20",
+    name="DevelopmentSpecialist", 
+    instruction="発達・成長専門AI"
+)
+```
+
+#### **ルーティングパターン**
+```python
+# 統合エージェント（sub_agentsでルーティング）
+coordinator_agent = Agent(
+    name="ジーニー",
+    instruction="親しみやすい子育て支援AI",
+    sub_agents=[sleep_agent, feeding_agent, development_agent]
+)
+
+# 並列処理パターン  
+multi_perspective_agent = ParallelAgent(
+    name="MultiPerspectiveConsultation",
+    sub_agents=[multi_sleep_agent, multi_feeding_agent, multi_development_agent]
+)
+
+# 順次処理パターン
+comprehensive_pipeline = SequentialAgent(
+    name="ChildcareConsultationPipeline", 
+    sub_agents=[triage_agent, childcare_with_search]
+)
+```
+
+#### **検索機能付きエージェント**
+```python
+# 検索ツール統合エージェント
+simple_unified_agent = Agent(
+    model="gemini-2.5-flash-preview-05-20",
+    name="ジーニー",
+    instruction="子育て支援AIアシスタント（統合版）",
+    tools=[google_search]  # google_searchツールを直接使用
+)
+```
+
+### ADK制限への対応策
+現在のコードは以下のADK制限に準拠：
+
+#### **制限される構成**
+```python
+# ❌ エラーが発生するパターン
+agent = Agent(
+    sub_agents=[sleep_agent, feeding_agent],  # sub_agentsあり
+    tools=[google_search, custom_tool]         # 複数ツールあり → エラー
+)
+```
+
+#### **許可される構成**
+```python
+# ✅ 正常に動作するパターン
+# パターン1: sub_agentsのみ
+coordinator = Agent(sub_agents=[agent1, agent2])
+
+# パターン2: toolsのみ（google_search以外は1つまで）
+search_agent = Agent(tools=[google_search])
+
+# パターン3: 各sub_agentがツールを持つ
+sleep_with_search = Agent(tools=[google_search])
+parallel_agent = ParallelAgent(sub_agents=[sleep_with_search, feeding_agent])
+```
+
+### 実際のAPI エンドポイント実装
+```python
+# src/presentation/api/routes/chat.py
+@router.post("/chat")
+async def chat_endpoint(request: ChatRequest):
+    """基本チャットエンドポイント - マルチエージェント対応"""
+    
+# src/presentation/api/routes/chat_v2.py
+@router.post("/v2/voice-record")
+async def voice_record_endpoint():
+    """V2アーキテクチャ - 音声記録"""
+
+@router.post("/v2/prediction") 
+async def prediction_endpoint():
+    """V2アーキテクチャ - 予測分析"""
+```
+
+### 実際のGatewayパターン
+```python
+# src/infrastructure/adapters/adk_gateway.py
+class AgentGateway(AgentGatewayProtocol):
+    def __init__(self, logger: logging.Logger):
+        self._registry = {}
+        self._load_agents()  # 動的エージェント登録
+    
+    async def run(self, workflow: str, payload: Dict[str, Any]):
+        # ADK Runner使用の実際の実装
+        from google.adk.sessions import InMemorySessionService
+        from google.adk.runners import Runner
+        
+        session_service = InMemorySessionService()
+        runner = Runner(agent=agent, app_name=f"gateway_{workflow}")
+```
+
+## 重要な開発ガイドライン
+
+### ADK Web UIの起動
+```bash
+# ADK Web UIを単独で起動する場合
+cd backend
+python -m src.main adk
+# または
+python -m google.adk web --port 8001
+
+# 注意: メインアプリケーション起動時にはADK Web UIは自動では起動しません
+# 必要に応じて別ターミナルで手動起動してください
+```
+
+### 環境変数設定
+バックエンドは`.env.dev`ファイルで環境変数を管理します。必要な環境変数：
+```bash
+# .env.dev (backend/に配置)
+GOOGLE_CLOUD_PROJECT="team-sa-labo"
+GOOGLE_CLOUD_LOCATION="us-central1"
+GOOGLE_GENAI_USE_VERTEXAI="True"
+```
+
+フロントエンドは`.env.local`ファイルで環境変数を管理します：
+```bash
+# .env.local (frontend/に配置)
+NEXT_PUBLIC_API_URL="http://localhost:8000"
+```
+
+### ログ確認
+```bash
+# バックエンドログ
+tail -f backend/backend.log
+
+# フロントエンドログ
+tail -f frontend/frontend.log
+
+# ADKログ
+tail -f backend/adk.log
+```
+
+### よく使用するAPI エンドポイント
+- `POST /api/v1/chat` - 基本チャット（マルチエージェント）
+- `POST /api/v1/history/save` - チャット履歴保存
+- `GET /api/v1/history/load` - チャット履歴読み込み  
+- `POST /api/v2/voice-record` - 音声記録（V2アーキテクチャ）
+- `POST /api/v2/image-record` - 画像記録
+- `POST /api/v2/video-record` - 動画記録
+- `POST /api/v2/prediction` - 予測分析
+- `POST /api/v2/effort-report` - 努力評価レポート
+- `POST /api/v2/chat` - V2統合チャット
+- `GET /api/v1/health` - ヘルスチェック
+- `GET /api/v1/debug/info` - デバッグ情報取得
+- `GET /` - ルートエンドポイント（API概要）
+
+### エラートラブルシューティング
+1. **ポートが使用中**: `./scripts/stop_dev.sh`を実行してから再起動
+2. **依存関係の問題**: バックエンドは`uv sync`、フロントエンドは`npm install`を実行
+3. **ADK関連エラー**: 環境変数が正しく設定されているか確認
+
+### テスト実行
+```bash
+# バックエンドテスト（単発）
+cd backend && uv run pytest tests/test_specific.py
+
+# バックエンドテスト（全体）
+cd backend && uv run pytest
+
+# フロントエンドテスト（カバレッジ付き）
+cd frontend && npm run test:coverage
+
+# E2Eテスト
+cd frontend && npm run test:e2e
+
+# E2Eテスト（UI付き）
+cd frontend && npx playwright test --ui
+
+# 特定のテストファイル実行
+npm test -- path/to/test.test.tsx
+```
+
+### デバッグとモニタリング
+
+#### **エージェントデバッグ**
+```bash
+# ADK Web UIでエージェント動作確認
+python -m src.main adk
+
+# 特定エージェントのメタデータ確認
+curl http://localhost:8000/api/v1/agents/list
+
+# セッション情報の確認
+curl http://localhost:8000/api/v1/debug/sessions
+```
+
+#### **構造化ログ解析**
+```bash
+# エージェント実行ログ
+grep "agent_execution" backend/backend.log | jq .
+
+# エラーパターン分析
+grep "ERROR" backend/backend.log | tail -20
+
+# パフォーマンス分析
+grep "response_time" backend/backend.log | awk '{print $NF}' | sort -n
+```
+
+#### **主要なエージェントパターン**
+```bash
+# 現在実装されているエージェントの確認
+grep -r "Agent(" backend/src/agents/ | head -10
+
+# エージェントの実行ログ分析
+grep "ワークフロー実行" backend/backend.log | tail -10
+
+# ADK Gateway 登録状況確認
+curl http://localhost:8000/api/v1/debug/info | jq .
+```

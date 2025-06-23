@@ -1,0 +1,122 @@
+{
+  "project_name": "GenieUs",
+  "project_type": "AI_agent_development",
+  "architecture": "Clean_Architecture_with_ADK",
+  
+  "mandatory_references": {
+    "before_any_implementation": [
+      "CLAUDE.md",
+      "docs/development/coding-standards.md"
+    ],
+    "architecture_changes": [
+      "docs/architecture/overview.md",
+      "docs/architecture/di-container-design.md"
+    ]
+  },
+  
+  "task_specific_docs": {
+    "agent_implementation": {
+      "required": [
+        "docs/guides/new-agent-creation.md",
+        "docs/development/coding-standards.md"
+      ],
+      "template": "docs/templates/agent_template.py",
+      "checklist": [
+        "Import文がファイル先頭に配置されている",
+        "型アノテーションが完備されている",
+        "エラーハンドリングが実装されている",
+        "DI統合が適切",
+        "ADK制約が遵守されている"
+      ]
+    },
+    "tool_development": {
+      "required": [
+        "docs/guides/new-tool-development.md",
+        "docs/development/coding-standards.md"
+      ],
+      "template": "docs/templates/tool_template.py",
+      "checklist": [
+        "Protocol定義が完了",
+        "Infrastructure層実装が完了",
+        "薄いアダプター実装",
+        "段階的エラーハンドリング"
+      ]
+    },
+    "usecase_implementation": {
+      "required": [
+        "docs/guides/new-usecase-impl.md",
+        "docs/architecture/overview.md"
+      ],
+      "checklist": [
+        "レイヤー責務が守られている",
+        "依存関係の方向が正しい"
+      ]
+    },
+    "api_implementation": {
+      "required": [
+        "docs/development/coding-standards.md",
+        "docs/architecture/overview.md"
+      ],
+      "checklist": [
+        "RESTパターン適用",
+        "エラーハンドリング実装"
+      ]
+    },
+    "ui_implementation": {
+      "required": [
+        "docs/guides/ui-component-guide.md",
+        "docs/development/coding-standards.md"
+      ],
+      "checklist": [
+        "shadcn/ui使用",
+        "TypeScript規約遵守"
+      ]
+    },
+    "bug_fixing": {
+      "required": [
+        "docs/guides/troubleshooting.md",
+        "docs/development/debugging.md"
+      ],
+      "checklist": [
+        "段階的フォールバック確認",
+        "ログ分析実施"
+      ]
+    }
+  },
+  
+  "coding_standards": {
+    "critical_rules": [
+      "Import文は必ずファイル先頭に配置",
+      "型アノテーションは全関数に必須",
+      "エラーハンドリングは段階的フォールバック",
+      "DIコンテナ直接呼び出し禁止（main.py以外）",
+      "レイヤー責務の厳格遵守"
+    ],
+    "forbidden_patterns": [
+      "関数内でのimport文",
+      "型アノテーションなしの関数",
+      "エラーハンドリングなしの外部API呼び出し",
+      "get_container()の直接呼び出し（main.py以外）"
+    ]
+  },
+  
+  "quality_gates": {
+    "before_commit": [
+      "Import文配置確認",
+      "型アノテーション確認",
+      "エラーハンドリング確認",
+      "テストケース存在確認"
+    ],
+    "lint_commands": {
+      "backend": "uv run ruff check",
+      "frontend": "npm run lint"
+    }
+  },
+  
+  "help_urls": {
+    "quick_start": "docs/development/quick-start.md",
+    "architecture": "docs/architecture/overview.md",
+    "coding_standards": "docs/development/coding-standards.md",
+    "troubleshooting": "docs/guides/troubleshooting.md"
+  }
+}

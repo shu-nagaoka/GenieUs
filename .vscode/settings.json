@@ -1,0 +1,19 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+    "python.linting.enabled": true,
+    "python.linting.ruffEnabled": true,
+    "python.formatting.provider": "ruff", // フォーマッターとしてもRuffを使用する
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff", // Ruff拡張機能を使用する
+        "editor.formatOnSave": true, // 保存時に自動フォーマットする場合
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit", // Ruffによる自動修正を有効にする
+            // "source.organizeImports": "explicit" // Ruffによるimportの自動整理を有効にする
+        }
+    },
+    // 他のリンター（Pylint, Flake8など）を無効化する
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": false,
+    "python.linting.mypyEnabled": false,
+    "ruff.config": "${workspaceFolder}/backend/pyproject.toml",
+}

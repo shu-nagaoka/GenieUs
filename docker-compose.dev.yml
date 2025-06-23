@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # GenieUs Backend API (開発モード)
+  backend-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: GenieUs-backend-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=development
+      - PORT=8000
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+      - PYTHONPATH=/app
+    volumes:
+      - ./backend:/app:delegated  # ホットリロード用
+      - backend_venv:/app/.venv   # 仮想環境の永続化
+    command: uv run uvicorn src.app:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+    networks:
+      - GenieUs-network
+
+  # GenieUs Frontend (開発モード)
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: GenieUs-frontend-dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app:delegated
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    restart: unless-stopped
+    networks:
+      - GenieUs-network
+
+networks:
+  GenieUs-network:
+    driver: bridge
+
+volumes:
+  backend_venv:
+    driver: local

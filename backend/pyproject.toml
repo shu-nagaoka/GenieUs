@@ -1,0 +1,109 @@
+[project]
+name = "genieus"
+version = "0.1.0"
+description = "AI子育て支援アプリケーション - あなたの育児をサポートする魔法のジーニー"
+requires-python = ">=3.12"
+authors = [
+    { name = "Shu Nagaoka", email = "shu.nagaoka@sb-presales.com" },
+    { name = "Your Name", email = "x@sb-presales.com" },
+    { name = "Your Name", email = "y@sb-presales.com" },
+    { name = "Your Name", email = "z@sb-presales.com" }
+]
+license = { text = "LICENSE.txt" }
+readme = "README.md"
+keywords = [
+    "vector search",
+    "google cloud",
+    "generative ai",
+    "rag",
+    "sa"
+]
+
+dependencies = [
+    "google-cloud-discoveryengine==0.13.2",
+    "google-cloud-storage==2.18.2",
+    "google-auth>=2.36.0",
+    "google-cloud-aiplatform==1.94.0",
+    "google-adk==1.0.0",
+    "python-dotenv==1.0.1",
+    "fastapi==0.115.12",
+    "uvicorn[standard]>=0.34.0",
+    "pyyaml==6.0.2",
+    "colorama==0.4.6",
+    "tenacity==9.0.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings==2.9.1",
+    "dependency-injector==4.46.0",
+    "deprecated>=1.2.18",
+    "ipykernel>=6.29.5",
+]
+
+[project.urls]
+Repository = "https://dev.azure.com/softbank-sa/オニオンフライ/_git/Linx"
+Documentation = "https://dev.azure.com/softbank-sa/オニオンフライ/_git/Linx"
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.5",
+    "pipdeptree",
+    "pip-audit",
+    "ruff",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+ignore = [
+    "D100",
+    "D101", # パブリッククラスのdocstringは必須ではない
+    "D104",
+    "D106", # ネステッドクラスのdocstringは必須ではない
+    "D107",
+    "D400", # docstringの文末ピリオドは必須ではない
+    "D415", # docstringの文末ピリオド、クエスチョン、エクスクラメーションマークは必須ではない
+]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings (Eと合わせてPEP8準拠を目指す)
+    "F",  # Pyflakes (未使用のimportや変数など、論理的なエラーを検出)
+    "I",  # isort (importの順序をチェック・修正)
+    "C90", # McCabe complexity (複雑度チェック)
+    "N",  # pep8-naming (命名規則チェック)
+    "D",  # pydocstyle (docstringのスタイルチェック)
+    "UP", # pyupgrade (Pythonの新しい構文へのアップグレード提案)
+    "ANN",# flake8-annotations (型アノテーションのチェック)
+    "S",  # flake8-bandit (セキュリティリスクのチェック)
+    "BLE",# flake8-blind-except (except Exception: のようなブロードなexceptを警告)
+    "B",  # flake8-bugbear (バグや設計上の問題を発見)
+    "A",  # flake8-builtins (組み込み関数をシャドウイングする変数を警告)
+    "COM",# flake8-commas (末尾カンマのチェック)
+    "ISC",# flake8-implicit-str-concat (暗黙的な文字列結合を警告)
+    "T20",# flake8-print (print文の使用を警告、デバッグ用途以外ではロギングを推奨)
+    "SIM",# flake8-simplify (よりシンプルなコードへのリファクタリング提案)
+    "PT", # flake8-pytest-style (pytestのスタイルチェック)
+    "RUF",# Ruff固有のルール
+]
+
+allowed-confusables = [
+    "（", 
+    "）", 
+    "「", 
+    "」", 
+    "『", 
+    "』", 
+    "、", 
+    "。", 
+    "・", 
+    "ー", 
+    "…", 
+    "：", 
+    "；"
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.setuptools.packages.find]
+where = ["src"]

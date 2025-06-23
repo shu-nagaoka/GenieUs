@@ -1,0 +1,11 @@
+# Technical Documentation
+
+## 予定ファイル一覧
+
+- [ ] adk-best-practices.md - ADK制約・パターン
+- [ ] error-handling.md - 段階的フォールバック戦略
+- [ ] logging-monitoring.md - 構造化ログ・監視
+- [ ] performance.md - パフォーマンス最適化
+- [ ] security.md - セキュリティガイドライン
+
+Phase 2で内容を移行予定

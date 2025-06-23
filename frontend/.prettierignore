@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.next/
+out/
+dist/
+build/
+
+# Generated files
+.next/
+*.log
+*.lock
+package-lock.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Environment files
+.env*
+
+# Test coverage
+coverage/
+
+# Storybook
+storybook-static/

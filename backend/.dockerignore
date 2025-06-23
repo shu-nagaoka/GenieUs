@@ -1,0 +1,7 @@
+venv
+.venv
+.env
+.env.local
+# models/model/**
+**/__pycache__
+.DS_Store

@@ -1,0 +1,12 @@
+# Architecture Documentation
+
+## 予定ファイル一覧
+
+- [ ] overview.md - 全体アーキテクチャ概要
+- [ ] adk-first-design.md - ADKファースト設計思想  
+- [ ] clean-architecture.md - Clean Architecture適用方針
+- [ ] di-container-design.md - DI設計とComposition Root
+- [ ] layer-responsibilities.md - 各層の責務定義
+- [ ] future-roadmap.md - 拡張性・将来展望
+
+Phase 2で内容を移行予定
