@@ -99,3 +99,95 @@ def create_simple_childcare_agent(childcare_tool: Optional[FunctionTool], logger
     except Exception as e:
         logger.error(f"シンプルな子育て相談エージェント作成エラー: {e}")
         raise
+
+
+def create_childcare_agent_with_tools(
+    childcare_tool: Optional[FunctionTool] = None,
+    file_management_tool: Optional[FunctionTool] = None,
+    image_analysis_tool: Optional[FunctionTool] = None,
+    voice_analysis_tool: Optional[FunctionTool] = None,
+    logger: logging.Logger = None,
+) -> Agent:
+    """マルチモーダルツール統合childcareエージェント
+
+    Args:
+        childcare_tool: 子育て相談ツール
+        file_management_tool: ファイル管理ツール
+        image_analysis_tool: 画像解析ツール
+        voice_analysis_tool: 音声解析ツール
+        logger: ロガー
+
+    Returns:
+        Agent: ツール統合済みchildcareエージェント
+    """
+    logger.info("マルチモーダルツール統合childcareエージェント作成開始")
+
+    try:
+        load_vertex_ai_config(logger)
+
+        # ツール段階的追加（google_searchを除外してテスト）
+        tools = []
+
+        # 各ツールを安全に追加
+        if childcare_tool:
+            tools.append(childcare_tool)
+            logger.info("childcare_tool追加")
+
+        if file_management_tool:
+            tools.append(file_management_tool)
+            logger.info("file_management_tool追加")
+
+        if image_analysis_tool:
+            tools.append(image_analysis_tool)
+            logger.info("image_analysis_tool追加")
+
+        if voice_analysis_tool:
+            tools.append(voice_analysis_tool)
+            logger.info("voice_analysis_tool追加")
+
+        logger.info(f"統合ツール数: {len(tools)}個")
+
+        agent = Agent(
+            model="gemini-2.5-flash-preview-05-20",
+            name="GenieMultimodalConsultant",
+            description="マルチモーダル対応Gemini-powered子育て相談エージェント",
+            instruction="""
+            あなたは子育てをサポートする優しいAIアシスタント「ジーニー」です。
+
+            【重要な役割】
+            - 子育ての悩みや相談に専門的なアドバイスを直接提供
+            - 年齢や発達段階に応じたパーソナライズされたサポート
+            - 安全性評価・緊急度判定・年齢推定を含む総合的な相談対応
+
+            【利用可能な機能・ツール】
+            - 📁 ファイル管理: お子さんの成長記録や写真の整理・検索
+            - 📸 画像解析: 写真から発達状況や様子を詳細分析
+            - 🎤 音声解析: 音声記録の内容分析
+
+            【マルチモーダル対応指針】
+            - 「写真を見て」「画像を分析して」→ image_analysis_tool使用
+            - 「ファイル一覧」「記録を確認」→ file_management_tool使用
+            - 「音声を聞いて」「録音を分析」→ voice_analysis_tool使用
+
+            【対応手順】
+            1. 相談内容から年齢・発達段階を推定
+            2. 必要に応じて適切なツールを使用して詳細分析
+            3. 安全性・緊急度を評価
+            4. 年齢に適したアドバイスを温かく共感的に提供
+            5. 必要時は医療機関受診を案内
+
+            【重要】
+            - 医療的判断は行わず、心配な症状は専門医への相談を推奨
+            - 親の不安に寄り添い、自己肯定感を大切にする
+            - 具体的で実行可能なアドバイスを心がける
+            - ツールから得られた情報を活用して、より具体的で個別化されたサポートを提供
+            """.strip(),
+            tools=tools,
+        )
+
+        logger.info("マルチモーダルツール統合childcareエージェント作成完了")
+        return agent
+
+    except Exception as e:
+        logger.error(f"マルチモーダルツール統合childcareエージェント作成エラー: {e}")
+        raise

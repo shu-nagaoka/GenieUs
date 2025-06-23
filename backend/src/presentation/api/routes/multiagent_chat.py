@@ -180,23 +180,60 @@ async def _execute_comprehensive_pipeline(
             logger.info(
                 f"ADKイベント受信 #{event_count}",
                 extra={
-                    "author": getattr(event, 'author', 'unknown'),
+                    "author": getattr(event, "author", "unknown"),
                     "event_type": type(event).__name__,
-                    "is_final": getattr(event, 'is_final_response', lambda: False)(),
-                    "has_content": bool(getattr(event, 'content', None)),
-                    "has_actions": bool(getattr(event, 'actions', None)),
-                    "has_error": bool(getattr(event, 'error_message', None)),
+                    "is_final": getattr(event, "is_final_response", lambda: False)(),
+                    "has_content": bool(getattr(event, "content", None)),
+                    "has_actions": bool(getattr(event, "actions", None)),
+                    "has_error": bool(getattr(event, "error_message", None)),
                     "session_id": session_id,
-                }
+                },
             )
 
             # エラーがある場合は詳細ログ
-            if hasattr(event, 'error_message') and event.error_message:
+            if hasattr(event, "error_message") and event.error_message:
                 logger.error(f"ADKイベントエラー: {event.error_message}")
 
-            # アクションがある場合はログ
-            if hasattr(event, 'actions') and event.actions:
+            # アクションがある場合はログ（ツール使用詳細含む）
+            if hasattr(event, "actions") and event.actions:
                 logger.info(f"ADKイベントアクション: {event.actions}")
+                
+                # ツール使用の詳細ログ
+                for i, action in enumerate(event.actions):
+                    if hasattr(action, 'function_call'):
+                        function_call = action.function_call
+                        logger.info(
+                            f"🔧 ツール呼び出し検出 #{i+1}",
+                            extra={
+                                "tool_name": getattr(function_call, 'name', 'unknown'),
+                                "tool_args": getattr(function_call, 'args', {}),
+                                "event_count": event_count,
+                                "session_id": session_id,
+                            }
+                        )
+                    elif hasattr(action, 'tool_use'):
+                        tool_use = action.tool_use
+                        logger.info(
+                            f"🔧 ツール使用検出 #{i+1}",
+                            extra={
+                                "tool_name": getattr(tool_use, 'name', 'unknown'),
+                                "tool_input": getattr(tool_use, 'input', {}),
+                                "event_count": event_count,
+                                "session_id": session_id,
+                            }
+                        )
+                    else:
+                        # 一般的なアクションログ
+                        action_details = str(action)
+                        logger.info(
+                            f"🎬 アクション検出 #{i+1}",
+                            extra={
+                                "action_type": type(action).__name__,
+                                "action_details": action_details[:200] + "..." if len(action_details) > 200 else action_details,
+                                "event_count": event_count,
+                                "session_id": session_id,
+                            }
+                        )
 
             # 最終レスポンスの処理
             if event.is_final_response() and event.content:
@@ -218,6 +255,7 @@ async def _execute_comprehensive_pipeline(
 
     except Exception as e:
         import traceback
+
         error_details = traceback.format_exc()
         logger.error(
             f"包括的パイプライン実行エラー: {e}",
@@ -227,16 +265,12 @@ async def _execute_comprehensive_pipeline(
                 "traceback": error_details,
                 "session_id": session_id,
                 "user_id": user_id,
-            }
+            },
         )
         return {
             "success": False,
             "response": "申し訳ございません。包括的相談処理中に問題が発生しました。",
-            "metadata": {
-                "error": str(e), 
-                "error_type": type(e).__name__,
-                "pipeline": "comprehensive"
-            },
+            "metadata": {"error": str(e), "error_type": type(e).__name__, "pipeline": "comprehensive"},
         }
 
 

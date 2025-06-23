@@ -103,7 +103,7 @@ class DIContainer(containers.DeclarativeContainer):
 
     tool_registry: providers.Provider[Any] = providers.Singleton(
         _create_tool_registry,
-        container=providers.Self(),
+        container=providers.Self,
         logger=logger,
     )
 
@@ -112,6 +112,3 @@ class DIContainer(containers.DeclarativeContainer):
         tool_registry=tool_registry,
         logger=logger,
     )
-
-
-# RoutingService削除済み - 既存のcomprehensive_pipelineを使用

@@ -8,7 +8,7 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content
 
-from src.agents.config import AgentConfigPresets, AgentFactory, ToolRegistry
+from src.agents.config import AgentConfigPresets
 from src.agents.pipelines.comprehensive_consultation_pipeline import (
     create_comprehensive_consultation_pipeline,
     create_emergency_consultation_pipeline,
@@ -25,8 +25,6 @@ class AgentManager:
     """
 
     def __init__(self, container: DIContainer):
-        # if container is None:
-        #     raise ValueError("DIContainer cannot be None")
         self.container = container
         self.logger = container.logger()
 
@@ -89,8 +87,57 @@ class AgentManager:
                 self.logger.error(f"{agent_key}エージェント初期化エラー: {e}")
                 raise
 
+        # マルチモーダル統合childcareエージェントを追加作成
+        self._initialize_multimodal_childcare_agent()
+
         # ルーターエージェントは特別処理（ルーティングツールが必要）
         self._initialize_router_agent()
+
+    def _initialize_multimodal_childcare_agent(self) -> None:
+        """マルチモーダル統合childcareエージェント初期化"""
+        try:
+            self.logger.info("マルチモーダル統合childcareエージェント初期化開始")
+
+            # ツールを取得
+            childcare_tool = self.tool_registry.get_childcare_consultation_tool()
+            file_tool = self.tool_registry.get_file_management_tool()
+            image_tool = self.tool_registry.get_image_analysis_tool()
+            voice_tool = self.tool_registry.get_voice_analysis_tool()
+
+            # ツール取得状況をログ
+            tool_status = {
+                "childcare_tool": childcare_tool is not None,
+                "file_tool": file_tool is not None,
+                "image_tool": image_tool is not None,
+                "voice_tool": voice_tool is not None,
+            }
+            self.logger.info(f"ツール取得状況: {tool_status}")
+
+            # マルチモーダル統合エージェント作成
+            from src.agents.individual.childcare_agent import create_childcare_agent_with_tools
+
+            agent = create_childcare_agent_with_tools(
+                childcare_tool=childcare_tool,
+                file_management_tool=file_tool,
+                image_analysis_tool=image_tool,
+                voice_analysis_tool=voice_tool,
+                logger=self.logger,
+            )
+
+            # 既存のchildcareエージェントを置き換え
+            self._agents["childcare"] = agent
+
+            # Runner再作成
+            runner = Runner(agent=agent, app_name=self._app_name, session_service=self._session_service)
+            self._runners["childcare"] = runner
+
+            self.logger.info("マルチモーダル統合childcareエージェント初期化完了")
+
+        except Exception as e:
+            self.logger.error(f"マルチモーダル統合childcareエージェント初期化エラー: {e}")
+            # エラー時は標準childcareエージェントを使用（フォールバック）
+            self.logger.warning("フォールバック: 標準childcareエージェントを使用")
+            raise
 
     def _initialize_router_agent(self) -> None:
         """ルーターエージェント初期化（特別処理）"""
