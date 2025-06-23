@@ -61,6 +61,15 @@ async def multiagent_chat_endpoint(
     agent_manager = request.app.agent_manager
 
     try:
+        # リクエストサイズ詳細ログ
+        image_size = len(chat_message.image_path) if chat_message.image_path else 0
+        history_size = len(str(chat_message.conversation_history)) if chat_message.conversation_history else 0
+        
+        # 詳細デバッグ
+        logger.info(f"🖼️ 画像受信確認: has_image={chat_message.has_image}, image_path={'あり' if chat_message.image_path else 'なし'}")
+        if chat_message.image_path:
+            logger.info(f"🖼️ 画像データ先頭100文字: {chat_message.image_path[:100]}...")
+        
         logger.info(
             "マルチエージェントチャット要求受信",
             extra={
@@ -69,6 +78,9 @@ async def multiagent_chat_endpoint(
                 "message_length": len(chat_message.message),
                 "requested_agent": chat_message.requested_agent,
                 "has_media": chat_message.has_image or chat_message.has_audio,
+                "image_size": image_size,
+                "history_size": history_size,
+                "total_estimated_size": len(chat_message.message) + image_size + history_size,
             },
         )
 
@@ -150,8 +162,6 @@ async def _execute_comprehensive_pipeline(
             final_message = f"{history_context}\n\n{message}"
 
         # マルチモーダル情報の追加
-        if image_path:
-            final_message += f"\n\n[画像が添付されています: {image_path}]"
         if audio_text:
             final_message += f"\n\n[音声入力: {audio_text}]"
 
@@ -159,6 +169,9 @@ async def _execute_comprehensive_pipeline(
         from google.adk.runners import Runner
         from google.adk.sessions import InMemorySessionService
         from google.genai.types import Content, Part
+        import base64
+        import PIL.Image
+        import io
 
         session_service = InMemorySessionService()
         runner = Runner(agent=childcare_agent, app_name="GenieUs-Childcare", session_service=session_service)
@@ -166,8 +179,24 @@ async def _execute_comprehensive_pipeline(
         # セッション作成
         await session_service.create_session(app_name="GenieUs-Childcare", user_id=user_id, session_id=session_id)
 
+        # マルチモーダルコンテンツ作成
+        parts = [Part(text=final_message)]
+        
+        if image_path:
+            logger.info("画像データをContentに追加中...")
+            if image_path.startswith('data:image/'):
+                # Base64データの場合
+                header, data = image_path.split(',', 1)
+                image_data = base64.b64decode(data)
+                image = PIL.Image.open(io.BytesIO(image_data))
+                
+                # 画像をPart形式で追加
+                parts.append(Part(inline_data={"mime_type": "image/jpeg", "data": data}))
+                final_message += f"\n\n[画像が添付されています - サイズ: {image.size}]"
+                logger.info(f"画像データ追加完了: {image.size}")
+
         # パイプライン実行
-        user_content = Content(role="user", parts=[Part(text=final_message)])
+        user_content = Content(role="user", parts=parts)
 
         logger.info(f"ADKパイプライン実行開始: user_id={user_id}, session_id={session_id}")
 
@@ -200,6 +229,8 @@ async def _execute_comprehensive_pipeline(
                 
                 # ツール使用の詳細ログ
                 for i, action in enumerate(event.actions):
+                    logger.info(f"🔍 アクション詳細 #{i+1}: {type(action).__name__} - {str(action)[:200]}")
+                    
                     if hasattr(action, 'function_call'):
                         function_call = action.function_call
                         logger.info(
@@ -223,17 +254,44 @@ async def _execute_comprehensive_pipeline(
                             }
                         )
                     else:
-                        # 一般的なアクションログ
+                        # 一般的なアクションログ（詳細表示）
                         action_details = str(action)
                         logger.info(
                             f"🎬 アクション検出 #{i+1}",
                             extra={
                                 "action_type": type(action).__name__,
-                                "action_details": action_details[:200] + "..." if len(action_details) > 200 else action_details,
+                                "action_details": action_details,  # 制限を外して全内容表示
                                 "event_count": event_count,
                                 "session_id": session_id,
                             }
                         )
+            
+            # function_call警告の検出とツール使用の確認
+            if hasattr(event, "content") and event.content:
+                # eventのcontent.partsを確認してfunction_callを検出
+                if hasattr(event.content, 'parts') and event.content.parts:
+                    for part_idx, part in enumerate(event.content.parts):
+                        if hasattr(part, 'function_call'):
+                            logger.info(
+                                f"🔧✅ ツール実行確認 part#{part_idx+1}",
+                                extra={
+                                    "tool_name": getattr(part.function_call, 'name', 'unknown'),
+                                    "tool_args": getattr(part.function_call, 'args', {}),
+                                    "event_count": event_count,
+                                    "session_id": session_id,
+                                    "detected_via": "content.parts"
+                                }
+                            )
+                        elif hasattr(part, 'function_response'):
+                            logger.info(
+                                f"🔧📤 ツール応答確認 part#{part_idx+1}",
+                                extra={
+                                    "tool_response": str(part.function_response)[:500],
+                                    "event_count": event_count,
+                                    "session_id": session_id,
+                                    "detected_via": "content.parts"
+                                }
+                            )
 
             # 最終レスポンスの処理
             if event.is_final_response() and event.content:

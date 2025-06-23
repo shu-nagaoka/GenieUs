@@ -165,6 +165,7 @@ export default function ChatPage() {
           conversation_history: conversationHistory.length > 0 ? conversationHistory : null,
           message_type: messageType,
           has_image: !!selectedImage,
+          image_path: selectedImage ? imagePreview : null, // Base64データを送信
           multimodal_context: {
             type: messageType,
             voice_input: isRecording,
@@ -333,16 +334,65 @@ export default function ChatPage() {
     }
   }
 
-  // 画像選択処理
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setSelectedImage(file)
+  // 画像リサイズ処理
+  const resizeImage = (file: File, maxWidth: number = 800, maxHeight: number = 600, quality: number = 0.8): Promise<string> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')!
+      const img = new Image()
+      
+      img.onload = () => {
+        // 元の縦横比を保持してリサイズ
+        let { width, height } = img
+        
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width
+            width = maxWidth
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height
+            height = maxHeight
+          }
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        ctx.drawImage(img, 0, 0, width, height)
+        
+        // JPEGに変換してサイズ削減
+        const resizedDataUrl = canvas.toDataURL('image/jpeg', quality)
+        resolve(resizedDataUrl)
+      }
+      
       const reader = new FileReader()
       reader.onload = (e) => {
-        setImagePreview(e.target?.result as string)
+        img.src = e.target?.result as string
       }
       reader.readAsDataURL(file)
+    })
+  }
+
+  // 画像選択処理
+  const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // 画像形式チェック
+      if (!file.type.startsWith('image/')) {
+        alert('画像ファイルを選択してください。')
+        return
+      }
+      
+      try {
+        // 画像をリサイズしてプレビュー設定
+        const resizedImage = await resizeImage(file, 800, 600, 0.8)
+        setImagePreview(resizedImage)
+        setSelectedImage(file) // 元ファイルも保持
+      } catch (error) {
+        console.error('画像処理エラー:', error)
+        alert('画像の処理中にエラーが発生しました。')
+      }
     }
   }
 
@@ -629,9 +679,26 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Input Area - Simplified */}
+      {/* Input Area - With Image Upload */}
       <div className="p-4 border-t border-gray-200 bg-white">
-        <div className="flex gap-3 items-center">
+        {/* 画像プレビュー */}
+        {imagePreview && (
+          <div className="mb-3 relative inline-block">
+            <img 
+              src={imagePreview} 
+              alt="選択された画像" 
+              className="max-h-32 rounded-lg border border-gray-200"
+            />
+            <button
+              onClick={removeImage}
+              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        
+        <div className="flex gap-2 items-end">
           <div className="flex-1">
             <textarea
               value={inputValue}
@@ -648,10 +715,39 @@ export default function ChatPage() {
             />
           </div>
           
+          {/* 画像アップロードボタン */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageSelect}
+            accept="image/*"
+            className="hidden"
+          />
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            className="h-12 px-3 bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-700 rounded-xl transition-all duration-200"
+            type="button"
+          >
+            <IoCamera className="h-5 w-5" />
+          </Button>
+          
+          {/* 音声録音ボタン（将来の拡張用） */}
+          <Button
+            onClick={toggleRecording}
+            className={`h-12 px-3 rounded-xl transition-all duration-200 ${
+              isRecording 
+                ? 'bg-red-500 hover:bg-red-600 text-white'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-700'
+            }`}
+            type="button"
+          >
+            {isRecording ? <IoStop className="h-5 w-5" /> : <IoMic className="h-5 w-5" />}
+          </Button>
+          
           <Button 
             onClick={sendMessage}
             className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 h-12 px-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
-            disabled={!inputValue.trim()}
+            disabled={!inputValue.trim() && !selectedImage}
           >
             <IoSend className="h-5 w-5" />
           </Button>

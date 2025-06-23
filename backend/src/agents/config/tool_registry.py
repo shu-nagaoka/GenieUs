@@ -155,49 +155,65 @@ class ToolRegistry:
     # ========== ツール作成メソッド ==========
 
     def _create_image_analysis_tool(self) -> FunctionTool:
-        """画像分析ツール作成"""
+        """画像分析ツール作成（直接インスタンス化）"""
         try:
             from src.tools.image_analysis_tool import create_image_analysis_tool
+            from src.application.usecases.image_analysis_usecase import ImageAnalysisUseCase
+            from src.infrastructure.adapters.gemini_image_analyzer import GeminiImageAnalyzer
 
-            if hasattr(self.container, "image_analysis_usecase"):
-                usecase = self.container.image_analysis_usecase()
-                return create_image_analysis_tool(image_analysis_usecase=usecase, logger=self.logger)
-            else:
-                self.logger.warning("DIコンテナのimage_analysis_usecase取得失敗、プレースホルダーツール作成")
-                return self._create_placeholder_tool("image_analysis")
+            # 直接インスタンス化してテスト
+            self.logger.info("画像解析ツール直接作成開始...")
+            image_analyzer = GeminiImageAnalyzer(logger=self.logger)
+            usecase = ImageAnalysisUseCase(image_analyzer=image_analyzer, logger=self.logger)
+            
+            self.logger.info(f"画像解析UseCase作成成功: {type(usecase)}")
+            return create_image_analysis_tool(image_analysis_usecase=usecase, logger=self.logger)
         except Exception as e:
             self.logger.error(f"画像解析ツール作成エラー: {e}")
+            import traceback
+            self.logger.error(f"エラー詳細: {traceback.format_exc()}")
             return self._create_placeholder_tool("image_analysis")
 
     def _create_voice_analysis_tool(self) -> FunctionTool:
-        """音声分析ツール作成"""
+        """音声分析ツール作成（直接インスタンス化）"""
         try:
             from src.tools.voice_analysis_tool import create_voice_analysis_tool
+            from src.application.usecases.voice_analysis_usecase import VoiceAnalysisUseCase
+            from src.infrastructure.adapters.gemini_voice_analyzer import GeminiVoiceAnalyzer
 
-            if hasattr(self.container, "voice_analysis_usecase"):
-                usecase = self.container.voice_analysis_usecase()
-                return create_voice_analysis_tool(voice_analysis_usecase=usecase, logger=self.logger)
-            else:
-                self.logger.warning("DIコンテナのvoice_analysis_usecase取得失敗、プレースホルダーツール作成")
-                return self._create_placeholder_tool("voice_analysis")
+            # 直接インスタンス化してテスト
+            self.logger.info("音声解析ツール直接作成開始...")
+            voice_analyzer = GeminiVoiceAnalyzer(logger=self.logger)
+            usecase = VoiceAnalysisUseCase(voice_analyzer=voice_analyzer, logger=self.logger)
+            
+            self.logger.info(f"音声解析UseCase作成成功: {type(usecase)}")
+            return create_voice_analysis_tool(voice_analysis_usecase=usecase, logger=self.logger)
         except Exception as e:
             self.logger.error(f"音声解析ツール作成エラー: {e}")
+            import traceback
+            self.logger.error(f"エラー詳細: {traceback.format_exc()}")
             return self._create_placeholder_tool("voice_analysis")
 
     def _create_file_management_tool(self) -> FunctionTool:
-        """ファイル管理ツール作成"""
+        """ファイル管理ツール作成（直接インスタンス化）"""
         try:
             from src.tools.file_management_tool import create_file_management_tool
+            from src.application.usecases.file_management_usecase import FileManagementUseCase
+            from src.infrastructure.adapters.file_operator import GcsFileOperator
+            from src.config.settings import get_settings
 
-            # DIコンテナが正しく設定されていない場合のフォールバック
-            if hasattr(self.container, "file_management_usecase"):
-                usecase = self.container.file_management_usecase()
-                return create_file_management_tool(file_management_usecase=usecase, logger=self.logger)
-            else:
-                self.logger.warning("DIコンテナのfile_management_usecase取得失敗、プレースホルダーツール作成")
-                return self._create_placeholder_tool("file_management")
+            # 直接インスタンス化してテスト
+            self.logger.info("ファイル管理ツール直接作成開始...")
+            settings = get_settings()
+            file_operator = GcsFileOperator(project_id=settings.GOOGLE_CLOUD_PROJECT, logger=self.logger)
+            usecase = FileManagementUseCase(file_operator=file_operator, logger=self.logger)
+
+            self.logger.info(f"ファイル管理UseCase作成成功: {type(usecase)}")
+            return create_file_management_tool(file_management_usecase=usecase, logger=self.logger)
         except Exception as e:
             self.logger.error(f"ファイル管理ツール作成エラー: {e}")
+            import traceback
+            self.logger.error(f"エラー詳細: {traceback.format_exc()}")
             return self._create_placeholder_tool("file_management")
 
     def _create_record_management_tool(self) -> FunctionTool:
@@ -250,10 +266,34 @@ class ToolRegistry:
     def _create_placeholder_tool(self, tool_name: str) -> FunctionTool:
         """プレースホルダーツール作成（フォールバック用）"""
 
-        def placeholder_func(request: str = "機能要求") -> str:
-            """プレースホルダーツール関数"""
-            return f"[{tool_name}] 機能は現在利用できませんが、ご要求「{request}」は記録されました。基本的なサポートを提供いたします。"
+        if tool_name == "image_analysis":
+            def image_analysis_tool(image_request: str = "画像分析要求") -> str:
+                """画像解析ツール（プレースホルダー）"""
+                return f"画像解析機能は現在準備中です。ご要求「{image_request}」は記録されました。画像の内容について詳しく教えていただければ、テキストベースでサポートいたします。"
+            
+            from google.adk.tools import FunctionTool
+            return FunctionTool(func=image_analysis_tool)
+            
+        elif tool_name == "file_management":
+            def file_management_tool(file_request: str = "ファイル管理要求") -> str:
+                """ファイル管理ツール（プレースホルダー）"""
+                return f"ファイル管理機能は現在準備中です。ご要求「{file_request}」は記録されました。どのような記録をお探しか詳しく教えてください。"
+            
+            from google.adk.tools import FunctionTool
+            return FunctionTool(func=file_management_tool)
+            
+        elif tool_name == "voice_analysis":
+            def voice_analysis_tool(voice_request: str = "音声分析要求") -> str:
+                """音声解析ツール（プレースホルダー）"""
+                return f"音声解析機能は現在準備中です。ご要求「{voice_request}」は記録されました。音声の内容について詳しく教えていただければサポートいたします。"
+            
+            from google.adk.tools import FunctionTool
+            return FunctionTool(func=voice_analysis_tool)
+            
+        else:
+            def placeholder_func(request: str = "機能要求") -> str:
+                """汎用プレースホルダーツール関数"""
+                return f"[{tool_name}] 機能は現在利用できませんが、ご要求「{request}」は記録されました。基本的なサポートを提供いたします。"
 
-        from google.adk.tools import FunctionTool
-
-        return FunctionTool(func=placeholder_func)
+            from google.adk.tools import FunctionTool
+            return FunctionTool(func=placeholder_func)

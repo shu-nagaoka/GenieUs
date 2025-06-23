@@ -33,9 +33,6 @@ def _create_agent_factory(tool_registry, logger):
     return AgentFactory(tool_registry, logger)
 
 
-# RoutingService削除 - 既存パイプラインを使用
-
-
 class DIContainer(containers.DeclarativeContainer):
     """統合DIContainer - 型安全providers形式
 

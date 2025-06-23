@@ -41,8 +41,9 @@ def create_image_analysis_tool(image_analysis_usecase: ImageAnalysisUseCase, log
         """
         try:
             logger.info(
-                f"画像解析ツール実行開始: child_id={child_id}, analysis_type={analysis_type}, image_path={image_path}",
+                f"画像解析ツール実行開始: child_id={child_id}, analysis_type={analysis_type}, image_path長={len(image_path)}",
             )
+            logger.info(f"image_path先頭100文字: {image_path[:100]}...")
 
             # コンテキスト情報の構築
             analysis_context = {
@@ -125,5 +126,7 @@ def create_image_analysis_tool(image_analysis_usecase: ImageAnalysisUseCase, log
         return "\n".join(response_parts)
 
     logger.info("画像解析ツール作成完了")
-    # ADK v1.2.1のFunctionToolバグ回避: 関数を直接返す
-    return analyze_child_image
+    
+    # FunctionToolオブジェクトを正しく返す
+    from google.adk.tools import FunctionTool
+    return FunctionTool(func=analyze_child_image)
