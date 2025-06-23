@@ -1,36 +1,36 @@
 # 🧞‍♂️ GenieUs
 
-**Google ADK活用 AI子育て支援アプリケーション - あなたの育児をサポートする魔法のGenie**
+**「見えない成長に、光をあてる。不安な毎日を、自信に変える。」**  
+Google ADK × Gemini 2.5 Flash powered AI子育て支援システム
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Node.js 20+](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org/)
 [![Next.js 15](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green.svg)](https://fastapi.tiangolo.com/)
+[![Google ADK](https://img.shields.io/badge/Google_ADK-1.2.1-blue.svg)](https://cloud.google.com/ai-platform/docs/adk)
 
 ## ✨ 概要
 
-GenieUsは、**Google Agent Development Kit (ADK)**を活用した次世代AI子育て支援アプリケーションです。高度なマルチエージェント技術により、24時間いつでも専門的な育児アドバイスを提供し、年齢に応じたパーソナライズされたサポートを実現します。
+GenieUsは、**Google Agent Development Kit (ADK)**とGemini 2.5 Flashを活用したADKファースト設計の子育て支援システムです。Agent中心のアーキテクチャにより、専門的で温かみのある育児サポートを24時間提供します。
 
-### 🎯 実装済み主要機能
+### 🎯 MVP実装完了機能
 
-- **🤖 高度なAIチャット相談**: Google ADK マルチエージェントによる専門分野別相談
-  - 睡眠専門エージェント（夜泣き、寝かしつけ）
-  - 授乳・食事専門エージェント（離乳食、アレルギー対応）
-  - 発達専門エージェント（成長マイルストーン、言語発達）
-  - 緊急度判定エージェント（医療機関受診判断）
-- **💬 リアルタイムチャット**: RESTful API + WebSocket対応
-- **📱 レスポンシブUI**: モバイルファースト設計、shadcn/ui使用
-- **📝 会話履歴管理**: セッション保存・復元機能
-- **🔄 フォローアップ質問**: AI自動生成による会話継続サポート
-- **🎨 美しいデザイン**: 子育て支援に特化した温かみのあるUI
+- **🤖 ADK統合マルチエージェントシステム**: Gemini-powered childcareエージェント
+- **💬 リアルタイムチャット相談**: `/api/v1/multiagent/chat`エンドポイント
+- **📱 Next.js レスポンシブUI**: shadcn/ui + Tailwind CSS設計
+- **📝 会話履歴管理**: アプリケーション側実装による文脈保持
+- **🔄 段階的エラーハンドリング**: フォールバック機構付き安定稼働
+- **🏗️ 統合DIアーキテクチャ**: Composition Root パターン採用
+- **📊 構造化ログ**: ADKイベント詳細ログ + 運用監視対応
 
-### 🚧 準備済み機能（UI実装済み）
+### 🚧 準備済み拡張機能（基盤実装済み）
 
-- **📊 ダッシュボード**: 子どもの状況サマリー、今日のタスク
-- **📈 成長記録トラッキング**: 授乳、睡眠、発達マイルストーンの記録
-- **📝 子育て記録**: 思い出、日常、マイルストーン記録
-- **📅 スケジotukatュール管理**: 予防接種、健診の管理
+- **🔧 マルチモーダルツール**: 画像解析・ファイル管理・音声解析
+- **📈 トリアージ＋専門家パイプライン**: 緊急度判定→専門分野ルーティング
+- **📊 ダッシュボード**: 子どもの状況サマリー、今日のタスク  
+- **📝 成長記録**: 授乳、睡眠、発達マイルストーン記録
+- **📅 スケジュール管理**: 予防接種、健診管理
 
 ## 🚀 クイックスタート
 
@@ -38,7 +38,7 @@ GenieUsは、**Google Agent Development Kit (ADK)**を活用した次世代AI子
 
 ```bash
 # リポジトリをクローン
-git clone <repository-url>
+git clone https://github.com/shu-nagaoka/GenieUs.git
 cd GenieUs
 
 # 開発環境を起動
@@ -81,41 +81,51 @@ npm run dev
 
 ## 🏗️ 技術アーキテクチャ
 
-### マルチエージェント構成（Google ADK）
+### ADKファースト アーキテクチャ
 
 ```mermaid
 graph TD
-    User[👤 ユーザー] --> Coordinator[🧞‍♂️ Coordinator Agent]
-    Coordinator --> Triage[🚨 Triage Agent]
-    Triage --> Sleep[😴 Sleep Specialist]
-    Triage --> Feeding[🍼 Feeding Specialist]
-    Triage --> Development[📈 Development Specialist]
-    Coordinator --> Search[🔍 Google Search]
+    User[👤 ユーザー] --> FE[Next.js Frontend]
+    FE --> API[FastAPI Router]
+    API --> AM[AgentManager]
+    AM --> CA[Childcare Agent]
+    CA --> GT[Google Search Tool]
+    CA --> CT[Childcare Tool]
+    
+    subgraph "拡張予定"
+        AM --> TA[Triage Agent]
+        TA --> PE[Parallel Experts]
+        PE --> SA[Sleep Agent]
+        PE --> DA[Development Agent]
+        PE --> NA[Nutrition Agent]
+    end
 ```
 
-#### エージェント詳細
+#### 現在の実装（MVP）
 
-1. **CoordinatorAgent** - メイン窓口（Genieとして振る舞い）
-   - ユーザー向け統合インターフェース
-   - 適切な専門エージェントへのルーティング
-   - 温かみのある応答生成
+1. **childcare Agent** - Gemini 2.5 Flash powered メインエージェント
+   - 子育て全般の専門的相談対応
+   - 年齢・発達段階推定機能
+   - 安全性・緊急度評価
+   - Google検索連携による最新情報提供
 
-2. **TriageAgent** - 緊急度判定エージェント
-   - 医療機関受診の必要性を自動判定
-   - HIGH/MEDIUM/LOWの3段階評価
-   - 安全性を最優先とした判断
+2. **AgentManager** - ADK Agent統一管理
+   - Composition Rootパターンによる中央集約管理
+   - DIコンテナ統合
+   - エージェント・ツール動的組み立て
 
-3. **専門エージェント群**
-   - **SleepSpecialist**: 睡眠問題の専門対応
-   - **FeedingSpecialist**: 授乳・食事の専門アドバイス
-   - **DevelopmentSpecialist**: 発達・成長サポート
+3. **準備済み拡張機能**
+   - **TriageAgent**: 緊急度判定・専門分野振り分け
+   - **専門エージェント群**: 睡眠・栄養・発達の並列専門相談
 
 ### 技術スタック
 
 #### バックエンド
-- **Google ADK 1.0.0** - AIエージェント開発フレームワーク
+- **Google ADK 1.2.1** - Agent Development Kit
+- **Gemini 2.5 Flash Preview** - 基盤大規模言語モデル
 - **FastAPI 0.115.12** - 高速Python Webフレームワーク
 - **Python 3.12+** - メイン開発言語
+- **dependency-injector** - DIコンテナライブラリ
 - **Pydantic 2.0+** - データバリデーション・設定管理
 - **uvicorn** - ASGIサーバー
 - **uv** - 高速Pythonパッケージマネージャー
@@ -206,27 +216,38 @@ GenieUs/
 
 ### 主要エンドポイント
 
-#### チャットAPI
+#### マルチエージェントチャットAPI
 ```bash
-# RESTful チャット
-POST /api/v1/chat
+# ADK統合マルチエージェントチャット
+POST /api/v1/multiagent/chat
 Content-Type: application/json
 
 {
-  "message": "夜泣きで困っています",
-  "user_id": "frontend_user",
-  "session_id": "session-123",
-  "conversation_history": [...]
+  "message": "2歳の夜泣きで困っています",
+  "user_id": "anonymous", 
+  "session_id": "default",
+  "conversation_history": [
+    {"sender": "user", "content": "前回の相談"},
+    {"sender": "ai", "content": "前回の回答"}
+  ]
 }
+```
 
-# WebSocket チャット
-WS /api/v1/chat/ws
+#### レスポンス例
+```json
+{
+  "response": "2歳の夜泣きについて、年齢に応じたアドバイスをお伝えします...",
+  "status": "success",
+  "session_id": "default",
+  "agent_used": "childcare_agent",
+  "routing_info": {"agent": "childcare", "direct_mode": true},
+  "follow_up_questions": ["睡眠環境について", "日中の過ごし方は"]
+}
 ```
 
 #### その他API
 - `GET /api/v1/health` - ヘルスチェック
-- `GET /api/v1/debug/info` - デバッグ情報
-- `POST /api/v1/chat/history` - チャット履歴管理
+- `GET /` - システム情報・利用可能エンドポイント一覧
 
 詳細なAPI仕様書: http://localhost:8000/docs
 
@@ -322,24 +343,24 @@ tail -f backend/adk.log
 
 ## 📈 ロードマップ
 
-### Phase 1 - 基盤完成 ✅
-- [x] Google ADKマルチエージェント実装
-- [x] RESTful API + WebSocket
-- [x] レスポンシブUI実装
-- [x] 会話履歴管理
-- [x] フォローアップ質問
+### Phase 1 - MVP基盤完了 ✅
+- [x] ADK統合マルチエージェントシステム実装
+- [x] Gemini 2.5 Flash powered childcareエージェント
+- [x] Next.js + FastAPI フルスタック構成
+- [x] 統合DIアーキテクチャ（Composition Root）
+- [x] 会話履歴管理・段階的エラーハンドリング
+- [x] 構造化ログ・ADKイベント詳細ログ
 
-### Phase 2 - 機能拡張 🚧  
+### Phase 2 - マルチモーダル拡張 🚧  
+- [ ] ツール統合（画像解析・ファイル管理・音声解析）
+- [ ] トリアージ＋専門家パイプライン実装
 - [ ] データベース統合（PostgreSQL/Redis）
 - [ ] 認証システム完全実装
-- [ ] 記録・スケジュール機能詳細実装
-- [ ] Push通知・リマインダー
 
 ### Phase 3 - 高度機能 📋
-- [ ] 音声入力対応
-- [ ] 画像解析機能（症状写真等）
-- [ ] 多言語対応
-- [ ] IoTデバイス連携
+- [ ] 予測インサイト・努力肯定システム
+- [ ] IoTデバイス連携（体重計・体温計）
+- [ ] 多言語対応（英語・中国語等）
 - [ ] 専門医との連携機能
 
 ## 🤝 コントリビューション
@@ -362,9 +383,9 @@ tail -f backend/adk.log
 
 ## 🆘 サポート
 
-- **Issues**: [GitHub Issues](https://github.com/your-repo/GenieUs/issues)
-- **Discord**: [コミュニティ](https://discord.gg/GenieUs)
-- **Email**: support@GenieUs.com
+- **Issues**: [GitHub Issues](https://github.com/shu-nagaoka/GenieUs/issues)
+- **リポジトリ**: [GitHub Repository](https://github.com/shu-nagaoka/GenieUs)
+- **開発ガイド**: [CLAUDE.md](CLAUDE.md)
 
 ---
 
