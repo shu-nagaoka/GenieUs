@@ -89,7 +89,7 @@ export default function DashboardPage() {
               <HiOutlineHeart className="h-8 w-8 text-white" />
             </div>
             <h3 className="text-2xl font-bold text-pink-800 mb-4 text-center">相談する</h3>
-            
+
             <div className="space-y-3 mb-6">
               <div className="bg-white/80 p-3 rounded-lg text-sm">
                 <div className="font-semibold text-pink-700 mb-1">「夜泣きがひどい」</div>

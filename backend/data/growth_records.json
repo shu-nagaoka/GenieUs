@@ -69,9 +69,9 @@
     "child_id": "frontend_user_child_0",
     "child_name": "日佳梨",
     "date": "2025-06-24",
-    "age_in_months": 22,
+    "age_in_months": 2,
     "type": "body_growth",
-    "category": "movement",
+    "category": "weight",
     "title": "新しい成長記録のテスト",
     "description": "家族情報連携のテスト記録です",
     "value": null,
@@ -79,9 +79,9 @@
     "image_url": null,
     "detected_by": "parent",
     "confidence": null,
-    "emotions": null,
+    "emotions": [],
     "development_stage": null,
     "created_at": "2025-06-24T15:10:27.645916",
-    "updated_at": "2025-06-24T15:10:27.645927"
+    "updated_at": "2025-06-24T16:14:14.959164"
   }
 }

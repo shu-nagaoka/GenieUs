@@ -278,42 +278,42 @@ export default function GrowthTrackingPage() {
   return (
     <AppLayout>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-teal-50">
-        {/* ページヘッダー */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-blue-100">
-          <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* 固定ヘッダー */}
+        <div className="fixed top-0 left-0 md:left-64 right-0 z-40 bg-white/90 backdrop-blur-md border-b border-blue-100 shadow-sm">
+          <div className="max-w-6xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-teal-600 flex items-center justify-center shadow-lg">
-                  <MdTimeline className="h-6 w-6 text-white" />
+              <div className="flex items-center space-x-3">
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-teal-600 flex items-center justify-center shadow-lg">
+                  <MdTimeline className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800">お子さんの成長記録</h1>
-                  <p className="text-gray-600">からだ・ことば・できることを記録して成長を見守ります</p>
+                  <h1 className="text-xl font-bold text-gray-800">成長記録</h1>
+                  <p className="text-sm text-gray-600">からだ・ことば・できることを記録</p>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
                 <Button 
                   onClick={() => setShowCreateModal(true)}
+                  size="sm"
                   className="bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 text-white shadow-lg"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 mr-1" />
                   記録を追加
                 </Button>
                 <Link href="/chat">
-                  <Button variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50">
-                    <Camera className="h-4 w-4 mr-2" />
-                    Genieで記録
+                  <Button variant="outline" size="sm" className="border-blue-300 text-blue-700 hover:bg-blue-50">
+                    <Camera className="h-4 w-4 mr-1" />
+                    Genie
                   </Button>
                 </Link>
-                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-lg border border-blue-200">
-                  <GiMagicLamp className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm text-blue-700 font-medium">AI自動検出</span>
-                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* メインヘッダー（スペーサー） */}
+        <div className="h-20"></div>
 
         <div className="max-w-6xl mx-auto p-6 space-y-8">
           {/* 成長サマリーカード */}
@@ -416,13 +416,24 @@ export default function GrowthTrackingPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">すべて</SelectItem>
+                      <SelectItem value="all">
+                        <div className="flex items-center gap-2">
+                          <Star className="h-4 w-4" />
+                          <span>すべて</span>
+                        </div>
+                      </SelectItem>
                       {Object.entries(categoryLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                      {/* 詳細カテゴリも表示 */}
-                      {Object.entries(detailCategoryLabels).map(([key, label]) => (
-                        <SelectItem key={`detail_${key}`} value={key}>{label}</SelectItem>
+                        <SelectItem key={key} value={key}>
+                          <div className="flex items-center gap-2">
+                            {key === 'body_growth' && <Ruler className="h-4 w-4" />}
+                            {key === 'language_growth' && <MessageCircle className="h-4 w-4" />}
+                            {key === 'skills' && <Star className="h-4 w-4" />}
+                            {key === 'social_skills' && <Heart className="h-4 w-4" />}
+                            {key === 'hobbies' && <Award className="h-4 w-4" />}
+                            {key === 'life_skills' && <Target className="h-4 w-4" />}
+                            <span>{label}</span>
+                          </div>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

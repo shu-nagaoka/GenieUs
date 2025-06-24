@@ -176,26 +176,52 @@ export default function FamilyPageNew() {
   const getFamilyStructureDisplay = () => {
     if (!familyData) return ''
     
-    const members = []
-    if (familyData.family_members.has_father) members.push('パパ')
-    if (familyData.family_members.has_mother) members.push('ママ')
-    if (familyData.family_members.children_count > 0) {
-      members.push(`子ども${familyData.family_members.children_count}人`)
-    }
-    if (familyData.family_members.has_grandparents) members.push('おじいちゃん・おばあちゃん')
-    if (familyData.family_members.has_pets && familyData.pets.length > 0) {
-      members.push(`ペット${familyData.pets.length}匹`)
+    const { has_father, has_mother, has_grandparents, children_count, has_pets } = familyData.family_members
+    
+    // 基本構成を決定
+    let baseStructure = ''
+    if (has_father && has_mother) {
+      baseStructure = '夫婦'
+    } else if (has_father) {
+      baseStructure = 'パパ'
+    } else if (has_mother) {
+      baseStructure = 'ママ'
     }
     
-    return members.join(' + ')
+    // 子どもの情報
+    const childrenPart = children_count > 0 ? `お子さん${children_count}人` : ''
+    
+    // 祖父母の情報
+    const grandparentsPart = has_grandparents ? '三世代同居' : ''
+    
+    // ペットの情報
+    const petsPart = has_pets && familyData.pets.length > 0 ? `ペット${familyData.pets.length}匹` : ''
+    
+    // 自然な日本語で組み立て
+    const parts = []
+    if (baseStructure) parts.push(baseStructure)
+    if (childrenPart) parts.push(childrenPart)
+    
+    let description = parts.join('と') || '未設定'
+    
+    // 追加情報を括弧内で表示
+    const additionalInfo = []
+    if (grandparentsPart) additionalInfo.push(grandparentsPart)
+    if (petsPart) additionalInfo.push(petsPart)
+    
+    if (additionalInfo.length > 0) {
+      description += ` (${additionalInfo.join('、')})`
+    }
+    
+    return description
   }
 
   if (loading) {
     return (
       <AppLayout>
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50 flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-stone-50 flex items-center justify-center">
           <div className="inline-flex items-center gap-2">
-            <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-6 h-6 border-2 border-slate-500 border-t-transparent rounded-full animate-spin"></div>
             <span className="text-gray-600">家族情報を読み込み中...</span>
           </div>
         </div>
@@ -205,13 +231,13 @@ export default function FamilyPageNew() {
 
   return (
     <AppLayout>
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-stone-50">
         {/* ページヘッダー */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-emerald-100">
+        <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
           <div className="max-w-6xl mx-auto px-4 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center shadow-lg">
                   <MdFamilyRestroom className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -223,7 +249,7 @@ export default function FamilyPageNew() {
               <div className="flex items-center space-x-3">
                 <Button 
                   onClick={() => setShowModal(true)}
-                  className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-lg"
+                  className="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white shadow-lg"
                 >
                   {hasData ? (
                     <>
@@ -248,7 +274,7 @@ export default function FamilyPageNew() {
             <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
               <CardContent className="p-12 text-center">
                 <div className="mb-6">
-                  <MdFamilyRestroom className="h-24 w-24 mx-auto text-emerald-300" />
+                  <MdFamilyRestroom className="h-24 w-24 mx-auto text-slate-300" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-800 mb-4">
                   家族情報をご登録ください
@@ -260,7 +286,7 @@ export default function FamilyPageNew() {
                 <Button 
                   onClick={() => setShowModal(true)}
                   size="lg"
-                  className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-lg"
+                  className="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white shadow-lg"
                 >
                   <Plus className="h-5 w-5 mr-2" />
                   家族情報を登録する
@@ -272,12 +298,12 @@ export default function FamilyPageNew() {
             <>
               {/* 家族構成サマリー */}
               <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-t-lg">
+                <CardHeader className="bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-t-lg">
                   <CardTitle className="flex items-center gap-3">
                     <Users className="h-6 w-6" />
                     家族構成
                   </CardTitle>
-                  <CardDescription className="text-emerald-100">
+                  <CardDescription className="text-slate-100">
                     {familyData?.parent_name}さんのご家族
                   </CardDescription>
                 </CardHeader>
@@ -286,14 +312,14 @@ export default function FamilyPageNew() {
                     <div className="text-lg font-medium text-gray-800">
                       {getFamilyStructureDisplay()}
                     </div>
-                    <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">
+                    <Badge className="bg-slate-100 text-slate-700 border-slate-300">
                       {familyData?.family_members.children_count}人のお子さん
                     </Badge>
                   </div>
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                    <div className="text-center p-4 bg-emerald-50 rounded-lg">
-                      <Users className="h-8 w-8 mx-auto text-emerald-600 mb-2" />
+                    <div className="text-center p-4 bg-slate-50 rounded-lg">
+                      <Users className="h-8 w-8 mx-auto text-slate-600 mb-2" />
                       <div className="text-sm text-gray-600">保護者</div>
                       <div className="font-medium">
                         {(familyData?.family_members.has_father && familyData?.family_members.has_mother) ? '2人' :
@@ -315,8 +341,8 @@ export default function FamilyPageNew() {
                       </div>
                     </div>
                     
-                    <div className="text-center p-4 bg-amber-50 rounded-lg">
-                      <FaPaw className="h-8 w-8 mx-auto text-amber-600 mb-2" />
+                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                      <FaPaw className="h-8 w-8 mx-auto text-gray-600 mb-2" />
                       <div className="text-sm text-gray-600">ペット</div>
                       <div className="font-medium">
                         {familyData?.pets.length || 0}匹
@@ -384,7 +410,7 @@ export default function FamilyPageNew() {
               {/* ペット情報 */}
               {familyData?.pets && familyData.pets.length > 0 && (
                 <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                  <CardHeader className="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-t-lg">
+                  <CardHeader className="bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-t-lg">
                     <CardTitle className="flex items-center gap-3">
                       <FaPaw className="h-6 w-6" />
                       ペット情報
@@ -393,11 +419,11 @@ export default function FamilyPageNew() {
                   <CardContent className="p-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {familyData.pets.map((pet, index) => (
-                        <div key={index} className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                          <h4 className="font-bold text-amber-800 mb-2">{pet.name}</h4>
+                        <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <h4 className="font-bold text-gray-800 mb-2">{pet.name}</h4>
                           <div className="space-y-1 text-sm">
                             <div className="flex items-center gap-2">
-                              <FaPaw className="h-3 w-3 text-amber-600" />
+                              <FaPaw className="h-3 w-3 text-gray-600" />
                               <span>
                                 {pet.type === 'dog' ? '犬' : pet.type === 'cat' ? '猫' : 'その他'}
                                 {pet.age && ` (${pet.age})`}
@@ -417,7 +443,7 @@ export default function FamilyPageNew() {
               {/* 相談事・悩み */}
               {familyData?.concerns && (
                 <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                  <CardHeader className="bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-t-lg">
+                  <CardHeader className="bg-gradient-to-r from-stone-600 to-stone-700 text-white rounded-t-lg">
                     <CardTitle className="flex items-center gap-3">
                       <Heart className="h-6 w-6" />
                       子育ての悩み・相談事

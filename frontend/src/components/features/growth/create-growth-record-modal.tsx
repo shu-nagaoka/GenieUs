@@ -134,14 +134,32 @@ export function CreateGrowthRecordModal({ open, onOpenChange, onRecordCreated }:
     }
   }
 
+  const calculateAgeInMonths = (birthDate: string): number => {
+    if (!birthDate) return 0
+    
+    const birth = new Date(birthDate)
+    const today = new Date()
+    
+    let months = (today.getFullYear() - birth.getFullYear()) * 12
+    months += today.getMonth() - birth.getMonth()
+    
+    // 日付を考慮した調整
+    if (today.getDate() < birth.getDate()) {
+      months--
+    }
+    
+    return Math.max(0, months)
+  }
+
   const handleChildSelection = (childId: string) => {
     const selectedChild = children.find(child => child.child_id === childId)
     if (selectedChild) {
+      const calculatedAge = calculateAgeInMonths(selectedChild.birth_date)
       setFormData(prev => ({
         ...prev,
         child_id: selectedChild.child_id,
         child_name: selectedChild.name,
-        age_in_months: selectedChild.age_in_months
+        age_in_months: calculatedAge
       }))
     }
   }
@@ -301,17 +319,22 @@ export function CreateGrowthRecordModal({ open, onOpenChange, onRecordCreated }:
               <Label htmlFor="age_in_months" className="text-sm font-medium text-gray-700">
                 年齢（月齢）*
               </Label>
-              <Input
-                id="age_in_months"
-                type="number"
-                min="0"
-                max="120"
-                value={formData.age_in_months}
-                onChange={(e) => handleInputChange('age_in_months', parseInt(e.target.value) || 0)}
-                placeholder="8"
-                className="border-blue-200 focus:border-blue-400"
-                required
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  id="age_in_months"
+                  type="number"
+                  value={formData.age_in_months}
+                  className="border-blue-200 focus:border-blue-400 bg-gray-50"
+                  readOnly
+                />
+                <div className="text-sm text-gray-500">
+                  {formData.age_in_months && formData.age_in_months > 0 ? (
+                    formData.age_in_months >= 12 ? 
+                      `${Math.floor(formData.age_in_months / 12)}歳${formData.age_in_months % 12}ヶ月` :
+                      `${formData.age_in_months}ヶ月`
+                  ) : '生年月日から自動計算'}
+                </div>
+              </div>
             </div>
           </div>
 
