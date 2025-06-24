@@ -158,13 +158,13 @@ export default function EffortReportPage() {
 
   return (
     <AppLayout>
-      <div className="min-h-screen bg-gradient-to-br from-lime-50 via-green-50 to-emerald-50">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-slate-50">
         {/* ページヘッダー */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-lime-100">
+        <div className="bg-white/80 backdrop-blur-sm border-b border-emerald-100">
           <div className="max-w-6xl mx-auto px-4 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-lime-500 to-green-600 flex items-center justify-center shadow-lg">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
                   <FaTrophy className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -175,14 +175,14 @@ export default function EffortReportPage() {
               
               <div className="flex items-center space-x-3">
                 <Link href="/chat">
-                  <Button className="bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-600 hover:to-green-600 text-white shadow-lg">
+                  <Button className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-lime-600 hover:to-green-600 text-white shadow-lg">
                     <Sparkles className="h-4 w-4 mr-2" />
                     Genieに相談
                   </Button>
                 </Link>
-                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-lg border border-lime-200">
-                  <Sparkles className="h-4 w-4 text-lime-600" />
-                  <span className="text-sm text-lime-700 font-medium">毎日自動作成</span>
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-lg border border-emerald-200">
+                  <Sparkles className="h-4 w-4 text-emerald-600" />
+                  <span className="text-sm text-emerald-700 font-medium">毎日自動作成</span>
                 </div>
               </div>
             </div>
@@ -192,54 +192,54 @@ export default function EffortReportPage() {
         <div className="max-w-6xl mx-auto p-6 space-y-8">
           {/* 努力サマリーカード */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
+            <Card className="bg-gradient-to-br from-emerald-600 to-emerald-700 text-white border-0 shadow-xl">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-blue-100 text-sm font-medium">今週の努力</p>
+                    <p className="text-emerald-100 text-sm font-medium">今週の努力</p>
                     <p className="text-2xl font-bold mt-1">27回</p>
-                    <p className="text-blue-200 text-xs">先週比 +3回</p>
+                    <p className="text-emerald-200 text-xs">先週比 +3回</p>
                   </div>
-                  <Heart className="h-8 w-8 text-blue-200" />
+                  <Heart className="h-8 w-8 text-emerald-200" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-xl">
+            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-green-100 text-sm font-medium">継続日数</p>
+                    <p className="text-emerald-100 text-sm font-medium">継続日数</p>
                     <p className="text-2xl font-bold mt-1">21日</p>
-                    <p className="text-green-200 text-xs">連続記録中</p>
+                    <p className="text-emerald-200 text-xs">連続記録中</p>
                   </div>
-                  <FaStar className="h-8 w-8 text-green-200" />
+                  <FaStar className="h-8 w-8 text-emerald-200" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white border-0 shadow-xl">
+            <Card className="bg-gradient-to-br from-teal-500 to-teal-600 text-white border-0 shadow-xl">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-amber-100 text-sm font-medium">成長実感</p>
+                    <p className="text-teal-100 text-sm font-medium">成長実感</p>
                     <p className="text-2xl font-bold mt-1">8.7</p>
-                    <p className="text-amber-200 text-xs">レポートスコア</p>
+                    <p className="text-teal-200 text-xs">レポートスコア</p>
                   </div>
-                  <Star className="h-8 w-8 text-amber-200" />
+                  <Star className="h-8 w-8 text-teal-200" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl">
+            <Card className="bg-gradient-to-br from-slate-500 to-slate-600 text-white border-0 shadow-xl">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-purple-100 text-sm font-medium">レポート作成</p>
+                    <p className="text-slate-100 text-sm font-medium">レポート作成</p>
                     <p className="text-2xl font-bold mt-1">12件</p>
-                    <p className="text-purple-200 text-xs">毎日21:00自動</p>
+                    <p className="text-slate-200 text-xs">毎日21:00自動</p>
                   </div>
-                  <Clock className="h-8 w-8 text-purple-200" />
+                  <Clock className="h-8 w-8 text-slate-200" />
                 </div>
               </CardContent>
             </Card>
@@ -252,7 +252,7 @@ export default function EffortReportPage() {
             </div>
             <Button 
               variant="outline" 
-              className="border-lime-300 text-lime-700 hover:bg-lime-50"
+              className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
               onClick={() => setShowSettingsModal(true)}
             >
               <Target className="h-4 w-4 mr-2" />
@@ -262,12 +262,12 @@ export default function EffortReportPage() {
 
           {/* 過去のレポート一覧 */}
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-t-lg">
+            <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-3">
                 <Archive className="h-6 w-6" />
                 過去のレポート
               </CardTitle>
-              <CardDescription className="text-green-100">
+              <CardDescription className="text-emerald-100">
                 これまでのあなたの努力の記録を振り返る
               </CardDescription>
             </CardHeader>
@@ -276,13 +276,13 @@ export default function EffortReportPage() {
                 {historicalReports.map((report) => (
                   <Card 
                     key={report.id} 
-                    className="cursor-pointer hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-gradient-to-br from-white to-lime-50 hover:from-lime-50 hover:to-green-50"
+                    className="cursor-pointer hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-gradient-to-br from-white to-emerald-50 hover:from-emerald-50 hover:to-teal-50"
                     onClick={() => openReportModal(report)}
                   >
                     <CardContent className="p-5">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-lime-500 to-green-600 flex items-center justify-center">
+                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                             <FileText className="h-4 w-4 text-white" />
                           </div>
                           <div>
@@ -290,7 +290,7 @@ export default function EffortReportPage() {
                             <p className="text-xs text-gray-500">{new Date(report.date).toLocaleDateString('ja-JP')}</p>
                           </div>
                         </div>
-                        <Badge className="bg-gradient-to-r from-lime-500 to-green-600 text-white">
+                        <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
                           {report.score}/10
                         </Badge>
                       </div>
@@ -301,11 +301,11 @@ export default function EffortReportPage() {
                           <div className="flex items-center gap-2">
                             <div className="flex-1 h-2 bg-gray-200 rounded-full">
                               <div 
-                                className="h-2 bg-gradient-to-r from-lime-500 to-green-600 rounded-full" 
+                                className="h-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full" 
                                 style={{ width: `${Math.min((report.effortCount / 30) * 100, 100)}%` }}
                               ></div>
                             </div>
-                            <span className="text-sm font-bold text-lime-700">{report.effortCount}回</span>
+                            <span className="text-sm font-bold text-emerald-700">{report.effortCount}回</span>
                           </div>
                         </div>
                         
@@ -314,7 +314,7 @@ export default function EffortReportPage() {
                           <div className="space-y-1">
                             {report.highlights.slice(0, 2).map((highlight, index) => (
                               <div key={index} className="flex items-center gap-2">
-                                <Star className="h-3 w-3 text-lime-600 flex-shrink-0" />
+                                <Star className="h-3 w-3 text-emerald-600 flex-shrink-0" />
                                 <p className="text-xs text-gray-600 line-clamp-1">{highlight}</p>
                               </div>
                             ))}
@@ -327,7 +327,7 @@ export default function EffortReportPage() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="w-full border-lime-300 text-lime-700 hover:bg-lime-50"
+                          className="w-full border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                           onClick={(e) => {
                             e.stopPropagation()
                             openReportModal(report)
@@ -484,26 +484,26 @@ export default function EffortReportPage() {
 
           {/* AIチャット連携カード */}
           <Card className="shadow-xl border-0 bg-gradient-to-br from-lime-50 to-green-50">
-            <CardHeader className="bg-gradient-to-r from-lime-500 to-green-600 text-white rounded-t-lg">
+            <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-3">
                 <Sparkles className="h-6 w-6" />
                 Genieとの連携
               </CardTitle>
-              <CardDescription className="text-lime-100">
+              <CardDescription className="text-emerald-100">
                 このレポートはGenieとの会話で活用され、あなたの努力を認めたよりよいアドバイスを提供します
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="bg-white/60 p-4 rounded-lg border border-lime-200">
+              <div className="bg-white/60 p-4 rounded-lg border border-emerald-200">
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-lime-500 to-green-600 flex items-center justify-center shadow-lg">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
                     <FaTrophy className="h-5 w-5 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm text-lime-800 font-medium mb-2">
+                    <p className="text-sm text-emerald-800 font-medium mb-2">
                       💡 Genieは、あなたの努力レポートを理解して：
                     </p>
-                    <ul className="text-sm text-lime-700 space-y-1">
+                    <ul className="text-sm text-emerald-700 space-y-1">
                       <li>• 「今日も頑張りましたね」と具体的に認めてくれます</li>
                       <li>• あなたの努力の傾向を考慮したアドバイスをします</li>
                       <li>• 成長を実感できる振り返りを一緒にしてくれます</li>
@@ -512,7 +512,7 @@ export default function EffortReportPage() {
                 </div>
                 <div className="flex gap-3">
                   <Link href="/chat" className="flex-1">
-                    <Button className="w-full bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-600 hover:to-green-600 text-white shadow-lg">
+                    <Button className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-lime-600 hover:to-green-600 text-white shadow-lg">
                       <Sparkles className="h-4 w-4 mr-2" />
                       Genieに努力を報告・相談
                     </Button>
@@ -520,7 +520,7 @@ export default function EffortReportPage() {
                   <Button 
                     onClick={regenerateReport}
                     variant="outline"
-                    className="border-lime-300 text-lime-700 hover:bg-lime-50"
+                    className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                   >
                     <TrendingUp className="h-4 w-4 mr-2" />
                     レポート更新
@@ -532,9 +532,9 @@ export default function EffortReportPage() {
 
           {/* 自動作成の説明 */}
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-lime-200">
-              <Clock className="h-4 w-4 text-lime-600" />
-              <span className="text-sm text-lime-700 font-medium">毎日21:00に自動作成されます</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-emerald-200">
+              <Clock className="h-4 w-4 text-emerald-600" />
+              <span className="text-sm text-emerald-700 font-medium">毎日21:00に自動作成されます</span>
             </div>
           </div>
         </div>
@@ -544,11 +544,11 @@ export default function EffortReportPage() {
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               {/* モーダルヘッダー */}
-              <div className="sticky top-0 bg-gradient-to-r from-lime-500 to-green-600 text-white p-6 rounded-t-xl">
+              <div className="sticky top-0 bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-6 rounded-t-xl">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold">努力レポート</h2>
-                    <p className="text-lime-100">{selectedReport.period} - {new Date(selectedReport.date).toLocaleDateString('ja-JP')}</p>
+                    <p className="text-emerald-100">{selectedReport.period} - {new Date(selectedReport.date).toLocaleDateString('ja-JP')}</p>
                   </div>
                   <Button 
                     variant="ghost" 
@@ -565,9 +565,9 @@ export default function EffortReportPage() {
               <div className="p-6 space-y-6">
                 {/* サマリー */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="bg-gradient-to-br from-lime-500 to-green-600 text-white border-0">
+                  <Card className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-0">
                     <CardContent className="p-4 text-center">
-                      <p className="text-lime-100 text-sm">努力回数</p>
+                      <p className="text-emerald-100 text-sm">努力回数</p>
                       <p className="text-2xl font-bold">{selectedReport.effortCount}回</p>
                     </CardContent>
                   </Card>
@@ -591,7 +591,7 @@ export default function EffortReportPage() {
                 <Card className="border-0 shadow-md">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Activity className="h-5 w-5 text-lime-600" />
+                      <Activity className="h-5 w-5 text-emerald-600" />
                       期間サマリー
                     </CardTitle>
                   </CardHeader>
@@ -604,7 +604,7 @@ export default function EffortReportPage() {
                 <Card className="border-0 shadow-md">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5 text-lime-600" />
+                      <BarChart3 className="h-5 w-5 text-emerald-600" />
                       カテゴリ別スコア
                     </CardTitle>
                   </CardHeader>
@@ -637,15 +637,15 @@ export default function EffortReportPage() {
                 <Card className="border-0 shadow-md">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Star className="h-5 w-5 text-lime-600" />
+                      <Star className="h-5 w-5 text-emerald-600" />
                       今週のハイライト
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       {selectedReport.highlights.map((highlight, index) => (
-                        <div key={index} className="flex items-start gap-3 p-3 bg-gradient-to-r from-lime-50 to-green-50 rounded-lg border border-lime-200">
-                          <div className="h-6 w-6 rounded-full bg-gradient-to-br from-lime-500 to-green-600 flex items-center justify-center flex-shrink-0">
+                        <div key={index} className="flex items-start gap-3 p-3 bg-gradient-to-r from-lime-50 to-green-50 rounded-lg border border-emerald-200">
+                          <div className="h-6 w-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
                             <Star className="h-3 w-3 text-white" />
                           </div>
                           <p className="text-sm text-gray-700">{highlight}</p>
@@ -659,14 +659,14 @@ export default function EffortReportPage() {
                 <Card className="border-0 shadow-md">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Award className="h-5 w-5 text-lime-600" />
+                      <Award className="h-5 w-5 text-emerald-600" />
                       達成事項
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-2">
                       {selectedReport.achievements.map((achievement, index) => (
-                        <Badge key={index} className="bg-gradient-to-r from-lime-500 to-green-600 text-white px-3 py-1">
+                        <Badge key={index} className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-3 py-1">
                           <Award className="h-3 w-3 mr-1" />
                           {achievement}
                         </Badge>
@@ -684,7 +684,7 @@ export default function EffortReportPage() {
           <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
               {/* モーダルヘッダー */}
-              <div className="bg-gradient-to-r from-lime-500 to-green-600 text-white p-4 rounded-t-xl">
+              <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-t-xl">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-bold">レポート設定</h2>
                   <Button 
@@ -703,7 +703,7 @@ export default function EffortReportPage() {
                 <div>
                   <Label className="text-sm font-medium text-gray-700 mb-2 block">期間設定</Label>
                   <Select value={selectedPeriod.toString()} onValueChange={handlePeriodChange}>
-                    <SelectTrigger className="border-lime-200 focus:border-lime-400">
+                    <SelectTrigger className="border-emerald-200 focus:border-emerald-400">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -732,7 +732,7 @@ export default function EffortReportPage() {
                 </div>
 
                 <Button 
-                  className="w-full bg-gradient-to-r from-lime-500 to-green-500 hover:from-lime-600 hover:to-green-600 text-white"
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-lime-600 hover:to-green-600 text-white"
                   onClick={() => setShowSettingsModal(false)}
                 >
                   設定完了

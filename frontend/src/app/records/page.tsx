@@ -1,7 +1,10 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
+import { CreateMemoryModal } from '@/components/features/memories/create-memory-modal'
+import { EditMemoryModal } from '@/components/features/memories/edit-memory-modal'
+import { getMemories, toggleMemoryFavorite, MemoryRecord as ApiMemoryRecord } from '@/lib/api/memories'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -28,27 +31,22 @@ import {
   Filter,
   Grid3X3,
   List,
-  Archive
+  Archive,
+  Edit,
+  Trash2
 } from 'lucide-react'
 import { MdPhotoLibrary, MdVideoLibrary, MdFamilyRestroom } from 'react-icons/md'
 import { FaCamera, FaVideo, FaHeart } from 'react-icons/fa'
 import { GiMagicLamp } from 'react-icons/gi'
 import Link from 'next/link'
+import { getImageUrl } from '@/lib/api/file-upload'
 
-interface MemoryRecord {
-  id: string
-  title: string
-  description: string
-  date: string
-  type: 'photo' | 'video' | 'album'
-  category: 'milestone' | 'daily' | 'family' | 'special'
+// バックエンドAPIから取得したデータを表示用に変換するインターフェース
+interface MemoryRecord extends Omit<ApiMemoryRecord, 'user_id' | 'created_at' | 'updated_at'> {
   mediaUrl?: string
   thumbnailUrl?: string
   duration?: string
   fileSize?: string
-  location?: string
-  tags: string[]
-  favorited: boolean
   genieAnalysis?: {
     detected: string[]
     emotions: string[]
@@ -57,76 +55,72 @@ interface MemoryRecord {
   }
 }
 
+// EditMemoryModalが期待する形式
+interface EditableMemoryRecord {
+  id: string
+  title: string
+  description: string
+  date: string
+  type: 'photo' | 'video' | 'album'
+  category: 'milestone' | 'daily' | 'family' | 'special'
+  mediaUrl?: string
+  thumbnailUrl?: string
+  location?: string
+  tags: string[]
+  favorited: boolean
+}
+
 export default function CapturedMemoriesPage() {
-  const [memories, setMemories] = useState<MemoryRecord[]>([
-    {
-      id: '1',
-      title: '初めての笑顔',
-      description: 'Genieが自動検出した特別な瞬間',
-      date: '2024-07-20',
-      type: 'photo',
-      category: 'milestone',
-      mediaUrl: '/api/placeholder/400/300',
-      thumbnailUrl: '/api/placeholder/150/150',
-      location: 'リビング',
-      tags: ['笑顔', '初回', '感動'],
-      favorited: true,
-      genieAnalysis: {
-        detected: ['笑顔', '感情表現', '親子の絆'],
-        emotions: ['喜び', '愛情', '幸せ'],
-        confidence: 0.95,
-        description: '赤ちゃんの初めての本格的な笑顔を検出しました。親子の特別な瞬間です。'
-      }
-    },
-    {
-      id: '2',
-      title: 'つかまり立ち成功',
-      description: '運動発達のマイルストーン達成',
-      date: '2024-07-18',
-      type: 'video',
-      category: 'milestone',
-      duration: '0:45',
-      fileSize: '12.3MB',
-      location: 'リビング',
-      tags: ['つかまり立ち', '運動発達', '成長'],
-      favorited: true,
-      genieAnalysis: {
-        detected: ['立位', '運動能力', '発達段階'],
-        emotions: ['達成感', '集中', '努力'],
-        confidence: 0.92,
-        description: 'つかまり立ちの成功を確認。運動発達が順調に進んでいます。'
-      }
-    },
-    {
-      id: '3',
-      title: '家族でお散歩',
-      description: '晴れた日の公園での一コマ',
-      date: '2024-07-15',
-      type: 'album',
-      category: 'family',
-      location: '近所の公園',
-      tags: ['お散歩', '家族時間', '自然'],
-      favorited: false
-    },
-    {
-      id: '4',
-      title: 'おやつタイム',
-      description: '離乳食を上手に食べました',
-      date: '2024-07-10',
-      type: 'photo',
-      category: 'daily',
-      mediaUrl: '/api/placeholder/400/300',
-      thumbnailUrl: '/api/placeholder/150/150',
-      tags: ['離乳食', '食事', '成長'],
-      favorited: false
-    }
-  ])
+  const [memories, setMemories] = useState<MemoryRecord[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedMemory, setSelectedMemory] = useState<EditableMemoryRecord | null>(null)
 
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedType, setSelectedType] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+
+  // APIからメモリーデータを取得
+  const loadMemories = async () => {
+    try {
+      setLoading(true)
+      const result = await getMemories({ user_id: 'frontend_user' })
+      
+      if (result.success && result.data) {
+        // APIデータを表示用に変換
+        const convertedMemories: MemoryRecord[] = result.data.map(apiMemory => ({
+          id: apiMemory.id,
+          title: apiMemory.title,
+          description: apiMemory.description,
+          date: apiMemory.date,
+          type: apiMemory.type,
+          category: apiMemory.category,
+          mediaUrl: apiMemory.media_url,
+          thumbnailUrl: apiMemory.thumbnail_url,
+          location: apiMemory.location,
+          tags: apiMemory.tags,
+          favorited: apiMemory.favorited,
+          // 仮のGenieAnalysisデータ（後で実装）
+          genieAnalysis: undefined
+        }))
+        setMemories(convertedMemories)
+      } else {
+        console.error('メモリーの取得に失敗しました:', result.message)
+      }
+    } catch (error) {
+      console.error('メモリー読み込みエラー:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 初回ロード
+  useEffect(() => {
+    loadMemories()
+  }, [])
 
   const categoryLabels = {
     milestone: 'マイルストーン',
@@ -166,10 +160,52 @@ export default function CapturedMemoriesPage() {
     }
   }
 
-  const toggleFavorite = (id: string) => {
-    setMemories(prev => prev.map(memory => 
-      memory.id === id ? { ...memory, favorited: !memory.favorited } : memory
-    ))
+  const toggleFavorite = async (id: string) => {
+    const memory = memories.find(m => m.id === id)
+    if (!memory) return
+
+    try {
+      const result = await toggleMemoryFavorite(id, !memory.favorited)
+      
+      if (result.success) {
+        setMemories(prev => prev.map(memory => 
+          memory.id === id ? { ...memory, favorited: !memory.favorited } : memory
+        ))
+      } else {
+        console.error('お気に入り切り替えに失敗しました:', result.message)
+        alert('お気に入りの切り替えに失敗しました')
+      }
+    } catch (error) {
+      console.error('お気に入り切り替えエラー:', error)
+      alert('お気に入りの切り替え中にエラーが発生しました')
+    }
+  }
+
+  const handleEditMemory = (memory: MemoryRecord) => {
+    // Convert page MemoryRecord to EditableMemoryRecord format for the EditMemoryModal
+    const editableMemoryRecord: EditableMemoryRecord = {
+      id: memory.id,
+      title: memory.title,
+      description: memory.description,
+      date: memory.date,
+      type: memory.type,
+      category: memory.category,
+      mediaUrl: memory.mediaUrl,
+      thumbnailUrl: memory.thumbnailUrl,
+      location: memory.location || '',
+      tags: memory.tags,
+      favorited: memory.favorited
+    }
+    setSelectedMemory(editableMemoryRecord)
+    setShowEditModal(true)
+  }
+
+  const handleMemoryUpdated = () => {
+    loadMemories()
+  }
+
+  const handleMemoryDeleted = () => {
+    loadMemories()
   }
 
   const formatDate = (dateStr: string) => {
@@ -241,10 +277,17 @@ export default function CapturedMemoriesPage() {
               </div>
               
               <div className="flex items-center space-x-3">
+                <Button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  メモリーを追加
+                </Button>
                 <Link href="/chat">
-                  <Button className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg">
+                  <Button variant="outline" className="border-cyan-300 text-cyan-700 hover:bg-cyan-50">
                     <Camera className="h-4 w-4 mr-2" />
-                    写真を撮影
+                    Genieで撮影
                   </Button>
                 </Link>
                 <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-lg border border-cyan-200">
@@ -436,9 +479,11 @@ export default function CapturedMemoriesPage() {
                           {/* メディアプレビュー */}
                           <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-lg overflow-hidden">
                             {memory.mediaUrl ? (
-                              <div className="w-full h-full bg-gradient-to-br from-cyan-100 to-blue-100 flex items-center justify-center">
-                                <IconComponent className="h-12 w-12 text-cyan-400" />
-                              </div>
+                              <img 
+                                src={memory.mediaUrl.startsWith('/api/') ? `http://localhost:8000${memory.mediaUrl}` : memory.mediaUrl}
+                                alt={memory.title}
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
                               <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                                 <IconComponent className="h-12 w-12 text-gray-400" />
@@ -527,6 +572,14 @@ export default function CapturedMemoriesPage() {
                               <Button size="sm" variant="outline" className="flex-1">
                                 <Eye className="h-3 w-3 mr-1" />
                                 表示
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => handleEditMemory(memory)}
+                                className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+                              >
+                                <Edit className="h-3 w-3" />
                               </Button>
                               <Button size="sm" variant="outline">
                                 <Share className="h-3 w-3" />
@@ -641,6 +694,15 @@ export default function CapturedMemoriesPage() {
                                   <Eye className="h-4 w-4 mr-2" />
                                   詳細表示
                                 </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleEditMemory(memory)}
+                                  className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  編集
+                                </Button>
                                 <Button size="sm" variant="outline">
                                   <Share className="h-4 w-4 mr-2" />
                                   共有
@@ -659,20 +721,46 @@ export default function CapturedMemoriesPage() {
                 </div>
               )}
               
+              {/* ローディング表示 */}
+              {loading && (
+                <div className="text-center py-12">
+                  <div className="inline-flex items-center gap-2">
+                    <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-gray-600">メモリーを読み込み中...</span>
+                  </div>
+                </div>
+              )}
+
               {/* 結果が見つからない場合 */}
-              {getFilteredMemories().length === 0 && (
+              {!loading && getFilteredMemories().length === 0 && (
                 <div className="text-center py-12">
                   <div className="mb-4">
                     <Camera className="h-16 w-16 mx-auto text-gray-300" />
                   </div>
-                  <h3 className="text-lg font-medium text-gray-700 mb-2">メモリーが見つかりません</h3>
-                  <p className="text-gray-500 mb-4">検索条件を変更するか、新しいメモリーを作成してください</p>
-                  <Link href="/chat">
-                    <Button className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white">
-                      <Camera className="h-4 w-4 mr-2" />
-                      新しいメモリーを作成
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">
+                    {memories.length === 0 ? 'メモリーがありません' : 'メモリーが見つかりません'}
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    {memories.length === 0 
+                      ? '最初のメモリーを作成しましょう' 
+                      : '検索条件を変更するか、新しいメモリーを作成してください'
+                    }
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Button 
+                      onClick={() => setShowCreateModal(true)}
+                      className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      メモリーを作成
                     </Button>
-                  </Link>
+                    <Link href="/chat">
+                      <Button variant="outline" className="border-cyan-300 text-cyan-700 hover:bg-cyan-50">
+                        <Camera className="h-4 w-4 mr-2" />
+                        Genieで撮影
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -736,6 +824,22 @@ export default function CapturedMemoriesPage() {
           </div>
         </div>
       </div>
+
+      {/* メモリー作成モーダル */}
+      <CreateMemoryModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        onMemoryCreated={loadMemories}
+      />
+
+      {/* メモリー編集モーダル */}
+      <EditMemoryModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        memory={selectedMemory}
+        onMemoryUpdated={handleMemoryUpdated}
+        onMemoryDeleted={handleMemoryDeleted}
+      />
     </AppLayout>
   )
 }

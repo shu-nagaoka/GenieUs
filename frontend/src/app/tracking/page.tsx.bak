@@ -129,70 +129,20 @@ export default function GrowthTrackingPage() {
     return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   }
 
-  // 親しみやすいカテゴリ名マッピング
-  const categoryLabels = {
-    'body_growth': 'からだの成長',
-    'language_growth': 'ことばの成長', 
-    'skills': 'できること',
-    'social_skills': 'お友達との関わり',
-    'hobbies': '習い事・特技',
-    'life_skills': '生活スキル'
-  }
-
-  const detailCategoryLabels = {
-    'height': '身長・体重',
-    'weight': '身長・体重',
-    'speech': 'おしゃべり',
-    'smile': '表情・感情',
-    'movement': '運動・歩行',
-    'expression': '感情表現',
-    'achievement': '達成・成功体験',
-    'social': 'お友達と遊ぶ',
-    'helping': 'お手伝い',
-    'rule_following': 'ルールを守る',
-    'piano': 'ピアノ',
-    'swimming': '水泳',
-    'drawing': 'お絵描き',
-    'dancing': 'ダンス',
-    'toilet': 'トイレ',
-    'brushing': '歯磨き',
-    'dressing': 'お着替え',
-    'cleaning': 'お片付け'
-  }
-
   const getRecordIcon = (category: string) => {
     switch (category) {
-      case 'height':
-      case 'weight': return <Ruler className="h-5 w-5" />
+      case 'height': return <Ruler className="h-5 w-5" />
+      case 'weight': return <Scale className="h-5 w-5" />
       case 'speech': return <MessageCircle className="h-5 w-5" />
-      case 'smile':
-      case 'expression': return <Smile className="h-5 w-5" />
+      case 'smile': return <Smile className="h-5 w-5" />
       case 'movement': return <TrendingUp className="h-5 w-5" />
-      case 'achievement': return <Award className="h-5 w-5" />
-      case 'social':
-      case 'helping':
-      case 'rule_following': return <Heart className="h-5 w-5" />
-      case 'piano':
-      case 'swimming':
-      case 'drawing':
-      case 'dancing': return <Star className="h-5 w-5" />
-      case 'toilet':
-      case 'brushing':
-      case 'dressing':
-      case 'cleaning': return <Target className="h-5 w-5" />
+      case 'expression': return <Heart className="h-5 w-5" />
       default: return <Star className="h-5 w-5" />
     }
   }
 
   const getRecordColor = (type: string) => {
     switch (type) {
-      case 'body_growth': return 'from-blue-500 to-blue-600'
-      case 'language_growth': return 'from-green-500 to-green-600'
-      case 'skills': return 'from-purple-500 to-purple-600'
-      case 'social_skills': return 'from-pink-500 to-pink-600'
-      case 'hobbies': return 'from-amber-500 to-amber-600'
-      case 'life_skills': return 'from-teal-500 to-teal-600'
-      // 従来のタイプも保持（後方互換性）
       case 'physical': return 'from-blue-500 to-blue-600'
       case 'emotional': return 'from-teal-500 to-teal-600'
       case 'cognitive': return 'from-purple-500 to-purple-600'
@@ -268,8 +218,8 @@ export default function GrowthTrackingPage() {
                   <MdTimeline className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800">お子さんの成長記録</h1>
-                  <p className="text-gray-600">からだ・ことば・できることを記録して成長を見守ります</p>
+                  <h1 className="text-3xl font-bold text-gray-800">見守った成長</h1>
+                  <p className="text-gray-600">Genieが記録したお子さんの大切な成長の軌跡</p>
                 </div>
               </div>
               
@@ -329,9 +279,9 @@ export default function GrowthTrackingPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-100 text-sm font-medium">できること</p>
+                    <p className="text-slate-100 text-sm font-medium">マイルストーン</p>
                     <p className="text-2xl font-bold mt-1">{selectedChildStats.milestonesCount}個</p>
-                    <p className="text-slate-200 text-xs">新しくできた</p>
+                    <p className="text-slate-200 text-xs">達成済み</p>
                   </div>
                   <Award className="h-8 w-8 text-slate-200" />
                 </div>
@@ -392,13 +342,12 @@ export default function GrowthTrackingPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">すべて</SelectItem>
-                      {Object.entries(categoryLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                      {/* 詳細カテゴリも表示 */}
-                      {Object.entries(detailCategoryLabels).map(([key, label]) => (
-                        <SelectItem key={`detail_${key}`} value={key}>{label}</SelectItem>
-                      ))}
+                      <SelectItem value="height">身長</SelectItem>
+                      <SelectItem value="weight">体重</SelectItem>
+                      <SelectItem value="speech">言葉</SelectItem>
+                      <SelectItem value="smile">笑顔</SelectItem>
+                      <SelectItem value="movement">運動</SelectItem>
+                      <SelectItem value="expression">表情</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -469,113 +418,167 @@ export default function GrowthTrackingPage() {
                 {!loading && getFilteredRecords().length > 0 && (
                   <div className="space-y-8">
                     {getFilteredRecords().map((record, index) => (
-                      <div key={record.id} className="relative flex items-start gap-6">
-                        {/* タイムライン点 */}
-                        <div className={`relative z-10 flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br ${getRecordColor(record.type)} flex items-center justify-center shadow-lg text-white`}>
-                          {getRecordIcon(record.category)}
-                          <div className="absolute -top-1 -right-1">
-                            {record.detectedBy === 'genie' && (
-                              <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                                <GiMagicLamp className="h-3 w-3 text-white" />
-                              </div>
-                            )}
-                          </div>
+                    <div key={record.id} className="relative flex items-start gap-6">
+                      {/* タイムライン点 */}
+                      <div className={`relative z-10 flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br ${getRecordColor(record.type)} flex items-center justify-center shadow-lg text-white`}>
+                        {getRecordIcon(record.category)}
+                        <div className="absolute -top-1 -right-1">
+                          {record.detectedBy === 'genie' && (
+                            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                              <GiMagicLamp className="h-3 w-3 text-white" />
+                            </div>
+                          )}
                         </div>
+                      </div>
 
-                        {/* 記録カード */}
-                        <Card className="flex-1 border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all duration-300">
-                          <CardContent className="p-6">
-                            <div className="flex items-start justify-between mb-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <h4 className="font-bold text-lg text-gray-800">{record.title}</h4>
-                                  <Badge className={`bg-gradient-to-r ${getRecordColor(record.type)} text-white`}>
-                                    {categoryLabels[record.type] || 
-                                     detailCategoryLabels[record.category] ||
-                                     (record.type === 'physical' ? 'からだの成長' :
-                                      record.type === 'emotional' ? 'お友達との関わり' :
-                                      record.type === 'cognitive' ? 'できること' :
-                                      record.type === 'milestone' ? 'できること' : '写真')}
+                      {/* 記録カード */}
+                      <Card className="flex-1 border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all duration-300">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h4 className="font-bold text-lg text-gray-800">{record.title}</h4>
+                                <Badge className={`bg-gradient-to-r ${getRecordColor(record.type)} text-white`}>
+                                  {record.type === 'physical' ? '身体' :
+                                   record.type === 'emotional' ? '感情' :
+                                   record.type === 'cognitive' ? '認知' :
+                                   record.type === 'milestone' ? 'マイルストーン' : '写真'}
+                                </Badge>
+                                {record.confidence && (
+                                  <Badge variant="outline" className="text-xs">
+                                    信頼度 {Math.round(record.confidence * 100)}%
                                   </Badge>
-                                  {record.confidence && (
-                                    <Badge variant="outline" className="text-xs">
-                                      信頼度 {Math.round(record.confidence * 100)}%
-                                    </Badge>
-                                  )}
-                                </div>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
-                                  <div className="flex items-center gap-2">
-                                    <Calendar className="h-4 w-4 text-blue-600" />
-                                    <span>{formatDate(record.date)}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Baby className="h-4 w-4 text-blue-600" />
-                                    <span>{record.ageInMonths}ヶ月</span>
-                                  </div>
-                                  {record.value && (
-                                    <div className="flex items-center gap-2">
-                                      <BarChart3 className="h-4 w-4 text-blue-600" />
-                                      <span>{record.value}{record.unit}</span>
-                                    </div>
-                                  )}
-                                </div>
-                                
-                                <p className="text-gray-700 mb-3">{record.description}</p>
-                                
-                                {record.developmentStage && (
-                                  <div className="mb-3">
-                                    <Badge className="bg-green-100 text-green-700">
-                                      {record.developmentStage}
-                                    </Badge>
-                                  </div>
                                 )}
-                                
-                                {record.emotions && record.emotions.length > 0 && (
-                                  <div className="flex flex-wrap gap-2 mb-3">
-                                    {record.emotions.map((emotion, idx) => (
-                                      <Badge key={idx} variant="outline" className="text-xs">
-                                        {emotion}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                )}
-                                
-                                {/* 編集ボタン */}
-                                <div className="mt-4 flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleEditRecord(record)}
-                                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
-                                  >
-                                    <Edit className="h-4 w-4 mr-1" />
-                                    編集
-                                  </Button>
-                                </div>
                               </div>
                               
-                              {record.imageUrl && (
-                                <div className="ml-4 flex-shrink-0">
-                                  <div className="w-32 h-24 rounded-lg border border-blue-200 overflow-hidden">
-                                    <img 
-                                      src={record.imageUrl.startsWith('/api/') ? `http://localhost:8000${record.imageUrl}` : record.imageUrl}
-                                      alt={record.title}
-                                      className="w-full h-full object-cover"
-                                    />
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="h-4 w-4 text-blue-600" />
+                                  <span>{formatDate(record.date)}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Baby className="h-4 w-4 text-blue-600" />
+                                  <span>{record.ageInMonths}ヶ月</span>
+                                </div>
+                                {record.value && (
+                                  <div className="flex items-center gap-2">
+                                    <BarChart3 className="h-4 w-4 text-blue-600" />
+                                    <span>{record.value}{record.unit}</span>
                                   </div>
+                                )}
+                              </div>
+                              
+                              <p className="text-gray-700 mb-3">{record.description}</p>
+                              
+                              {record.developmentStage && (
+                                <div className="mb-3">
+                                  <Badge className="bg-green-100 text-green-700">
+                                    {record.developmentStage}
+                                  </Badge>
+                                </div>
+                              )}
+                              
+                              {record.emotions && record.emotions.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                  {record.emotions.map((emotion, idx) => (
+                                    <Badge key={idx} variant="outline" className="text-xs">
+                                      {emotion}
+                                    </Badge>
+                                  ))}
                                 </div>
                               )}
                             </div>
-                          </CardContent>
-                        </Card>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                            
+                            {record.imageUrl && (
+                              <div className="ml-4 flex-shrink-0">
+                                <div className="w-32 h-24 rounded-lg border border-blue-200 overflow-hidden">
+                                  <img 
+                                    src={record.imageUrl.startsWith('/api/') ? `http://localhost:8000${record.imageUrl}` : record.imageUrl}
+                                    alt={record.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* 編集ボタン */}
+                            <div className="mt-4 flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditRecord(record)}
+                                className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                              >
+                                <Edit className="h-4 w-4 mr-1" />
+                                編集
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* AIチャット連携カード */}
+          <Card className="shadow-xl border-0 bg-gradient-to-br from-blue-50 to-teal-50">
+            <CardHeader className="bg-gradient-to-r from-blue-500 to-teal-600 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-3">
+                <Sparkles className="h-6 w-6" />
+                Genieとの成長記録連携
+              </CardTitle>
+              <CardDescription className="text-blue-100">
+                写真や動画を送るだけで、Genieが自動で成長を記録・分析します
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="bg-white/60 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <GiMagicLamp className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-blue-800 font-medium mb-2">
+                      📸 Genieができること：
+                    </p>
+                    <ul className="text-sm text-blue-700 space-y-1">
+                      <li>• 写真から身長・体重を自動測定</li>
+                      <li>• 表情や笑顔の変化を感情分析</li>
+                      <li>• 発話や言葉の発達を音声解析</li>
+                      <li>• 運動能力やマイルストーンを自動検出</li>
+                      <li>• 成長の軌跡を美しいタイムラインで表示</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Link href="/chat" className="flex-1">
+                    <Button className="w-full bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 text-white shadow-lg">
+                      <Camera className="h-4 w-4 mr-2" />
+                      写真で成長を記録
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="outline"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    詳細分析
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 自動記録の説明 */}
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-blue-200">
+              <GiMagicLamp className="h-4 w-4 text-blue-600" />
+              <span className="text-sm text-blue-700 font-medium">Genieが24時間、大切な成長の瞬間を見守ります</span>
+            </div>
+          </div>
         </div>
       </div>
 

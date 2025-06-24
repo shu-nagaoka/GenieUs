@@ -41,10 +41,10 @@ const mainNavigation = [
 ]
 
 const recordNavigation = [
-  { name: 'がんばったこと', href: '/effort-report', icon: FaHeart },
-  { name: '予定を立てたこと', href: '/schedule', icon: AiOutlineCalendar },
-  { name: '見守った成長', href: '/tracking', icon: AiOutlineBarChart },
   { name: '撮影したメモリー', href: '/records', icon: FaBookOpen },
+  { name: '見守った成長', href: '/tracking', icon: AiOutlineBarChart },
+  { name: '予定を立てたこと', href: '/schedule', icon: AiOutlineCalendar },
+  { name: 'がんばったこと', href: '/effort-report', icon: FaHeart },
 ]
 
 const familyNavigation = [
@@ -143,7 +143,13 @@ function SidebarContent({ isCollapsed = false }: { isCollapsed?: boolean }) {
                 title={isCollapsed ? item.name : undefined}
               >
                 <Link href={item.href}>
-                  <item.icon className="h-4 w-4" />
+                  <item.icon className={cn(
+                    "h-4 w-4",
+                    item.name === '撮影したメモリー' && "text-blue-500",
+                    item.name === '見守った成長' && "text-teal-500", 
+                    item.name === '予定を立てたこと' && "text-cyan-600",
+                    item.name === 'がんばったこと' && "text-emerald-800"
+                  )} />
                   {!isCollapsed && (
                     <>
                       <span>{item.name}</span>

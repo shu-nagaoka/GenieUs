@@ -11,6 +11,11 @@ from src.di_provider.composition_root import CompositionRootFactory
 from src.presentation.api.routes.multiagent_chat import router as multiagent_chat_router
 from src.presentation.api.routes.streaming_chat import router as streaming_chat_router
 from src.presentation.api.routes.family import router as family_router
+from src.presentation.api.routes.effort_reports import router as effort_reports_router
+from src.presentation.api.routes.schedules import router as schedules_router
+from src.presentation.api.routes.growth_records import router as growth_records_router
+from src.presentation.api.routes.memories import router as memories_router
+from src.presentation.api.routes.file_upload import router as file_upload_router
 from src.agents.agent_manager import AgentManager
 
 
@@ -78,6 +83,13 @@ app.include_router(streaming_chat_router, prefix="/api/v1/streaming", tags=["str
 # 👨‍👩‍👧‍👦 家族情報管理ルーター
 app.include_router(family_router, prefix="/api/v1", tags=["family"])
 
+# 📊 CRUD機能ルーター（Genieツール連携用）
+app.include_router(effort_reports_router, prefix="/api/v1", tags=["effort_reports"])
+app.include_router(schedules_router, prefix="/api/v1", tags=["schedules"])
+app.include_router(growth_records_router, prefix="/api/v1", tags=["growth_records"])
+app.include_router(memories_router, prefix="/api/v1", tags=["memories"])
+app.include_router(file_upload_router, tags=["files"])
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
@@ -112,6 +124,10 @@ async def root():
             "family_info": "/api/v1/family/info",
             "family_update": "/api/v1/family/update",
             "family_delete": "/api/v1/family/delete",
+            "effort_reports_crud": "/api/v1/effort-reports/*",
+            "schedules_crud": "/api/v1/schedules/*",
+            "growth_records_crud": "/api/v1/growth-records/*",
+            "memories_crud": "/api/v1/memories/*",
         },
     }
 

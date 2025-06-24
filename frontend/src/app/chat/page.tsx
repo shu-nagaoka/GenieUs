@@ -11,6 +11,7 @@ import { InlineProgressDisplay } from '@/components/features/chat/inline-progres
 import { PerplexityStyleProgress } from '@/components/features/chat/perplexity-style-progress'
 import { TimelineStyleProgress } from '@/components/features/chat/timeline-style-progress'
 import { GenieStyleProgress } from '@/components/features/chat/genie-style-progress'
+import LoadingSpinner from '@/components/common/LoadingSpinner'
 import { getFamilyInfo, formatFamilyInfoForChat } from '@/lib/api/family'
 import { 
   IoSend,
@@ -550,9 +551,9 @@ export default function ChatPage() {
 
   return (
     <AppLayout>
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
-        {/* ページヘッダー */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-amber-100">
+      <div className="flex flex-col h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+        {/* ページヘッダー（固定） */}
+        <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-b border-amber-100">
           <div className="max-w-6xl mx-auto px-4 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -602,9 +603,9 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Chat Messages */}
-        <div className="max-w-6xl mx-auto">
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        {/* Chat Messages（スクロール可能エリア） */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-6xl mx-auto p-6 space-y-6 pb-4">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -728,9 +729,113 @@ export default function ChatPage() {
             </Card>
           </div>
         )}
-        
-        {/* スクロール用の参照点 */}
-        <div ref={messagesEndRef} />
+            
+            {/* スクロール用の参照点 */}
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+
+        {/* 固定インプットエリア */}
+        <div className="flex-shrink-0">
+          {/* よくある相談 */}
+          {messages.length === 1 && (
+            <div className="max-w-4xl mx-auto px-6 py-3">
+              <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-amber-200 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Star className="h-4 w-4 text-amber-600" />
+                  <h3 className="text-sm font-medium text-gray-700">よくある相談</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {quickQuestions.map((question, index) => (
+                    <button
+                      key={index}
+                      className="text-left p-3 bg-white hover:bg-amber-50 border border-amber-100 hover:border-amber-300 rounded-md text-sm text-gray-700 hover:text-amber-800 transition-all duration-200"
+                      onClick={() => setInputValue(question)}
+                    >
+                      {question}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* インプットエリア */}
+          <div className="max-w-4xl mx-auto p-4">
+            <div className="bg-white/90 backdrop-blur-sm rounded-lg border border-amber-200 p-4 shadow-lg">
+              {/* 画像プレビュー */}
+              {imagePreview && (
+                <div className="mb-3 relative inline-block">
+                  <img 
+                    src={imagePreview} 
+                    alt="選択された画像" 
+                    className="max-h-32 rounded-lg border border-amber-200"
+                  />
+                  <button
+                    onClick={removeImage}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+              
+              <div className="flex gap-2 items-center">
+                <div className="flex-1">
+                  <textarea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="何でも相談してください... ✨"
+                    className="w-full h-12 max-h-[100px] resize-none px-4 py-3 border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400 transition-all duration-200 text-sm bg-white"
+                    rows={1}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault()
+                        sendMessage()
+                      }
+                    }}
+                  />
+                </div>
+                
+                {/* 画像アップロードボタン */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageSelect}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-12 px-3 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 hover:border-blue-300 rounded-lg transition-all duration-200"
+                  type="button"
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                
+                {/* 音声録音ボタン（将来の拡張用） */}
+                <Button
+                  onClick={toggleRecording}
+                  className={`h-12 px-3 rounded-lg transition-all duration-200 border ${
+                    isRecording 
+                      ? 'bg-red-500 hover:bg-red-600 text-white border-red-500'
+                      : 'bg-green-50 hover:bg-green-100 text-green-700 border-green-200 hover:border-green-300'
+                  }`}
+                  type="button"
+                >
+                  {isRecording ? <IoStop className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
+                
+                <Button 
+                  onClick={sendMessage}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 h-12 px-6 rounded-lg transition-all duration-200 border-0"
+                  disabled={!inputValue.trim() && !selectedImage}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
 
       {/* チャット履歴パネル */}
@@ -750,12 +855,11 @@ export default function ChatPage() {
             </div>
             <div className="p-6 space-y-3">
               {historyLoading ? (
-                <div className="text-center text-gray-500 py-8">
-                  <div className="inline-flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
-                    読み込み中...
-                  </div>
-                </div>
+                <LoadingSpinner 
+                  message="履歴を読み込み中..." 
+                  fullScreen={false}
+                  className="py-8"
+                />
               ) : sessions.length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
                   <MessageCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
@@ -801,115 +905,6 @@ export default function ChatPage() {
           </div>
         </div>
       )}
-
-        {/* Quick Questions - Compact & Stylish */}
-        {messages.length === 1 && (
-          <div className="max-w-6xl mx-auto px-6 py-4">
-            <Card className="shadow-lg border-0 bg-gradient-to-r from-amber-50 to-orange-50">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
-                    <Star className="h-4 w-4 text-white" />
-                  </div>
-                  <h3 className="font-bold text-gray-800">よくある相談</h3>
-                  <p className="text-sm text-gray-600">気になることから始めてみませんか？</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {quickQuestions.map((question, index) => (
-                    <button
-                      key={index}
-                      className="text-left p-4 bg-white hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 border border-amber-200 hover:border-amber-300 rounded-lg text-sm text-gray-700 hover:text-amber-800 transition-all duration-200 hover:shadow-md"
-                      onClick={() => setInputValue(question)}
-                    >
-                      <Heart className="h-4 w-4 inline mr-2 text-amber-600" />
-                      {question}
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Input Area - With Image Upload */}
-        <div className="max-w-6xl mx-auto p-6">
-          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="p-6">
-              {/* 画像プレビュー */}
-              {imagePreview && (
-                <div className="mb-4 relative inline-block">
-                  <img 
-                    src={imagePreview} 
-                    alt="選択された画像" 
-                    className="max-h-40 rounded-lg border-2 border-amber-200 shadow-md"
-                  />
-                  <button
-                    onClick={removeImage}
-                    className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-600 transition-colors shadow-md"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
-              
-              <div className="flex gap-3 items-end">
-                <div className="flex-1">
-                  <textarea
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    placeholder="Genieに何でも相談してください... ✨"
-                    className="w-full h-14 max-h-[120px] resize-none px-5 py-4 border-2 border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400 transition-all duration-200 text-sm bg-white/50 backdrop-blur-sm"
-                    rows={1}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                        e.preventDefault()
-                        sendMessage()
-                      }
-                    }}
-                  />
-                </div>
-                
-                {/* 画像アップロードボタン */}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageSelect}
-                  accept="image/*"
-                  className="hidden"
-                />
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="h-14 px-4 bg-gradient-to-r from-blue-100 to-indigo-100 hover:from-blue-200 hover:to-indigo-200 text-blue-700 hover:text-blue-800 border-0 rounded-xl transition-all duration-200 shadow-md"
-                  type="button"
-                >
-                  <Camera className="h-5 w-5" />
-                </Button>
-                
-                {/* 音声録音ボタン（将来の拡張用） */}
-                <Button
-                  onClick={toggleRecording}
-                  className={`h-14 px-4 rounded-xl transition-all duration-200 shadow-md border-0 ${
-                    isRecording 
-                      ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white'
-                      : 'bg-gradient-to-r from-green-100 to-emerald-100 hover:from-green-200 hover:to-emerald-200 text-green-700 hover:text-green-800'
-                  }`}
-                  type="button"
-                >
-                  {isRecording ? <IoStop className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                </Button>
-                
-                <Button 
-                  onClick={sendMessage}
-                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 h-14 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 border-0"
-                  disabled={!inputValue.trim() && !selectedImage}
-                >
-                  <Send className="h-5 w-5" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        </div>
       </div>
       
     </AppLayout>

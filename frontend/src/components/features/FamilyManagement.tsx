@@ -12,10 +12,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Plus, Trash2, Edit, Users, Baby, Heart, Sparkles, Clock } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertCircle, Plus, Trash2, Edit, Users, Baby, Heart, Clock } from 'lucide-react';
 import { FaBirthdayCake, FaAllergies, FaStethoscope } from 'react-icons/fa';
 import { MdChildCare, MdFamilyRestroom } from 'react-icons/md';
-import Link from 'next/link';
+import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { getFamilyInfo, registerFamilyInfo, updateFamilyInfo, deleteFamilyInfo as deleteFamilyInfoAPI } from '@/lib/api/family';
 
 interface Child {
@@ -38,6 +39,17 @@ interface FamilyInfo {
   created_at?: string;
   updated_at?: string;
 }
+
+const FAMILY_STRUCTURE_OPTIONS = [
+  { value: 'single_parent_1child', label: 'ひとり親+子ども1人' },
+  { value: 'single_parent_2children', label: 'ひとり親+子ども2人' },
+  { value: 'single_parent_3children', label: 'ひとり親+子ども3人以上' },
+  { value: 'couple_1child', label: '夫婦+子ども1人' },
+  { value: 'couple_2children', label: '夫婦+子ども2人' },
+  { value: 'couple_3children', label: '夫婦+子ども3人以上' },
+  { value: 'extended_family', label: '三世代同居（祖父母同居）' },
+  { value: 'other', label: 'その他' }
+];
 
 export default function FamilyManagement() {
   const [familyInfo, setFamilyInfo] = useState<FamilyInfo>({
@@ -216,29 +228,19 @@ export default function FamilyManagement() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
-            <Sparkles className="h-6 w-6 text-blue-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-          </div>
-          <p className="text-gray-600 font-medium">家族情報を読み込んでいます...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="家族情報を読み込んでいます..." />;
   }
 
   const { childrenCount, allergiesCount } = getChildrenSummary();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gray-50">
       {/* ページヘッダー */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-blue-100">
+      <div className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
+              <div className="h-12 w-12 rounded-full bg-gray-600 flex items-center justify-center shadow-sm">
                 <MdFamilyRestroom className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -247,81 +249,71 @@ export default function FamilyManagement() {
               </div>
             </div>
             
-            {hasExistingData && !isEditing && (
-              <div className="flex space-x-3">
-                <Link href="/chat">
-                  <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg">
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Genieに相談
-                  </Button>
-                </Link>
-                <Button onClick={() => setIsEditing(true)} variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
-                  <Edit className="h-4 w-4 mr-2" />
-                  編集
-                </Button>
-                <Button onClick={deleteFamilyInfo} variant="destructive" className="bg-red-500 hover:bg-red-600">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  削除
-                </Button>
-              </div>
-            )}
+            <div className="flex space-x-3">
+              <Button onClick={() => setIsEditing(true)} className="bg-gray-700 hover:bg-gray-800 text-white shadow-sm">
+                <Plus className="h-4 w-4 mr-2" />
+                {hasExistingData ? '新規追加' : '新規登録'}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto p-6 space-y-8">
         {/* 家族サマリーカード */}
-        {hasExistingData && !isEditing && (
+        {hasExistingData && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
+            <Card className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-blue-100 text-sm font-medium">家族構成</p>
-                    <p className="text-2xl font-bold mt-1">{familyInfo.family_structure || '未設定'}</p>
+                    <p className="text-gray-600 text-sm font-medium">家族構成</p>
+                    <p className="text-2xl font-bold mt-1 text-gray-900">
+                      {FAMILY_STRUCTURE_OPTIONS.find(option => option.value === familyInfo.family_structure)?.label || familyInfo.family_structure || '未設定'}
+                    </p>
                   </div>
-                  <MdFamilyRestroom className="h-8 w-8 text-blue-200" />
+                  <MdFamilyRestroom className="h-8 w-8 text-gray-400" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-xl">
+            <Card className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-green-100 text-sm font-medium">お子さん</p>
-                    <p className="text-2xl font-bold mt-1">{childrenCount}人</p>
+                    <p className="text-gray-600 text-sm font-medium">お子さん</p>
+                    <p className="text-2xl font-bold mt-1 text-gray-900">{childrenCount}人</p>
                   </div>
-                  <MdChildCare className="h-8 w-8 text-green-200" />
+                  <MdChildCare className="h-8 w-8 text-gray-400" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white border-0 shadow-xl">
+            <Card className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-amber-100 text-sm font-medium">アレルギー</p>
-                    <p className="text-2xl font-bold mt-1">{allergiesCount}件</p>
+                    <p className="text-gray-600 text-sm font-medium">アレルギー</p>
+                    <p className="text-2xl font-bold mt-1 text-gray-900">{allergiesCount}件</p>
                   </div>
-                  <FaAllergies className="h-8 w-8 text-amber-200" />
+                  <FaAllergies className="h-8 w-8 text-gray-400" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl">
+            <Card className="bg-gradient-to-br from-white to-gray-50 border border-gray-200 shadow-sm">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-purple-100 text-sm font-medium">最終更新</p>
-                    <p className="text-2xl font-bold mt-1">
+                    <p className="text-gray-600 text-sm font-medium">最終更新</p>
+                    <p className="text-2xl font-bold mt-1 text-gray-900">
                       {familyInfo.updated_at ? 
                         new Date(familyInfo.updated_at).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }) 
                         : '今日'
                       }
                     </p>
                   </div>
-                  <Clock className="h-8 w-8 text-purple-200" />
+                  <Clock className="h-8 w-8 text-gray-400" />
                 </div>
               </CardContent>
             </Card>
@@ -343,15 +335,31 @@ export default function FamilyManagement() {
         )}
 
         {/* 基本情報カード */}
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
-            <CardTitle className="flex items-center gap-3">
-              <Users className="h-6 w-6" />
-              基本情報
-            </CardTitle>
-            <CardDescription className="text-blue-100">
-              ご家族の基本的な情報を入力してください
-            </CardDescription>
+        <Card className="shadow-sm border border-gray-200 bg-white">
+          <CardHeader className="bg-gray-100 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-3 text-gray-800">
+                  <Users className="h-6 w-6 text-gray-600" />
+                  基本情報
+                </CardTitle>
+                <CardDescription className="text-gray-600">
+                  ご家族の基本的な情報を入力してください
+                </CardDescription>
+              </div>
+              {hasExistingData && !isEditing && (
+                <div className="flex space-x-2">
+                  <Button onClick={() => setIsEditing(true)} variant="outline" size="sm" className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                    <Edit className="h-4 w-4 mr-1" />
+                    編集
+                  </Button>
+                  <Button onClick={deleteFamilyInfo} variant="destructive" size="sm" className="bg-red-500 hover:bg-red-600">
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    削除
+                  </Button>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4 p-6">
             <div>
@@ -367,13 +375,22 @@ export default function FamilyManagement() {
             
             <div>
               <Label htmlFor="family_structure">家族構成</Label>
-              <Input
-                id="family_structure"
+              <Select
                 value={familyInfo.family_structure}
-                onChange={(e) => setFamilyInfo(prev => ({ ...prev, family_structure: e.target.value }))}
-                placeholder="夫婦+子ども1人"
+                onValueChange={(value) => setFamilyInfo(prev => ({ ...prev, family_structure: value }))}
                 disabled={!isEditing}
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="家族構成を選択してください" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FAMILY_STRUCTURE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
@@ -391,20 +408,20 @@ export default function FamilyManagement() {
         </Card>
 
         {/* 子どもの情報カード */}
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-t-lg">
+        <Card className="shadow-sm border border-gray-200 bg-white">
+          <CardHeader className="bg-gray-100 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-3">
-                  <Baby className="h-6 w-6" />
+                <CardTitle className="flex items-center gap-3 text-gray-800">
+                  <Baby className="h-6 w-6 text-gray-600" />
                   お子さんの情報
                 </CardTitle>
-                <CardDescription className="text-green-100">
+                <CardDescription className="text-gray-600">
                   お子さんそれぞれの詳しい情報を入力してください
                 </CardDescription>
               </div>
               {isEditing && (
-                <Button onClick={addChild} className="bg-white/20 hover:bg-white/30 border-white/30 text-white" size="sm">
+                <Button onClick={addChild} className="bg-gray-600 hover:bg-gray-700 text-white" size="sm">
                   <Plus className="h-4 w-4 mr-2" />
                   子どもを追加
                 </Button>
@@ -421,11 +438,11 @@ export default function FamilyManagement() {
             ) : (
               <div className="space-y-6">
                 {familyInfo.children.map((child, index) => (
-                  <Card key={index} className="border-0 shadow-lg bg-gradient-to-br from-white to-blue-50 hover:shadow-xl transition-all duration-300">
+                  <Card key={index} className="border border-gray-200 shadow-sm bg-white hover:shadow-md transition-all duration-300">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                          <div className="h-12 w-12 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold text-lg shadow-sm">
                             {child.name ? child.name.charAt(0) : '👶'}
                           </div>
                           <div>
@@ -440,12 +457,12 @@ export default function FamilyManagement() {
                         </div>
                         <div className="flex items-center gap-2">
                           {child.birth_date && (
-                            <Badge className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                            <Badge className="bg-gray-600 text-white">
                               {calculateAge(child.birth_date)}
                             </Badge>
                           )}
                           {child.allergies && child.allergies.trim() !== '' && (
-                            <Badge className="bg-gradient-to-r from-red-400 to-red-500 text-white">
+                            <Badge className="bg-red-500 text-white">
                               <FaAllergies className="h-3 w-3 mr-1" />
                               アレルギー
                             </Badge>
@@ -476,12 +493,11 @@ export default function FamilyManagement() {
                         </div>
                         
                         <div>
-                          <Label>年齢</Label>
+                          <Label>年齢（自動計算）</Label>
                           <Input
-                            value={child.age}
-                            onChange={(e) => updateChild(index, 'age', e.target.value)}
-                            placeholder="8ヶ月"
-                            disabled={!isEditing}
+                            value={child.birth_date ? calculateAge(child.birth_date) : '生年月日を入力してください'}
+                            disabled={true}
+                            className="bg-gray-50 text-gray-600"
                           />
                         </div>
                         
@@ -508,8 +524,8 @@ export default function FamilyManagement() {
                       </div>
                       
                       <div className="space-y-4 mt-6">
-                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                          <Label className="flex items-center gap-2 text-blue-800 font-semibold mb-2">
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                          <Label className="flex items-center gap-2 text-gray-800 font-semibold mb-2">
                             <Heart className="h-4 w-4" />
                             特徴・性格
                           </Label>
@@ -519,7 +535,7 @@ export default function FamilyManagement() {
                             placeholder="人見知りが激しい、よく笑う、活発で元気 など"
                             rows={2}
                             disabled={!isEditing}
-                            className="bg-white/80 border-blue-200 focus:border-blue-400"
+                            className="bg-white border-gray-300 focus:border-gray-500"
                           />
                         </div>
                         
@@ -533,7 +549,7 @@ export default function FamilyManagement() {
                             onChange={(e) => updateChild(index, 'allergies', e.target.value)}
                             placeholder="卵、牛乳、小麦 など（なしの場合は空欄）"
                             disabled={!isEditing}
-                            className="bg-white/80 border-red-200 focus:border-red-400"
+                            className="bg-white border-red-300 focus:border-red-500"
                           />
                         </div>
                         
@@ -548,7 +564,7 @@ export default function FamilyManagement() {
                             placeholder="予防接種の状況、通院歴、気になる症状、かかりつけ医 など"
                             rows={2}
                             disabled={!isEditing}
-                            className="bg-white/80 border-green-200 focus:border-green-400"
+                            className="bg-white border-green-300 focus:border-green-500"
                           />
                         </div>
                       </div>
@@ -573,34 +589,6 @@ export default function FamilyManagement() {
           )}
         </Card>
 
-        {/* AIチャット連携カード */}
-        {hasExistingData && !isEditing && (
-          <Card className="shadow-xl border-0 bg-gradient-to-br from-amber-50 to-orange-50">
-            <CardHeader className="bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-3">
-                <Sparkles className="h-6 w-6" />
-                AIチャット連携
-              </CardTitle>
-              <CardDescription className="text-amber-100">
-                この家族情報はチャット機能で自動的に活用され、お子さんに合わせた個別のアドバイスを提供します
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="bg-white/60 p-4 rounded-lg border border-amber-200">
-                <p className="text-sm text-amber-800 mb-4">
-                  💡 チャットでは、お子さんの名前、年齢、特徴、アレルギー情報などを考慮した
-                  パーソナライズされた回答を受け取ることができます。
-                </p>
-                <Link href="/chat">
-                  <Button className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg">
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    今すぐGenieに相談する
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );
