@@ -1,0 +1,20 @@
+{
+  "family_id": "41304591-fddf-4c98-807c-4190bdf395f8",
+  "user_id": "test_user",
+  "parent_name": "テスト太郎",
+  "family_structure": "夫婦+子ども2人",
+  "concerns": "新機能のテスト中",
+  "children": [
+    {
+      "name": "テスト花子",
+      "age": "5歳",
+      "gender": "女の子",
+      "birth_date": "2019-01-01",
+      "characteristics": "テスト中",
+      "allergies": "なし",
+      "medical_notes": "健康"
+    }
+  ],
+  "created_at": "2025-06-24T02:31:34.038679",
+  "updated_at": "2025-06-24T02:31:34.038684"
+}

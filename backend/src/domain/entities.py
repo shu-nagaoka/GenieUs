@@ -6,7 +6,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Literal
+from typing import Any, Literal, List, Optional, Dict
 
 
 class EventType(str, Enum):
@@ -396,4 +396,47 @@ class ImageRecordingData:
             "processing_status": self.processing_status,
             "error_message": self.error_message,
             "created_at": self.created_at.isoformat(),
+        }
+
+
+@dataclass
+class FamilyInfo:
+    """家族情報エンティティ"""
+
+    family_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str = ""
+    parent_name: str = ""
+    family_structure: str = ""
+    concerns: str = ""
+    children: list[dict] = field(default_factory=list)
+    created_at: datetime = field(default_factory=datetime.now)
+    updated_at: datetime = field(default_factory=datetime.now)
+
+    def __post_init__(self):
+        """バリデーション"""
+        if not self.user_id.strip():
+            raise ValueError("user_id is required")
+
+    @classmethod
+    def from_dict(cls, user_id: str, family_data: dict) -> "FamilyInfo":
+        """辞書データから家族情報エンティティを作成"""
+        return cls(
+            user_id=user_id,
+            parent_name=family_data.get("parent_name", ""),
+            family_structure=family_data.get("family_structure", ""),
+            concerns=family_data.get("concerns", ""),
+            children=family_data.get("children", []),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """辞書形式に変換"""
+        return {
+            "family_id": self.family_id,
+            "user_id": self.user_id,
+            "parent_name": self.parent_name,
+            "family_structure": self.family_structure,
+            "concerns": self.concerns,
+            "children": self.children,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
         }

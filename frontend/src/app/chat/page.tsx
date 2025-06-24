@@ -7,6 +7,11 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useChatHistory } from '@/hooks/use-chat-history'
 import { MultiAgentOrchestration } from '@/components/features/chat/multi-agent-orchestration'
+import { InlineProgressDisplay } from '@/components/features/chat/inline-progress-display'
+import { PerplexityStyleProgress } from '@/components/features/chat/perplexity-style-progress'
+import { TimelineStyleProgress } from '@/components/features/chat/timeline-style-progress'
+import { GenieStyleProgress } from '@/components/features/chat/genie-style-progress'
+import { getFamilyInfo, formatFamilyInfoForChat } from '@/lib/api/family'
 import { 
   IoSend,
   IoMic,
@@ -14,7 +19,9 @@ import {
   IoStop,
   IoImage,
   IoVolumeHigh,
-  IoBulbOutline
+  IoBulbOutline,
+  IoSparkles,
+  IoTime
 } from 'react-icons/io5'
 import {
   AiOutlineMessage,
@@ -23,6 +30,20 @@ import {
   AiOutlineSave,
   AiOutlineUser
 } from 'react-icons/ai'
+import {
+  Sparkles,
+  MessageCircle,
+  Plus,
+  History,
+  Save,
+  Camera,
+  Mic,
+  Send,
+  User,
+  Heart,
+  Star
+} from 'lucide-react'
+import Link from 'next/link'
 import {
   FaUserTie
 } from 'react-icons/fa'
@@ -33,7 +54,7 @@ interface Message {
   content: string
   sender: 'user' | 'genie'
   timestamp: Date
-  type?: 'text' | 'audio' | 'image'
+  type?: 'text' | 'audio' | 'image' | 'streaming'
   followUpQuestions?: string[]
   debugInfo?: {
     workflow_used?: string
@@ -72,6 +93,10 @@ export default function ChatPage() {
   const [isRecording, setIsRecording] = useState(false)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [useStreamingProgress] = useState(true)
+  const [progressStyle] = useState<'genie' | 'timeline' | 'modern' | 'simple'>('genie')
+  const [currentStreamingId, setCurrentStreamingId] = useState<string | null>(null)
+  const [familyInfo, setFamilyInfo] = useState<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -114,7 +139,51 @@ export default function ChatPage() {
     removeImage()
     setIsRecording(false)
     
-    // マルチエージェント演出を開始
+    // 会話履歴を準備（ストリーミング・従来共通）
+    const conversationHistory = messages
+      .filter(msg => {
+        // 初期の挨拶メッセージを除外（内容で判定）
+        const isInitialMessage = msg.content.includes('こんにちは！私はGenieです') || 
+                                msg.content.includes('こんにちは！私はジーニーです')
+        return !isInitialMessage
+      })
+      .map(msg => ({
+        id: msg.id,
+        content: msg.content,
+        sender: msg.sender,
+        timestamp: typeof msg.timestamp === 'string' ? msg.timestamp : msg.timestamp.toISOString(),
+        type: msg.type
+      }))
+
+    // セッションIDを決定
+    const sessionId = currentSession ? currentSession.id : 'default-session'
+
+    // ストリーミング進捗を使用する場合（現在はGenieスタイル固定）
+    if (useStreamingProgress) {
+      // ストリーミング用のプレースホルダーメッセージを追加
+      const streamingMessageId = (Date.now() + 1).toString()
+      setCurrentStreamingId(streamingMessageId)
+      
+      const streamingMessage: Message = {
+        id: streamingMessageId,
+        content: JSON.stringify({
+          message: query,
+          conversation_history: conversationHistory,
+          session_id: sessionId,
+          user_id: 'frontend_user',
+          family_info: familyInfo
+        }), // 会話履歴と家族情報も含めて送信
+        sender: 'genie',
+        timestamp: new Date(),
+        type: 'streaming'
+      }
+
+      setMessages(prev => [...prev, streamingMessage])
+      setTimeout(scrollToBottom, 100)
+      return // 従来のAPI呼び出しはスキップ
+    }
+
+    // 従来のマルチエージェント演出を開始
     setIsOrchestrating(true)
     
     // ユーザーメッセージ追加後にスクロール
@@ -163,6 +232,7 @@ export default function ChatPage() {
           user_id: 'frontend_user',
           session_id: sessionId,
           conversation_history: conversationHistory.length > 0 ? conversationHistory : null,
+          family_info: familyInfo,
           message_type: messageType,
           has_image: !!selectedImage,
           image_path: selectedImage ? imagePreview : null, // Base64データを送信
@@ -241,6 +311,32 @@ export default function ChatPage() {
   const handleOrchestrationComplete = () => {
     setIsOrchestrating(false)
     setIsTyping(true)
+  }
+
+  // ストリーミング完了時の処理
+  const handleStreamingComplete = (response: string) => {
+    setMessages(prev => 
+      prev.map(msg => 
+        msg.id === currentStreamingId 
+          ? { ...msg, content: response, type: 'text' as const }
+          : msg
+      )
+    )
+    setCurrentStreamingId(null)
+    setIsTyping(false)
+  }
+
+  // ストリーミングエラー時の処理
+  const handleStreamingError = (error: string) => {
+    setMessages(prev => 
+      prev.map(msg => 
+        msg.id === currentStreamingId 
+          ? { ...msg, content: `申し訳ございません。エラーが発生しました: ${error}`, type: 'text' as const }
+          : msg
+      )
+    )
+    setCurrentStreamingId(null)
+    setIsTyping(false)
   }
 
   // チャットを保存
@@ -410,6 +506,22 @@ export default function ChatPage() {
     setInputValue(question)
   }
 
+  // 家族情報を読み込み
+  useEffect(() => {
+    const loadFamilyInfo = async () => {
+      try {
+        const response = await getFamilyInfo('frontend_user')
+        if (response.success && response.data) {
+          setFamilyInfo(formatFamilyInfoForChat(response.data))
+        }
+      } catch (error) {
+        console.error('家族情報の読み込みに失敗しました:', error)
+      }
+    }
+
+    loadFamilyInfo()
+  }, [])
+
   // メッセージが変更されたら未保存フラグを立てる
   useEffect(() => {
     if (messages.length > 1) {
@@ -438,96 +550,114 @@ export default function ChatPage() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
         {/* ページヘッダー */}
-        <div className="bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
-          <div className="px-4 py-4">
+        <div className="bg-white/80 backdrop-blur-sm border-b border-amber-100">
+          <div className="max-w-6xl mx-auto px-4 py-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-400 flex items-center justify-center">
-                  <AiOutlineMessage className="h-4 w-4 text-white" />
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg">
+                  <GiMagicLamp className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-kiwi font-semibold text-gray-800">Genieとチャット</h1>
-                  <p className="text-sm text-gray-600">子育ての記録・分析・相談をサポート</p>
+                  <h1 className="text-3xl font-bold text-gray-800">Genieと話す</h1>
+                  <p className="text-gray-600">あなただけの魔法のランプが子育てをサポート</p>
                   {currentSession && (
-                    <p className="text-xs text-gray-500 truncate max-w-[200px] mt-1">{currentSession.title}</p>
+                    <p className="text-sm text-amber-600 mt-1 truncate max-w-[300px]">{currentSession.title}</p>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              
+              <div className="flex items-center space-x-3">
+                <Button 
+                  onClick={startNewChat}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Genieに相談
+                </Button>
+                <Button 
+                  onClick={() => setShowHistory(!showHistory)}
+                  variant="outline"
+                  className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                >
+                  <History className="h-4 w-4 mr-2" />
+                  履歴
+                </Button>
                 {unsavedChanges && (
                   <Button 
                     onClick={saveChat}
-                    size="sm" 
-                    className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white border-0 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
+                    className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-lg"
                   >
-                    <AiOutlineSave className="h-4 w-4 mr-1.5" />
+                    <Save className="h-4 w-4 mr-2" />
                     保存
                   </Button>
                 )}
-                <Button 
-                  onClick={() => setShowHistory(!showHistory)}
-                  size="sm" 
-                  className="bg-white/80 hover:bg-white border border-gray-200 hover:border-gray-300 text-gray-700 hover:text-gray-900 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 backdrop-blur-sm"
-                >
-                  <AiOutlineHistory className="h-4 w-4 mr-1.5" />
-                  履歴
-                </Button>
-                <Button 
-                  onClick={startNewChat}
-                  size="sm" 
-                  className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white border-0 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-kiwi font-semibold"
-                >
-                  <AiOutlinePlus className="h-4 w-4 mr-1.5" />
-                  新規チャット
-                </Button>
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-lg border border-amber-200">
+                  <GiMagicLamp className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm text-amber-700 font-medium">24時間対応</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex gap-3 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex gap-4 ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             {message.sender === 'genie' && (
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                <GiMagicLamp className="h-4 w-4 text-white" />
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                <GiMagicLamp className="h-5 w-5 text-white" />
               </div>
             )}
             
-            <div className={`max-w-[80%] ${message.sender === 'user' ? 'order-first' : ''}`}>
-              <Card className={`${
-                message.sender === 'user' 
-                  ? 'bg-amber-500 text-white' 
-                  : 'bg-white/80 backdrop-blur-sm border border-amber-200'
-              }`}>
-                <CardContent className="p-3">
-                  {message.sender === 'genie' ? (
-                    <div className="prose prose-sm max-w-none font-main text-sm prose-headings:font-bold prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-ul:text-foreground prose-ol:text-foreground prose-blockquote:text-gray-700 prose-blockquote:border-amber-300">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {message.content}
-                      </ReactMarkdown>
-                    </div>
-                  ) : (
-                    <p className="font-main text-sm whitespace-pre-line">{message.content}</p>
-                  )}
+            <div className={`${
+              message.type === 'streaming' ? 'max-w-[90%] w-full' : 'max-w-[85%]'
+            } ${message.sender === 'user' ? 'order-first' : ''}`}>
+              {message.type === 'streaming' ? (
+                // ストリーミング進捗表示（Genieスタイル固定）
+                <GenieStyleProgress
+                  message={message.content}
+                  userId="frontend_user"
+                  sessionId={currentSession ? currentSession.id : 'default-session'}
+                  onComplete={handleStreamingComplete}
+                  onError={handleStreamingError}
+                />
+              ) : (
+                // 通常のメッセージ表示
+                <Card className={`shadow-lg border-0 ${
+                  message.sender === 'user' 
+                    ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white' 
+                    : 'bg-white/90 backdrop-blur-sm border border-amber-100'
+                }`}>
+                  <CardContent className="p-4">
+                    {message.sender === 'genie' ? (
+                      <div className="prose prose-sm max-w-none text-gray-800 prose-headings:font-bold prose-headings:text-gray-800 prose-p:text-gray-700 prose-strong:text-gray-800 prose-li:text-gray-700 prose-ul:text-gray-700 prose-ol:text-gray-700 prose-blockquote:text-gray-600 prose-blockquote:border-amber-300">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <p className="text-white whitespace-pre-line">{message.content}</p>
+                    )}
                   
                   {/* フォローアップ質問ボタン */}
                   {message.sender === 'genie' && message.followUpQuestions && message.followUpQuestions.length > 0 && (
                     <div className="mt-3 space-y-2">
                       <p className="text-xs text-gray-600 font-medium">💡 こんなことも気になりませんか？</p>
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         {message.followUpQuestions.map((question, index) => (
                           <button
                             key={index}
                             onClick={() => handleFollowUpClick(question)}
-                            className="block w-full text-left text-xs px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-md border border-amber-200 transition-colors duration-200"
+                            className="block w-full text-left text-sm px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-800 rounded-lg border border-amber-200 hover:border-amber-300 transition-all duration-200 hover:shadow-md"
                           >
+                            <Heart className="h-3 w-3 inline mr-2 text-amber-600" />
                             {question}
                           </button>
                         ))}
@@ -549,7 +679,7 @@ export default function ChatPage() {
                     </div>
                   )}
                   
-                  <p className={`text-xs mt-2 ${
+                  <p className={`text-xs mt-3 ${
                     message.sender === 'user' ? 'text-amber-100' : 'text-gray-500'
                   }`}>
                     {message.timestamp.toLocaleTimeString('ja-JP', { 
@@ -557,13 +687,14 @@ export default function ChatPage() {
                       minute: '2-digit' 
                     })}
                   </p>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {message.sender === 'user' && (
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0">
-                <FaUserTie className="h-4 w-4 text-white" />
+              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                <User className="h-5 w-5 text-white" />
               </div>
             )}
           </div>
@@ -571,7 +702,7 @@ export default function ChatPage() {
 
         {/* マルチエージェント協調演出 - 回答生成中に表示 */}
         {isOrchestrating && (
-          <div className="px-4">
+          <div className="px-6">
             <MultiAgentOrchestration 
               isActive={isOrchestrating}
               userQuery={currentQuery}
@@ -582,16 +713,16 @@ export default function ChatPage() {
         )}
 
         {isTyping && !isOrchestrating && (
-          <div className="flex gap-3 justify-start">
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-              <GiMagicLamp className="h-4 w-4 text-white" />
+          <div className="flex gap-4 justify-start">
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+              <GiMagicLamp className="h-5 w-5 text-white" />
             </div>
-            <Card className="bg-white/80 backdrop-blur-sm border border-amber-200">
-              <CardContent className="p-3">
+            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg">
+              <CardContent className="p-4">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-3 h-3 bg-amber-400 rounded-full animate-bounce"></div>
+                  <div className="w-3 h-3 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-3 h-3 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               </CardContent>
             </Card>
@@ -600,49 +731,62 @@ export default function ChatPage() {
         
         {/* スクロール用の参照点 */}
         <div ref={messagesEndRef} />
-      </div>
+        </div>
 
       {/* チャット履歴パネル */}
       {showHistory && (
-        <div className="absolute inset-0 bg-black/50 z-50 flex">
+        <div className="fixed inset-0 bg-black/50 z-50 flex">
           <div 
             className="flex-1" 
             onClick={() => setShowHistory(false)}
           />
-          <div className="w-80 bg-white h-full overflow-y-auto">
-            <div className="p-4 border-b">
-              <h2 className="font-semibold text-gray-800">チャット履歴</h2>
+          <div className="w-96 bg-white h-full overflow-y-auto shadow-2xl">
+            <div className="p-6 border-b bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+              <div className="flex items-center gap-3">
+                <History className="h-6 w-6" />
+                <h2 className="text-xl font-bold">チャット履歴</h2>
+              </div>
+              <p className="text-amber-100 text-sm mt-1">過去の相談を振り返る</p>
             </div>
-            <div className="p-4 space-y-2">
+            <div className="p-6 space-y-3">
               {historyLoading ? (
-                <div className="text-center text-gray-500">読み込み中...</div>
+                <div className="text-center text-gray-500 py-8">
+                  <div className="inline-flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                    読み込み中...
+                  </div>
+                </div>
               ) : sessions.length === 0 ? (
-                <div className="text-center text-gray-500">履歴がありません</div>
+                <div className="text-center text-gray-500 py-8">
+                  <MessageCircle className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p>履歴がありません</p>
+                  <p className="text-sm mt-1">新しい相談を始めてみましょう</p>
+                </div>
               ) : (
                 sessions.map((session) => (
                   <Card 
                     key={session.id}
-                    className={`cursor-pointer hover:bg-gray-50 transition-colors ${
-                      currentSession?.id === session.id ? 'ring-2 ring-amber-500' : ''
+                    className={`cursor-pointer hover:shadow-md transition-all duration-200 border-0 shadow-sm ${
+                      currentSession?.id === session.id ? 'ring-2 ring-amber-500 bg-amber-50' : 'hover:bg-gray-50'
                     }`}
                     onClick={() => loadChatFromHistory(session.id)}
                   >
-                    <CardContent className="p-3">
-                      <h3 className="font-medium text-sm truncate">{session.title}</h3>
-                      <div className="flex justify-between items-center mt-1">
-                        <span className="text-xs text-gray-500">
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold text-gray-800 truncate">{session.title}</h3>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-sm text-gray-600">
                           {session.messages.length}件のメッセージ
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-sm text-gray-500">
                           {new Date(session.updatedAt).toLocaleDateString('ja-JP')}
                         </span>
                       </div>
                       {session.tags && session.tags.length > 0 && (
-                        <div className="flex gap-1 mt-2">
+                        <div className="flex gap-1 mt-3">
                           {session.tags.slice(0, 2).map((tag, index) => (
                             <span 
                               key={index}
-                              className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded"
+                              className="text-xs bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-2 py-1 rounded-full"
                             >
                               {tag}
                             </span>
@@ -658,101 +802,114 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Quick Questions - Compact & Stylish */}
-      {messages.length === 1 && (
-        <div className="px-4 py-3 bg-gradient-to-r from-slate-50 to-blue-50/50">
-          <div className="flex items-center gap-2 mb-2">
-            <IoBulbOutline className="h-3 w-3 text-gray-500" />
-            <p className="text-xs font-medium text-gray-600">よくある相談</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {quickQuestions.map((question, index) => (
-              <button
-                key={index}
-                className="inline-flex items-center px-3 py-1.5 bg-white/90 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-full text-xs text-gray-700 hover:text-blue-700 transition-all duration-200 hover:shadow-sm"
-                onClick={() => setInputValue(question)}
-              >
-                {question}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Input Area - With Image Upload */}
-      <div className="p-4 border-t border-gray-200 bg-white">
-        {/* 画像プレビュー */}
-        {imagePreview && (
-          <div className="mb-3 relative inline-block">
-            <img 
-              src={imagePreview} 
-              alt="選択された画像" 
-              className="max-h-32 rounded-lg border border-gray-200"
-            />
-            <button
-              onClick={removeImage}
-              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
-            >
-              ×
-            </button>
+        {/* Quick Questions - Compact & Stylish */}
+        {messages.length === 1 && (
+          <div className="max-w-6xl mx-auto px-6 py-4">
+            <Card className="shadow-lg border-0 bg-gradient-to-r from-amber-50 to-orange-50">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+                    <Star className="h-4 w-4 text-white" />
+                  </div>
+                  <h3 className="font-bold text-gray-800">よくある相談</h3>
+                  <p className="text-sm text-gray-600">気になることから始めてみませんか？</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {quickQuestions.map((question, index) => (
+                    <button
+                      key={index}
+                      className="text-left p-4 bg-white hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 border border-amber-200 hover:border-amber-300 rounded-lg text-sm text-gray-700 hover:text-amber-800 transition-all duration-200 hover:shadow-md"
+                      onClick={() => setInputValue(question)}
+                    >
+                      <Heart className="h-4 w-4 inline mr-2 text-amber-600" />
+                      {question}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
-        
-        <div className="flex gap-2 items-end">
-          <div className="flex-1">
-            <textarea
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="何でも相談してください..."
-              className="w-full h-12 max-h-[120px] resize-none px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200 text-sm"
-              rows={1}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                  e.preventDefault()
-                  sendMessage()
-                }
-              }}
-            />
-          </div>
-          
-          {/* 画像アップロードボタン */}
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleImageSelect}
-            accept="image/*"
-            className="hidden"
-          />
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            className="h-12 px-3 bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-700 rounded-xl transition-all duration-200"
-            type="button"
-          >
-            <IoCamera className="h-5 w-5" />
-          </Button>
-          
-          {/* 音声録音ボタン（将来の拡張用） */}
-          <Button
-            onClick={toggleRecording}
-            className={`h-12 px-3 rounded-xl transition-all duration-200 ${
-              isRecording 
-                ? 'bg-red-500 hover:bg-red-600 text-white'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-700'
-            }`}
-            type="button"
-          >
-            {isRecording ? <IoStop className="h-5 w-5" /> : <IoMic className="h-5 w-5" />}
-          </Button>
-          
-          <Button 
-            onClick={sendMessage}
-            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 h-12 px-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200"
-            disabled={!inputValue.trim() && !selectedImage}
-          >
-            <IoSend className="h-5 w-5" />
-          </Button>
+
+        {/* Input Area - With Image Upload */}
+        <div className="max-w-6xl mx-auto p-6">
+          <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+            <CardContent className="p-6">
+              {/* 画像プレビュー */}
+              {imagePreview && (
+                <div className="mb-4 relative inline-block">
+                  <img 
+                    src={imagePreview} 
+                    alt="選択された画像" 
+                    className="max-h-40 rounded-lg border-2 border-amber-200 shadow-md"
+                  />
+                  <button
+                    onClick={removeImage}
+                    className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-600 transition-colors shadow-md"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+              
+              <div className="flex gap-3 items-end">
+                <div className="flex-1">
+                  <textarea
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="Genieに何でも相談してください... ✨"
+                    className="w-full h-14 max-h-[120px] resize-none px-5 py-4 border-2 border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-400 transition-all duration-200 text-sm bg-white/50 backdrop-blur-sm"
+                    rows={1}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault()
+                        sendMessage()
+                      }
+                    }}
+                  />
+                </div>
+                
+                {/* 画像アップロードボタン */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageSelect}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-14 px-4 bg-gradient-to-r from-blue-100 to-indigo-100 hover:from-blue-200 hover:to-indigo-200 text-blue-700 hover:text-blue-800 border-0 rounded-xl transition-all duration-200 shadow-md"
+                  type="button"
+                >
+                  <Camera className="h-5 w-5" />
+                </Button>
+                
+                {/* 音声録音ボタン（将来の拡張用） */}
+                <Button
+                  onClick={toggleRecording}
+                  className={`h-14 px-4 rounded-xl transition-all duration-200 shadow-md border-0 ${
+                    isRecording 
+                      ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white'
+                      : 'bg-gradient-to-r from-green-100 to-emerald-100 hover:from-green-200 hover:to-emerald-200 text-green-700 hover:text-green-800'
+                  }`}
+                  type="button"
+                >
+                  {isRecording ? <IoStop className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                </Button>
+                
+                <Button 
+                  onClick={sendMessage}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 h-14 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 border-0"
+                  disabled={!inputValue.trim() && !selectedImage}
+                >
+                  <Send className="h-5 w-5" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </div>
+        </div>
       </div>
       
     </AppLayout>

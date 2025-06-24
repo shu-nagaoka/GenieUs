@@ -6,6 +6,7 @@ from typing import Any
 from google.adk.tools import FunctionTool
 
 from src.application.usecases.file_management_usecase import FileManagementUseCase
+from src.tools.common_response_formatter import ChildcareResponseFormatter
 
 
 def create_file_management_tool(
@@ -26,7 +27,7 @@ def create_file_management_tool(
 
     def manage_child_files(
         operation: str,
-        child_id: str,
+        child_id: str = "default_child",
         bucket_name: str = "genie-child-records",
         file_name: str = "",
         file_type: str = "image",
@@ -36,7 +37,7 @@ def create_file_management_tool(
 
         Args:
             operation: 操作タイプ（upload, download, list）
-            child_id: 子どものID
+            child_id: 子どものID（デフォルト: "default_child"）
             bucket_name: GCSバケット名
             file_name: ファイル名（upload, downloadで必要）
             file_type: ファイルタイプ（image, video, document等）
@@ -61,23 +62,29 @@ def create_file_management_tool(
 
                 if result.get("success"):
                     files = result.get("files", [])
-                    return {
-                        "success": True,
-                        "response": _create_file_list_response(files, child_id),
-                        "file_data": result,
-                        "metadata": {
-                            "operation": operation,
-                            "child_id": child_id,
-                            "total_files": len(files),
-                        },
-                    }
+                    if not files:
+                        return ChildcareResponseFormatter.error_response(
+                            "ファイル一覧取得", "該当するファイルが見つかりませんでした", child_id
+                        ).to_dict()
+
+                    # 最初のファイル情報を使用
+                    first_file = files[0]
+                    return ChildcareResponseFormatter.file_management_success(
+                        operation="ファイル一覧取得",
+                        file_info={"name": f"{len(files)}件のファイル", "size": sum(f.get("size", 0) for f in files)},
+                        child_id=child_id,
+                    ).to_dict()
                 else:
-                    return _create_error_response(operation, result.get("error", "ファイル一覧取得に失敗"))
+                    return ChildcareResponseFormatter.error_response(
+                        "ファイル一覧取得", result.get("error", "ファイル一覧取得に失敗"), child_id
+                    ).to_dict()
 
             elif operation == "download":
                 # ファイルダウンロード
                 if not file_name:
-                    return _create_error_response(operation, "ファイル名が指定されていません")
+                    return ChildcareResponseFormatter.error_response(
+                        "ファイルダウンロード", "ファイル名が指定されていません", child_id
+                    ).to_dict()
 
                 as_text = kwargs.get("as_text", False)
                 result = file_management_usecase.download_child_file(
@@ -89,87 +96,43 @@ def create_file_management_tool(
                 )
 
                 if result.get("success"):
-                    return {
-                        "success": True,
-                        "response": f"ファイル「{file_name}」のダウンロードが完了しました。",
-                        "file_data": result,
-                        "metadata": {
-                            "operation": operation,
-                            "child_id": child_id,
-                            "file_name": file_name,
-                            "data_size": len(result.get("file_data", b"")),
-                        },
-                    }
+                    data_size = len(result.get("file_data", b""))
+                    return ChildcareResponseFormatter.file_management_success(
+                        operation="ファイルダウンロード",
+                        file_info={"name": file_name, "size": data_size},
+                        child_id=child_id,
+                    ).to_dict()
                 else:
-                    return _create_error_response(operation, result.get("error", "ファイルダウンロードに失敗"))
+                    return ChildcareResponseFormatter.error_response(
+                        "ファイルダウンロード", result.get("error", "ファイルダウンロードに失敗"), child_id
+                    ).to_dict()
 
             elif operation == "upload":
                 # ファイルアップロード（通常はWebAPIから呼ばれるため、ここでは情報のみ）
-                return {
-                    "success": True,
-                    "response": "ファイルアップロード機能は利用可能です。WebUIまたはAPIを通じてファイルをアップロードしてください。",
-                    "metadata": {
-                        "operation": operation,
-                        "child_id": child_id,
-                        "supported_types": ["image", "video", "document", "audio"],
-                    },
-                }
+                return ChildcareResponseFormatter.file_management_success(
+                    operation="ファイルアップロード情報",
+                    file_info={"name": "アップロード機能", "size": 0},
+                    child_id=child_id,
+                ).to_dict()
 
             else:
-                return _create_error_response(operation, f"サポートされていない操作です: {operation}")
+                return ChildcareResponseFormatter.error_response(
+                    "ファイル管理", f"サポートされていない操作です: {operation}", child_id
+                ).to_dict()
 
         except Exception as e:
             logger.error(f"ファイル管理ツール実行エラー: {e}")
-            return _create_error_response(operation, f"ファイル操作中にエラーが発生しました: {e!s}")
+            return ChildcareResponseFormatter.error_response(
+                "ファイル管理", f"ファイル操作中にエラーが発生しました: {e!s}", child_id
+            ).to_dict()
 
-    def _create_file_list_response(files: list[dict[str, Any]], child_id: str) -> str:
-        """ファイル一覧を自然言語レスポンスに変換"""
-        if not files:
-            return f"お子さん（ID: {child_id}）に関連するファイルは見つかりませんでした。"
-
-        response_parts = [
-            f"お子さん（ID: {child_id}）に関連するファイルを{len(files)}件見つけました。",
-            "",
-        ]
-
-        # ファイルタイプ別の集計
+    def _get_file_type_summary(files: list[dict[str, Any]]) -> dict[str, int]:
+        """ファイルタイプ別の集計を取得"""
         type_counts = {}
         for file_info in files:
             file_category = file_info.get("file_category", "other")
             type_counts[file_category] = type_counts.get(file_category, 0) + 1
-
-        # タイプ別サマリー
-        type_summary = []
-        for file_type, count in type_counts.items():
-            type_name = {
-                "image": "画像",
-                "video": "動画",
-                "document": "文書",
-                "audio": "音声",
-                "other": "その他",
-            }.get(file_type, file_type)
-            type_summary.append(f"{type_name}: {count}件")
-
-        response_parts.append("📁 ファイル種類別: " + "、".join(type_summary))
-
-        # 最新ファイルの表示（最大5件）
-        if files:
-            response_parts.append("\n📋 最新ファイル:")
-            for i, file_info in enumerate(files[:5]):
-                name = file_info.get("name", "")
-                size_mb = file_info.get("size_mb", 0)
-                update_time = str(file_info.get("update_at", ""))[:10]  # 日付部分のみ
-                response_parts.append(f"  {i + 1}. {name} ({size_mb}MB) - {update_time}")
-
-        return "\n".join(response_parts)
-
-    def _create_error_response(operation: str, error_message: str) -> dict[str, Any]:
-        """エラーレスポンス作成"""
-        return {
-            "success": False,
-            "response": f"ファイル{operation}操作でエラーが発生しました: {error_message}",
-            "metadata": {"operation": operation, "error": error_message},
-        }
+        return type_counts
 
     logger.info("ファイル管理ツール作成完了")
     return FunctionTool(func=manage_child_files)

@@ -38,14 +38,14 @@ export default function DashboardPage() {
               <GiSparkles className="absolute -top-1 -right-1 h-6 w-6 text-yellow-400 animate-pulse" />
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
-              <span className="text-orange-600">Genie + us</span>で
+            <h1 className="md:text-5xl font-bold text-gray-800 mb-4">
+              <span className="text-orange-600">Genie ＋ Us</span>で
               <span className="text-gray-800">子育てをもっと楽に</span>
             </h1>
 
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               話すだけで <span className="text-orange-600 font-bold text-3xl">記録・相談・予定管理</span> が全部できる<br />
-              あなただけの魔法のランプ✨️
+              <span className="text-orange-600 font-bold text-3xl">あなただけの魔法のランプ✨️</span>
             </p>
           </div>
         </div>

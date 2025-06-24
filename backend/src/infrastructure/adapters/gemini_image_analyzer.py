@@ -17,9 +17,9 @@ from src.application.interface.protocols.image_analyzer import ImageAnalyzerProt
 class GeminiImageAnalyzer(ImageAnalyzerProtocol):
     """Geminiを使用した画像分析の具体的実装"""
 
-    def __init__(self, model_name: str = "gemini-2.5-flash-preview-05-20", logger: logging.Logger | None = None) -> None:
+    def __init__(self, logger: logging.Logger, model_name: str = "gemini-2.5-flash-preview-05-20") -> None:
         self.model_name = model_name
-        self.logger = logger or logging.getLogger(__name__)
+        self.logger = logger  # DIコンテナから必須注入
         self.model = genai.GenerativeModel(model_name)
 
     async def analyze_image_with_prompt(
@@ -33,10 +33,10 @@ class GeminiImageAnalyzer(ImageAnalyzerProtocol):
             # 詳細ログでデバッグ
             self.logger.info(f"画像パス詳細: 長さ={len(image_path)}, 先頭50文字={image_path[:50]}...")
             # 画像読み込み（Base64データ対応）
-            if image_path.startswith('data:image/'):
+            if image_path.startswith("data:image/"):
                 # Base64データの場合
                 self.logger.info("Base64データとして処理開始")
-                header, data = image_path.split(',', 1)
+                header, data = image_path.split(",", 1)
                 self.logger.info(f"Base64ヘッダー: {header}")
                 self.logger.info(f"Base64データ長: {len(data)}")
                 image_data = base64.b64decode(data)

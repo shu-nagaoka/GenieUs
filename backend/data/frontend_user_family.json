@@ -1,0 +1,20 @@
+{
+  "family_id": "d0283a80-8c9f-48d8-a755-f11de325d41b",
+  "user_id": "frontend_user",
+  "parent_name": "長岡　周",
+  "family_structure": "夫婦+子ども1人+祖父母",
+  "concerns": "夜泣きと離乳食の進め方が心配",
+  "children": [
+    {
+      "name": "田中花子",
+      "age": "9ヶ月",
+      "gender": "女の子",
+      "birth_date": "2024-04-01",
+      "characteristics": "人見知りが激しいが、最近よく笑うようになった",
+      "allergies": "卵",
+      "medical_notes": "予防接種は順調。最近風邪をひいた"
+    }
+  ],
+  "created_at": "2025-06-24T02:34:45.131355",
+  "updated_at": "2025-06-24T02:34:45.131359"
+}
