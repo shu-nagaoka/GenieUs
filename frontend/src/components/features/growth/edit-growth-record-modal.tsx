@@ -27,11 +27,12 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
-import { updateGrowthRecord, deleteGrowthRecord, GrowthRecordUpdateRequest } from '@/lib/api/growth-records'
+import { updateGrowthRecord, deleteGrowthRecord, GrowthRecordUpdateRequest, getChildrenForGrowthRecords, ChildInfo } from '@/lib/api/growth-records'
 import { ImageUpload } from '@/components/features/memories/image-upload'
 
 interface GrowthRecord {
   id: string
+  child_id?: string  // 家族情報からの子どもID
   child_name: string
   date: string
   age_in_months: number
@@ -58,6 +59,7 @@ interface EditGrowthRecordModalProps {
 
 export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpdated, onRecordDeleted }: EditGrowthRecordModalProps) {
   const [formData, setFormData] = useState<GrowthRecordUpdateRequest>({
+    child_id: '',
     child_name: '',
     date: '',
     age_in_months: 0,
@@ -73,11 +75,14 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
+  const [children, setChildren] = useState<ChildInfo[]>([])
+  const [isLoadingChildren, setIsLoadingChildren] = useState(false)
 
   // 記録データをフォームに設定
   useEffect(() => {
     if (record && open) {
       setFormData({
+        child_id: record.child_id || '',
         child_name: record.child_name,
         date: record.date,
         age_in_months: record.age_in_months,
@@ -95,8 +100,36 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
       setNewEmotion('')
       setShowDeleteConfirm(false)
       setUploadedImageUrl(null)
+      loadChildren()
     }
   }, [record, open])
+
+  // 子ども情報を取得
+  const loadChildren = async () => {
+    setIsLoadingChildren(true)
+    try {
+      const result = await getChildrenForGrowthRecords()
+      if (result.success && result.data) {
+        setChildren(result.data)
+      }
+    } catch (error) {
+      console.error('子ども情報取得エラー:', error)
+    } finally {
+      setIsLoadingChildren(false)
+    }
+  }
+
+  const handleChildSelection = (childId: string) => {
+    const selectedChild = children.find(child => child.child_id === childId)
+    if (selectedChild) {
+      setFormData(prev => ({
+        ...prev,
+        child_id: selectedChild.child_id,
+        child_name: selectedChild.name,
+        age_in_months: selectedChild.age_in_months
+      }))
+    }
+  }
 
   const typeOptions = [
     { value: 'body_growth', label: 'からだの成長', icon: Ruler, color: 'from-blue-500 to-blue-600' },
@@ -274,21 +307,39 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
 
         {!showDeleteConfirm ? (
           <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-            {/* 子どもの名前と年齢 */}
+            {/* 子どもの選択と年齢 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="child_name" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   <Baby className="h-4 w-4" />
-                  お子さんの名前 *
+                  お子さんを選択 *
                 </Label>
-                <Input
-                  id="child_name"
-                  value={formData.child_name || ''}
-                  onChange={(e) => handleInputChange('child_name', e.target.value)}
-                  placeholder="例: 花子ちゃん"
-                  className="border-blue-200 focus:border-blue-400"
-                  required
-                />
+                {isLoadingChildren ? (
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    読み込み中...
+                  </div>
+                ) : children.length > 0 ? (
+                  <Select value={formData.child_id} onValueChange={handleChildSelection}>
+                    <SelectTrigger className="border-blue-200 focus:border-blue-400">
+                      <SelectValue placeholder="お子さんを選択してください" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {children.map((child) => (
+                        <SelectItem key={child.child_id} value={child.child_id}>
+                          <div className="flex items-center gap-2">
+                            <Baby className="h-4 w-4" />
+                            {child.name} ({child.age}歳)
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-200">
+                    先に家族情報でお子さんを登録してください
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

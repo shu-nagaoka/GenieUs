@@ -65,12 +65,12 @@
     "date": "2025-06-24",
     "type": "photo",
     "category": "daily",
-    "media_url": "/api/v1/files/images/37aaab58-9d8a-4093-93a7-3570bfa0042a.jpeg",
-    "thumbnail_url": "/api/v1/files/images/37aaab58-9d8a-4093-93a7-3570bfa0042a.jpeg",
+    "media_url": "/api/v1/files/images/2b38b640-be11-465c-8dec-4c1c79fa869d.jpeg",
+    "thumbnail_url": "/api/v1/files/images/2b38b640-be11-465c-8dec-4c1c79fa869d.jpeg",
     "location": "",
     "tags": [],
     "favorited": true,
     "created_at": "2025-06-24T13:44:05.020484",
-    "updated_at": "2025-06-24T13:57:01.567217"
+    "updated_at": "2025-06-24T15:12:33.140472"
   }
 }

@@ -30,7 +30,7 @@ import { MdChildCare, MdPhotoCamera, MdTimeline } from 'react-icons/md'
 import { FaChild, FaCamera, FaChartLine, FaHeart } from 'react-icons/fa'
 import { GiMagicLamp, GiBabyFace, GiBodyHeight } from 'react-icons/gi'
 import Link from 'next/link'
-import { getGrowthRecords, GrowthRecord as ApiGrowthRecord } from '@/lib/api/growth-records'
+import { getGrowthRecords, GrowthRecord as ApiGrowthRecord, getChildrenForGrowthRecords, ChildInfo } from '@/lib/api/growth-records'
 import { CreateGrowthRecordModal } from '@/components/features/growth/create-growth-record-modal'
 import { EditGrowthRecordModal } from '@/components/features/growth/edit-growth-record-modal'
 
@@ -46,11 +46,12 @@ interface GrowthRecord extends Omit<ApiGrowthRecord, 'user_id' | 'created_at' | 
 // EditGrowthRecordModalが期待する形式
 interface EditableGrowthRecord {
   id: string
+  child_id?: string
   child_name: string
   date: string
   age_in_months: number
-  type: 'physical' | 'emotional' | 'cognitive' | 'milestone' | 'photo'
-  category: 'height' | 'weight' | 'speech' | 'smile' | 'movement' | 'expression' | 'achievement'
+  type: 'body_growth' | 'language_growth' | 'skills' | 'social_skills' | 'hobbies' | 'life_skills' | 'physical' | 'emotional' | 'cognitive' | 'milestone' | 'photo'
+  category: 'height' | 'weight' | 'speech' | 'smile' | 'movement' | 'expression' | 'achievement' | 'first_words' | 'vocabulary' | 'colors' | 'numbers' | 'puzzle' | 'drawing' | 'playing_together' | 'helping' | 'sharing' | 'kindness' | 'piano' | 'swimming' | 'dancing' | 'sports' | 'toilet' | 'brushing' | 'dressing' | 'cleaning'
   title: string
   description: string
   value?: string | number
@@ -63,23 +64,35 @@ interface EditableGrowthRecord {
 }
 
 export default function GrowthTrackingPage() {
-  const [selectedChild, setSelectedChild] = useState<string>('hanako')
+  const [selectedChild, setSelectedChild] = useState<string>('all')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [growthRecords, setGrowthRecords] = useState<GrowthRecord[]>([])
+  const [children, setChildren] = useState<ChildInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<EditableGrowthRecord | null>(null)
 
-  // APIから成長記録データを取得
-  const loadGrowthRecords = async () => {
+  // APIから成長記録データと子ども情報を取得
+  const loadData = async () => {
     try {
       setLoading(true)
-      const result = await getGrowthRecords({ user_id: 'frontend_user' })
       
-      if (result.success && result.data) {
+      // 並行して子ども情報と成長記録を取得
+      const [childrenResult, recordsResult] = await Promise.all([
+        getChildrenForGrowthRecords(),
+        getGrowthRecords({ user_id: 'frontend_user' })
+      ])
+      
+      // 子ども情報を設定
+      if (childrenResult.success && childrenResult.data) {
+        setChildren(childrenResult.data)
+      }
+      
+      // 成長記録を設定
+      if (recordsResult.success && recordsResult.data) {
         // APIデータを表示用に変換
-        const convertedRecords: GrowthRecord[] = result.data.map(apiRecord => ({
+        const convertedRecords: GrowthRecord[] = recordsResult.data.map(apiRecord => ({
           id: apiRecord.id,
           childName: apiRecord.child_name,
           date: apiRecord.date,
@@ -98,10 +111,10 @@ export default function GrowthTrackingPage() {
         }))
         setGrowthRecords(convertedRecords)
       } else {
-        console.error('成長記録の取得に失敗しました:', result.message)
+        console.error('成長記録の取得に失敗しました:', recordsResult.message)
       }
     } catch (error) {
-      console.error('成長記録読み込みエラー:', error)
+      console.error('データ読み込みエラー:', error)
     } finally {
       setLoading(false)
     }
@@ -109,21 +122,16 @@ export default function GrowthTrackingPage() {
 
   // 初回ロード
   useEffect(() => {
-    loadGrowthRecords()
+    loadData()
   }, [])
-
-  const children = [
-    { id: 'hanako', name: '花子ちゃん', age: '8ヶ月', avatar: '👶' },
-    { id: 'taro', name: '太郎くん', age: '2歳', avatar: '🧒' }
-  ]
 
   const getFilteredRecords = () => {
     let filtered = growthRecords.filter(record => 
-      selectedChild === 'all' || record.childName === children.find(c => c.id === selectedChild)?.name
+      selectedChild === 'all' || record.childName === children.find(c => c.child_id === selectedChild)?.name
     )
     
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(record => record.category === selectedCategory)
+      filtered = filtered.filter(record => record.type === selectedCategory || record.category === selectedCategory)
     }
     
     return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -212,9 +220,13 @@ export default function GrowthTrackingPage() {
   }
 
   const handleEditRecord = (record: GrowthRecord) => {
+    // 対応する child_id を取得
+    const matchedChild = children.find(child => child.name === record.childName)
+    
     // GrowthRecord を EditableGrowthRecord に変換
     const editableRecord: EditableGrowthRecord = {
       id: record.id,
+      child_id: matchedChild?.child_id,
       child_name: record.childName,
       date: record.date,
       age_in_months: record.ageInMonths,
@@ -235,22 +247,29 @@ export default function GrowthTrackingPage() {
   }
 
   const handleRecordUpdated = () => {
-    loadGrowthRecords()
+    loadData()
   }
 
   const handleRecordDeleted = () => {
-    loadGrowthRecords()
+    loadData()
+  }
+
+  const handleRecordCreated = () => {
+    loadData()
   }
 
   const getStatsForChild = (childId: string) => {
-    const childName = children.find(c => c.id === childId)?.name || ''
-    const records = growthRecords.filter(r => r.childName === childName)
+    let records = growthRecords
+    if (childId !== 'all') {
+      const childName = children.find(c => c.child_id === childId)?.name || ''
+      records = growthRecords.filter(r => r.childName === childName)
+    }
     
     return {
       totalRecords: records.length,
       photosCount: records.filter(r => r.imageUrl).length,
-      milestonesCount: records.filter(r => r.type === 'milestone').length,
-      avgConfidence: records.length > 0 ? Math.round(records.reduce((acc, r) => acc + (r.confidence || 0), 0) / records.length * 100) : 0
+      milestonesCount: records.filter(r => r.type === 'milestone' || r.type === 'skills').length,
+      avgConfidence: records.length > 0 ? Math.round(records.reduce((acc, r) => acc + (r.confidence || 95), 0) / records.length) : 0
     }
   }
 
@@ -372,11 +391,17 @@ export default function GrowthTrackingPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">
+                        <div className="flex items-center gap-2">
+                          <Baby className="h-4 w-4" />
+                          <span>すべてのお子さん</span>
+                        </div>
+                      </SelectItem>
                       {children.map(child => (
-                        <SelectItem key={child.id} value={child.id}>
+                        <SelectItem key={child.child_id} value={child.child_id}>
                           <div className="flex items-center gap-2">
-                            <span className="text-lg">{child.avatar}</span>
-                            <span>{child.name} ({child.age})</span>
+                            <Baby className="h-4 w-4" />
+                            <span>{child.name} ({child.age}歳)</span>
                           </div>
                         </SelectItem>
                       ))}
@@ -583,7 +608,7 @@ export default function GrowthTrackingPage() {
       <CreateGrowthRecordModal
         open={showCreateModal}
         onOpenChange={setShowCreateModal}
-        onRecordCreated={loadGrowthRecords}
+        onRecordCreated={handleRecordCreated}
       />
 
       {/* 成長記録編集モーダル */}
