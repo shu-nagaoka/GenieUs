@@ -185,8 +185,10 @@ export function CreateGrowthRecordModal({ open, onOpenChange, onRecordCreated }:
     setIsSubmitting(true)
     
     try {
+      // age_in_months はバックエンドで自動計算されるため除外
+      const { age_in_months, ...recordDataWithoutAge } = formData
       const recordData = {
-        ...formData,
+        ...recordDataWithoutAge,
         image_url: uploadedImageUrl
       }
       
@@ -280,62 +282,38 @@ export function CreateGrowthRecordModal({ open, onOpenChange, onRecordCreated }:
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-          {/* 子どもの選択と年齢 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <Baby className="h-4 w-4" />
-                お子さんを選択 *
-              </Label>
-              {isLoadingChildren ? (
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  読み込み中...
-                </div>
-              ) : children.length > 0 ? (
-                <Select value={formData.child_id} onValueChange={handleChildSelection}>
-                  <SelectTrigger className="border-blue-200 focus:border-blue-400">
-                    <SelectValue placeholder="お子さんを選択してください" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {children.map((child) => (
-                      <SelectItem key={child.child_id} value={child.child_id}>
-                        <div className="flex items-center gap-2">
-                          <Baby className="h-4 w-4" />
-                          {child.name} ({child.age}歳)
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-200">
-                  先に家族情報でお子さんを登録してください
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="age_in_months" className="text-sm font-medium text-gray-700">
-                年齢（月齢）*
-              </Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="age_in_months"
-                  type="number"
-                  value={formData.age_in_months}
-                  className="border-blue-200 focus:border-blue-400 bg-gray-50"
-                  readOnly
-                />
-                <div className="text-sm text-gray-500">
-                  {formData.age_in_months && formData.age_in_months > 0 ? (
-                    formData.age_in_months >= 12 ? 
-                      `${Math.floor(formData.age_in_months / 12)}歳${formData.age_in_months % 12}ヶ月` :
-                      `${formData.age_in_months}ヶ月`
-                  ) : '生年月日から自動計算'}
-                </div>
+          {/* 子どもの選択 */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+              <Baby className="h-4 w-4" />
+              お子さんを選択 *
+            </Label>
+            {isLoadingChildren ? (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                読み込み中...
               </div>
-            </div>
+            ) : children.length > 0 ? (
+              <Select value={formData.child_id} onValueChange={handleChildSelection}>
+                <SelectTrigger className="border-blue-200 focus:border-blue-400">
+                  <SelectValue placeholder="お子さんを選択してください" />
+                </SelectTrigger>
+                <SelectContent>
+                  {children.map((child) => (
+                    <SelectItem key={child.child_id} value={child.child_id}>
+                      <div className="flex items-center gap-2">
+                        <Baby className="h-4 w-4" />
+                        {child.name} ({child.age})
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-200">
+                先に家族情報でお子さんを登録してください
+              </div>
+            )}
           </div>
 
           {/* タイトル */}

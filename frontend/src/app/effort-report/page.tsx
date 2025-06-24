@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { EffortReportCard } from '@/components/v2/effort-affirmation/EffortReportCard'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -23,11 +23,14 @@ import {
   FileText,
   X,
   Archive,
-  Activity
+  Activity,
+  LayoutGrid,
+  List
 } from 'lucide-react'
 import { MdChildCare, MdFamilyRestroom } from 'react-icons/md'
 import { FaHeart, FaStar, FaTrophy } from 'react-icons/fa'
 import Link from 'next/link'
+import { getEffortRecords, getEffortRecordsStats, EffortRecord as ApiEffortRecord } from '@/lib/api/effort-records'
 
 interface HistoricalReport {
   id: string
@@ -46,96 +49,60 @@ interface HistoricalReport {
   achievements: string[]
 }
 
+type ViewMode = 'card' | 'table'
+
 export default function EffortReportPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<number>(7)
   const [reportKey, setReportKey] = useState<number>(0)
   const [selectedReport, setSelectedReport] = useState<HistoricalReport | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('card')
+  const [historicalReports, setHistoricalReports] = useState<HistoricalReport[]>([])
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({ total_efforts: 27, streak_days: 21, average_score: 8.7, total_reports: 12 })
 
-  // サンプル過去レポートデータ
-  const historicalReports: HistoricalReport[] = [
-    {
-      id: '1',
-      date: '2024-07-20',
-      period: '過去1週間',
-      effortCount: 27,
-      highlights: ['初めて「パパ」と言いました！', '睡眠時間が30分改善', '離乳食を完食する日が増加'],
-      score: 8.7,
-      categories: {
-        feeding: 85,
-        sleep: 78,
-        play: 92,
-        care: 88
-      },
-      summary: 'この1週間、お子さんとの絆が深まった素晴らしい期間でした。特に言葉の発達と睡眠リズムの改善が目立ちました。',
-      achievements: ['連続21日の記録達成', '言語発達マイルストーン', '睡眠改善成功']
-    },
-    {
-      id: '2',
-      date: '2024-07-13',
-      period: '過去1週間',
-      effortCount: 24,
-      highlights: ['つかまり立ち成功！', '新しい遊びを覚えました', '夜泣きが減少しました'],
-      score: 8.2,
-      categories: {
-        feeding: 80,
-        sleep: 85,
-        play: 88,
-        care: 82
-      },
-      summary: '運動発達が著しく進歩した週でした。つかまり立ちの成功は大きなマイルストーンです。',
-      achievements: ['運動発達マイルストーン', '夜泣き改善', '新しい遊び発見']
-    },
-    {
-      id: '3',
-      date: '2024-07-06',
-      period: '過去1週間',
-      effortCount: 22,
-      highlights: ['笑顔が増えました', '離乳食に新しい食材追加', 'お昼寝時間が安定'],
-      score: 7.9,
-      categories: {
-        feeding: 78,
-        sleep: 80,
-        play: 85,
-        care: 79
-      },
-      summary: '感情表現が豊かになり、食事のバラエティも増えた充実した週でした。',
-      achievements: ['感情表現向上', '食事バラエティ拡大', '生活リズム安定']
-    },
-    {
-      id: '4',
-      date: '2024-06-29',
-      period: '過去1週間',
-      effortCount: 20,
-      highlights: ['初めての離乳食', 'おもちゃに興味を示すように', '人見知りが少し減りました'],
-      score: 7.5,
-      categories: {
-        feeding: 75,
-        sleep: 77,
-        play: 82,
-        care: 75
-      },
-      summary: '離乳食開始という大きなステップを踏み出した記念すべき週でした。',
-      achievements: ['離乳食開始', '社会性発達', '好奇心向上']
-    },
-    {
-      id: '5',
-      date: '2024-06-22',
-      period: '過去1週間',
-      effortCount: 18,
-      highlights: ['寝返りがスムーズに', '声をよく出すように', '表情が豊かになりました'],
-      score: 7.2,
-      categories: {
-        feeding: 72,
-        sleep: 75,
-        play: 80,
-        care: 73
-      },
-      summary: '基本的な運動能力が向上し、コミュニケーションも活発になった週でした。',
-      achievements: ['運動能力向上', 'コミュニケーション活発化', '表情豊か']
+  // APIからデータを取得
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      
+      // 並行して記録一覧と統計を取得
+      const [recordsResult, statsResult] = await Promise.all([
+        getEffortRecords({ user_id: 'frontend_user' }),
+        getEffortRecordsStats('frontend_user', selectedPeriod)
+      ])
+      
+      // 記録データを設定
+      if (recordsResult.success && recordsResult.data) {
+        const convertedReports: HistoricalReport[] = recordsResult.data.map(apiRecord => ({
+          id: apiRecord.id,
+          date: apiRecord.date,
+          period: apiRecord.period,
+          effortCount: apiRecord.effort_count,
+          highlights: apiRecord.highlights,
+          score: apiRecord.score,
+          categories: apiRecord.categories,
+          summary: apiRecord.summary,
+          achievements: apiRecord.achievements
+        }))
+        setHistoricalReports(convertedReports)
+      }
+      
+      // 統計データを設定
+      if (statsResult.success && statsResult.data) {
+        setStats(statsResult.data)
+      }
+    } catch (error) {
+      console.error('データ読み込みエラー:', error)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [selectedPeriod])
 
   const handlePeriodChange = (value: string) => {
     setSelectedPeriod(parseInt(value))
@@ -151,9 +118,23 @@ export default function EffortReportPage() {
     setShowModal(true)
   }
 
+
   const closeModal = () => {
     setSelectedReport(null)
     setShowModal(false)
+  }
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-slate-50 flex items-center justify-center">
+          <div className="inline-flex items-center gap-2">
+            <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-gray-600">努力記録を読み込み中...</span>
+          </div>
+        </div>
+      </AppLayout>
+    )
   }
 
   return (
@@ -191,29 +172,16 @@ export default function EffortReportPage() {
 
         <div className="max-w-6xl mx-auto p-6 space-y-8">
           {/* 努力サマリーカード */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <Card className="bg-gradient-to-br from-emerald-600 to-emerald-700 text-white border-0 shadow-xl">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-emerald-100 text-sm font-medium">今週の努力</p>
-                    <p className="text-2xl font-bold mt-1">27回</p>
-                    <p className="text-emerald-200 text-xs">先週比 +3回</p>
+                    <p className="text-emerald-100 text-sm font-medium">今週頑張ったこと</p>
+                    <p className="text-2xl font-bold mt-1">{stats.total_efforts}回</p>
+                    <p className="text-emerald-200 text-xs">Genieが記録</p>
                   </div>
                   <Heart className="h-8 w-8 text-emerald-200" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-emerald-100 text-sm font-medium">継続日数</p>
-                    <p className="text-2xl font-bold mt-1">21日</p>
-                    <p className="text-emerald-200 text-xs">連続記録中</p>
-                  </div>
-                  <FaStar className="h-8 w-8 text-emerald-200" />
                 </div>
               </CardContent>
             </Card>
@@ -222,24 +190,11 @@ export default function EffortReportPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-teal-100 text-sm font-medium">成長実感</p>
-                    <p className="text-2xl font-bold mt-1">8.7</p>
-                    <p className="text-teal-200 text-xs">レポートスコア</p>
+                    <p className="text-teal-100 text-sm font-medium">平均スコア</p>
+                    <p className="text-2xl font-bold mt-1">{stats.average_score}</p>
+                    <p className="text-teal-200 text-xs">総合評価</p>
                   </div>
                   <Star className="h-8 w-8 text-teal-200" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-slate-500 to-slate-600 text-white border-0 shadow-xl">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-100 text-sm font-medium">レポート作成</p>
-                    <p className="text-2xl font-bold mt-1">12件</p>
-                    <p className="text-slate-200 text-xs">毎日21:00自動</p>
-                  </div>
-                  <Clock className="h-8 w-8 text-slate-200" />
                 </div>
               </CardContent>
             </Card>
@@ -263,84 +218,185 @@ export default function EffortReportPage() {
           {/* 過去のレポート一覧 */}
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-3">
-                <Archive className="h-6 w-6" />
-                過去のレポート
-              </CardTitle>
-              <CardDescription className="text-emerald-100">
-                これまでのあなたの努力の記録を振り返る
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-3">
+                    <Archive className="h-6 w-6" />
+                    過去のレポート
+                  </CardTitle>
+                  <CardDescription className="text-emerald-100">
+                    これまでのあなたの努力の記録を振り返る
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 bg-white/20 rounded-lg p-1">
+                  <Button
+                    size="sm"
+                    variant={viewMode === 'card' ? 'default' : 'ghost'}
+                    onClick={() => setViewMode('card')}
+                    className={`h-8 px-3 ${viewMode === 'card' ? 'bg-white text-emerald-600' : 'text-white hover:bg-white/20'}`}
+                  >
+                    <LayoutGrid className="h-4 w-4 mr-1" />
+                    カード
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={viewMode === 'table' ? 'default' : 'ghost'}
+                    onClick={() => setViewMode('table')}
+                    className={`h-8 px-3 ${viewMode === 'table' ? 'bg-white text-emerald-600' : 'text-white hover:bg-white/20'}`}
+                  >
+                    <List className="h-4 w-4 mr-1" />
+                    テーブル
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {historicalReports.map((report) => (
-                  <Card 
-                    key={report.id} 
-                    className="cursor-pointer hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-gradient-to-br from-white to-emerald-50 hover:from-emerald-50 hover:to-teal-50"
-                    onClick={() => openReportModal(report)}
-                  >
-                    <CardContent className="p-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                            <FileText className="h-4 w-4 text-white" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800">{report.period}</p>
-                            <p className="text-xs text-gray-500">{new Date(report.date).toLocaleDateString('ja-JP')}</p>
-                          </div>
-                        </div>
-                        <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
-                          {report.score}/10
-                        </Badge>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-sm font-medium text-gray-700 mb-1">努力回数</p>
+              {viewMode === 'card' ? (
+                // カード表示
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {historicalReports.map((report) => (
+                    <Card 
+                      key={report.id} 
+                      className="cursor-pointer hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-gradient-to-br from-white to-emerald-50 hover:from-emerald-50 hover:to-teal-50"
+                      onClick={() => openReportModal(report)}
+                    >
+                      <CardContent className="p-5">
+                        <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 h-2 bg-gray-200 rounded-full">
-                              <div 
-                                className="h-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full" 
-                                style={{ width: `${Math.min((report.effortCount / 30) * 100, 100)}%` }}
-                              ></div>
+                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                              <FileText className="h-4 w-4 text-white" />
                             </div>
-                            <span className="text-sm font-bold text-emerald-700">{report.effortCount}回</span>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-800">{report.period}</p>
+                              <p className="text-xs text-gray-500">{new Date(report.date).toLocaleDateString('ja-JP')}</p>
+                            </div>
                           </div>
+                          <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
+                            {report.score}/10
+                          </Badge>
                         </div>
                         
-                        <div>
-                          <p className="text-sm font-medium text-gray-700 mb-2">ハイライト</p>
-                          <div className="space-y-1">
-                            {report.highlights.slice(0, 2).map((highlight, index) => (
-                              <div key={index} className="flex items-center gap-2">
-                                <Star className="h-3 w-3 text-emerald-600 flex-shrink-0" />
-                                <p className="text-xs text-gray-600 line-clamp-1">{highlight}</p>
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 mb-1">努力回数</p>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-2 bg-gray-200 rounded-full">
+                                <div 
+                                  className="h-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full" 
+                                  style={{ width: `${Math.min((report.effortCount / 30) * 100, 100)}%` }}
+                                ></div>
                               </div>
-                            ))}
-                            {report.highlights.length > 2 && (
-                              <p className="text-xs text-gray-500 pl-5">+{report.highlights.length - 2}件のハイライト</p>
-                            )}
+                              <span className="text-sm font-bold text-emerald-700">{report.effortCount}回</span>
+                            </div>
                           </div>
+                          
+                          <div>
+                            <p className="text-sm font-medium text-gray-700 mb-2">ハイライト</p>
+                            <div className="space-y-1">
+                              {report.highlights.slice(0, 2).map((highlight, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                  <Star className="h-3 w-3 text-emerald-600 flex-shrink-0" />
+                                  <p className="text-xs text-gray-600 line-clamp-1">{highlight}</p>
+                                </div>
+                              ))}
+                              {report.highlights.length > 2 && (
+                                <p className="text-xs text-gray-500 pl-5">+{report.highlights.length - 2}件のハイライト</p>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openReportModal(report)
+                            }}
+                          >
+                            <Eye className="h-3 w-3 mr-2" />
+                            詳細を見る
+                          </Button>
                         </div>
-                        
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openReportModal(report)
-                          }}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                // テーブル表示
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-emerald-200">
+                        <th className="text-left py-3 px-4 font-medium text-emerald-700">期間</th>
+                        <th className="text-left py-3 px-4 font-medium text-emerald-700">日付</th>
+                        <th className="text-center py-3 px-4 font-medium text-emerald-700">努力回数</th>
+                        <th className="text-center py-3 px-4 font-medium text-emerald-700">スコア</th>
+                        <th className="text-left py-3 px-4 font-medium text-emerald-700">主なハイライト</th>
+                        <th className="text-center py-3 px-4 font-medium text-emerald-700">詳細</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historicalReports.map((report) => (
+                        <tr 
+                          key={report.id} 
+                          className="border-b border-gray-100 hover:bg-emerald-50/50 transition-colors cursor-pointer"
+                          onClick={() => openReportModal(report)}
                         >
-                          <Eye className="h-3 w-3 mr-2" />
-                          詳細を見る
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <div className="h-6 w-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                                <FileText className="h-3 w-3 text-white" />
+                              </div>
+                              <span className="text-sm font-medium text-gray-800">{report.period}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-600">
+                            {new Date(report.date).toLocaleDateString('ja-JP')}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <Badge variant="outline" className="text-emerald-700 border-emerald-300">
+                              {report.effortCount}回
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
+                              {report.score}/10
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="space-y-1">
+                              {report.highlights.slice(0, 2).map((highlight, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                  <Star className="h-3 w-3 text-emerald-600 flex-shrink-0" />
+                                  <p className="text-xs text-gray-600 truncate">{highlight}</p>
+                                </div>
+                              ))}
+                              {report.highlights.length > 2 && (
+                                <p className="text-xs text-gray-500">+{report.highlights.length - 2}件</p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openReportModal(report)
+                              }}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              詳細
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -351,135 +407,6 @@ export default function EffortReportPage() {
               periodDays={selectedPeriod}
               className="w-full"
             />
-          </div>
-
-          {/* 追加機能セクション */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* 努力の推移 */}
-            <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3">
-                  <BarChart3 className="h-6 w-6" />
-                  努力の推移
-                </CardTitle>
-                <CardDescription className="text-blue-100">
-                  あなたの子育て努力を数値で実感
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm font-medium text-blue-800">今週の記録数</span>
-                      </div>
-                      <Badge className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">+3</Badge>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-3 w-20 bg-blue-200 rounded-full">
-                        <div className="h-3 w-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"></div>
-                      </div>
-                      <span className="text-lg font-bold text-blue-700">27件</span>
-                    </div>
-                  </div>
-                  
-                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <FaStar className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-800">継続日数</span>
-                      </div>
-                      <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">連続</Badge>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-3 w-20 bg-green-200 rounded-full">
-                        <div className="h-3 w-18 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full"></div>
-                      </div>
-                      <span className="text-lg font-bold text-green-700">21日</span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-lg border border-purple-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4 text-purple-600" />
-                        <span className="text-sm font-medium text-purple-800">多様性スコア</span>
-                      </div>
-                      <Badge className="bg-gradient-to-r from-purple-500 to-violet-600 text-white">優秀</Badge>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-3 w-20 bg-purple-200 rounded-full">
-                        <div className="h-3 w-16 bg-gradient-to-r from-purple-500 to-violet-600 rounded-full"></div>
-                      </div>
-                      <span className="text-lg font-bold text-purple-700">8.7/10</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <Button 
-                  className="w-full mt-6 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-lg"
-                >
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  詳細な推移を見る
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* 今日のハイライト */}
-            <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-3">
-                  <Sparkles className="h-6 w-6" />
-                  今日のハイライト
-                </CardTitle>
-                <CardDescription className="text-green-100">
-                  Genieが記録したあなたの素晴らしい瞬間
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 shadow-sm">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-                        <FaHeart className="h-4 w-4 text-white" />
-                      </div>
-                      <span className="text-sm font-semibold text-green-800">特別な瞬間</span>
-                      <Badge className="bg-green-500 text-white text-xs">NEW</Badge>
-                    </div>
-                    <p className="text-sm text-green-700 leading-relaxed">
-                      お子さんが初めて「パパ」と言いました！あなたの毎日の語りかけが実を結んでいます。
-                    </p>
-                  </div>
-
-                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-sm">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                        <TrendingUp className="h-4 w-4 text-white" />
-                      </div>
-                      <span className="text-sm font-semibold text-blue-800">成長記録</span>
-                      <Badge className="bg-blue-500 text-white text-xs">成長中</Badge>
-                    </div>
-                    <p className="text-sm text-blue-700 leading-relaxed">
-                      睡眠時間が先週比で30分改善しました。あなたの寝かしつけルーティンが効果的です。
-                    </p>
-                  </div>
-
-                  <div className="p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200 shadow-sm">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center">
-                        <Heart className="h-4 w-4 text-white" />
-                      </div>
-                      <span className="text-sm font-semibold text-amber-800">愛情指標</span>
-                      <Badge className="bg-amber-500 text-white text-xs">高評価</Badge>
-                    </div>
-                    <p className="text-sm text-amber-700 leading-relaxed">
-                      今日だけで5回の笑顔を記録しました。お子さんはあなたの愛情を確実に感じています。
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* AIチャット連携カード */}
@@ -726,7 +653,7 @@ export default function EffortReportPage() {
                 <div className="bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-lg border border-purple-200">
                   <div className="text-center">
                     <p className="text-sm font-medium text-gray-700 mb-1">総レポート数</p>
-                    <p className="text-lg font-bold text-purple-600">12件</p>
+                    <p className="text-lg font-bold text-purple-600">{stats.total_reports}件</p>
                     <p className="text-xs text-purple-700">生成済み</p>
                   </div>
                 </div>
@@ -741,6 +668,7 @@ export default function EffortReportPage() {
             </div>
           </div>
         )}
+
       </div>
     </AppLayout>
   )

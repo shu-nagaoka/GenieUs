@@ -14,6 +14,7 @@ import {
   Save,
   Loader2,
   Baby,
+  Heart,
   Calendar,
   X
 } from 'lucide-react'
@@ -50,6 +51,7 @@ interface FamilyComposition {
   }
   pets: Pet[]
   children: Child[]
+  concerns: string[]
   living_situation: string
 }
 
@@ -78,6 +80,7 @@ export function FamilyCompositionModal({
     },
     pets: [],
     children: [],
+    concerns: [],
     living_situation: ''
   })
   
@@ -86,15 +89,7 @@ export function FamilyCompositionModal({
   // フォームデータの初期化
   useEffect(() => {
     if (familyData && open) {
-      // 既存データを変換（子どもに concerns が無い場合は空配列を追加）
-      const convertedData = {
-        ...familyData,
-        children: familyData.children.map(child => ({
-          ...child,
-          concerns: child.concerns || []
-        }))
-      }
-      setFormData(convertedData)
+      setFormData(familyData)
     } else if (open) {
       // 新規作成時のデフォルト値
       setFormData({
@@ -108,7 +103,16 @@ export function FamilyCompositionModal({
           has_pets: false
         },
         pets: [],
-        children: [],
+        children: [{ 
+          name: '', 
+          age: '', 
+          gender: '', 
+          birth_date: '', 
+          characteristics: '', 
+          allergies: '', 
+          medical_notes: '' 
+        }],
+        concerns: [],
         living_situation: ''
       })
     }
@@ -205,7 +209,7 @@ export function FamilyCompositionModal({
   }
 
   const getFamilyStructureDescription = () => {
-    const { has_father, has_mother, has_grandfather, has_grandmother, children_count, has_pets } = formData.family_members
+    const { has_father, has_mother, has_grandparents, children_count, has_pets } = formData.family_members
     
     // 基本構成を決定
     let baseStructure = ''
@@ -221,10 +225,7 @@ export function FamilyCompositionModal({
     const childrenPart = children_count > 0 ? `お子さん${children_count}人` : ''
     
     // 祖父母の情報
-    const grandparentsInfo = []
-    if (has_grandfather) grandparentsInfo.push('おじいちゃん')
-    if (has_grandmother) grandparentsInfo.push('おばあちゃん')
-    const grandparentsPart = grandparentsInfo.length > 0 ? grandparentsInfo.join('・') : ''
+    const grandparentsPart = has_grandparents ? '三世代同居' : ''
     
     // ペットの情報
     const petsPart = has_pets && formData.pets.length > 0 ? `ペット${formData.pets.length}匹` : ''
@@ -253,7 +254,7 @@ export function FamilyCompositionModal({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold text-gray-800">
-            <MdFamilyRestroom className="h-6 w-6 text-gray-600" />
+            <MdFamilyRestroom className="h-6 w-6 text-slate-600" />
             {familyData ? '家族情報を編集' : '家族情報を登録'}
           </DialogTitle>
           <DialogDescription className="text-gray-600">
@@ -261,7 +262,7 @@ export function FamilyCompositionModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+        <form onSubmit={handleSubmit} className="space-y-8 pt-4">
           {/* 保護者名 */}
           <div className="space-y-2">
             <Label htmlFor="parent_name" className="text-sm font-medium text-gray-700">
@@ -272,19 +273,19 @@ export function FamilyCompositionModal({
               value={formData.parent_name}
               onChange={(e) => setFormData(prev => ({ ...prev, parent_name: e.target.value }))}
               placeholder="例: 田中花子"
-              className="border-gray-200 focus:border-gray-400"
+              className="border-slate-200 focus:border-slate-400"
               required
             />
           </div>
 
           {/* 家族構成 */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
               <Users className="h-4 w-4" />
               家族構成
             </Label>
             
-            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -330,35 +331,35 @@ export function FamilyCompositionModal({
                   />
                   <Label htmlFor="has_pets" className="text-sm">ペット</Label>
                 </div>
+              </div>
 
-                <div className="space-y-2 col-span-2 md:col-span-3">
-                  <Label className="text-sm">子どもの人数</Label>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateFamilyMember('children_count', Math.max(0, formData.family_members.children_count - 1))}
-                      disabled={formData.family_members.children_count <= 0}
-                    >
-                      -
-                    </Button>
-                    <span className="px-4 py-2 bg-white rounded border">{formData.family_members.children_count}人</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => updateFamilyMember('children_count', formData.family_members.children_count + 1)}
-                    >
-                      +
-                    </Button>
-                  </div>
+              <div className="space-y-2">
+                <Label className="text-sm">子どもの人数</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => updateFamilyMember('children_count', Math.max(0, formData.family_members.children_count - 1))}
+                    disabled={formData.family_members.children_count <= 0}
+                  >
+                    -
+                  </Button>
+                  <span className="px-4 py-2 bg-white rounded border">{formData.family_members.children_count}人</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => updateFamilyMember('children_count', formData.family_members.children_count + 1)}
+                  >
+                    +
+                  </Button>
                 </div>
               </div>
 
-              <div className="mt-3 p-2 bg-white rounded border border-gray-300 col-span-2 md:col-span-3">
-                <div className="text-sm text-gray-600 mb-1">家族構成プレビュー:</div>
-                <Badge variant="outline" className="text-gray-700 border-gray-400 bg-white">
+              <div className="mt-3 p-2 bg-white rounded border border-slate-300">
+                <div className="text-sm text-slate-600 mb-1">家族構成プレビュー:</div>
+                <Badge variant="outline" className="text-slate-700 border-slate-400 bg-white">
                   {getFamilyStructureDescription()}
                 </Badge>
               </div>
@@ -374,12 +375,12 @@ export function FamilyCompositionModal({
               </Label>
               
               {formData.children.map((child, index) => (
-                <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                  <h4 className="font-medium text-gray-800 mb-3">
+                <div key={index} className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                  <h4 className="font-medium text-orange-800 mb-3">
                     {index + 1}人目のお子さん
                   </h4>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label className="text-sm">お名前</Label>
                       <Input
@@ -417,7 +418,7 @@ export function FamilyCompositionModal({
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                     <div className="space-y-2">
                       <Label className="text-sm">アレルギー・注意点</Label>
                       <Textarea
@@ -446,7 +447,7 @@ export function FamilyCompositionModal({
                     <Label className="text-sm font-medium text-gray-700 mb-3 block">
                       {child.name || `${index + 1}人目のお子さん`}の悩み・相談事（任意）
                     </Label>
-                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                         {[
                           '睡眠の悩み',
@@ -458,7 +459,7 @@ export function FamilyCompositionModal({
                           '運動発達',
                           '人見知り',
                           '夜泣き',
-                          '癇癪',
+                          '癉癪',
                           '兄弟げんか',
                           '習い事選び',
                           '保育園・幼稚園',
@@ -487,10 +488,10 @@ export function FamilyCompositionModal({
                       </div>
                       
                       {child.concerns && child.concerns.length > 0 && (
-                        <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
+                        <div className="mt-2 p-2 bg-white rounded border border-gray-300">
                           <div className="flex flex-wrap gap-1">
                             {child.concerns.map((concern, cIndex) => (
-                              <Badge key={cIndex} variant="outline" className="text-xs text-gray-600 border-gray-400">
+                              <Badge key={cIndex} variant="outline" className="text-xs text-gray-600 border-gray-300">
                                 {concern}
                               </Badge>
                             ))}
@@ -517,7 +518,7 @@ export function FamilyCompositionModal({
                   onClick={addPet}
                   size="sm"
                   variant="outline"
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   ペット追加
@@ -525,9 +526,9 @@ export function FamilyCompositionModal({
               </div>
               
               {formData.pets.map((pet, index) => (
-                <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div key={index} className="bg-purple-50 p-4 rounded-lg border border-purple-200">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-gray-800">
+                    <h4 className="font-medium text-purple-800">
                       ペット {index + 1}
                     </h4>
                     <Button
@@ -548,7 +549,7 @@ export function FamilyCompositionModal({
                         value={pet.name}
                         onChange={(e) => updatePet(index, 'name', e.target.value)}
                         placeholder="例: ポチ"
-                        className="border-gray-200 focus:border-gray-400"
+                        className="border-purple-200 focus:border-purple-400"
                       />
                     </div>
                     
@@ -557,7 +558,7 @@ export function FamilyCompositionModal({
                       <select
                         value={pet.type}
                         onChange={(e) => updatePet(index, 'type', e.target.value as 'dog' | 'cat' | 'other')}
-                        className="w-full px-3 py-2 border border-gray-200 rounded-md focus:border-gray-400"
+                        className="w-full px-3 py-2 border border-purple-200 rounded-md focus:border-purple-400"
                       >
                         <option value="dog">犬</option>
                         <option value="cat">猫</option>
@@ -571,7 +572,7 @@ export function FamilyCompositionModal({
                         value={pet.age}
                         onChange={(e) => updatePet(index, 'age', e.target.value)}
                         placeholder="例: 3歳"
-                        className="border-gray-200 focus:border-gray-400"
+                        className="border-purple-200 focus:border-purple-400"
                       />
                     </div>
                   </div>
@@ -579,6 +580,65 @@ export function FamilyCompositionModal({
               ))}
             </div>
           )}
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {[
+                  '睡眠の悩み',
+                  '食事の好き嫌い',
+                  '発達について',
+                  'イヤイヤ期',
+                  'おむつ・トイレ',
+                  '言葉の発達',
+                  '運動発達',
+                  '人見知り',
+                  '夜泣き',
+                  '癇癪',
+                  '兄弟げんか',
+                  '習い事選び',
+                  '保育園・幼稚園',
+                  '友達関係',
+                  'しつけ・マナー',
+                  'その他'
+                ].map((concern) => (
+                  <div key={concern} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`concern_${concern}`}
+                      checked={formData.concerns.includes(concern)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setFormData(prev => ({
+                            ...prev,
+                            concerns: [...prev.concerns, concern]
+                          }))
+                        } else {
+                          setFormData(prev => ({
+                            ...prev,
+                            concerns: prev.concerns.filter(c => c !== concern)
+                          }))
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`concern_${concern}`} className="text-sm text-orange-800">
+                      {concern}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              
+              {formData.concerns.length > 0 && (
+                <div className="mt-3 p-2 bg-white rounded border border-orange-300">
+                  <div className="text-sm text-orange-600 mb-1">選択された悩み:</div>
+                  <div className="flex flex-wrap gap-1">
+                    {formData.concerns.map((concern, index) => (
+                      <Badge key={index} className="bg-orange-100 text-orange-700 border-orange-300">
+                        {concern}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* アクションボタン */}
           <div className="flex gap-3 pt-4">
@@ -593,7 +653,7 @@ export function FamilyCompositionModal({
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white"
+              className="flex-1 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white"
               disabled={isSubmitting}
             >
               {isSubmitting ? (

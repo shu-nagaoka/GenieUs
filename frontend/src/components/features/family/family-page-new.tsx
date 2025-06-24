@@ -31,6 +31,7 @@ interface Child {
   characteristics: string
   allergies: string
   medical_notes: string
+  concerns?: string[]
 }
 
 interface Pet {
@@ -52,7 +53,6 @@ interface FamilyComposition {
   }
   pets: Pet[]
   children: Child[]
-  concerns: string[]
   living_situation: string
 }
 
@@ -97,8 +97,7 @@ export default function FamilyPageNew() {
             has_pets: false // 既存データではペット情報がないため
           },
           pets: [], // 既存データではペット情報がないため
-          children: apiData.children,
-          concerns: typeof apiData.concerns === 'string' ? [apiData.concerns] : apiData.concerns || [],
+          children: apiData.children.map(child => ({...child, concerns: []})),
           living_situation: ''
         }
         setFamilyData(convertedData)
@@ -120,8 +119,11 @@ export default function FamilyPageNew() {
       const apiData = {
         parent_name: data.parent_name,
         family_structure: generateFamilyStructureString(data.family_members),
-        concerns: data.concerns.join(', '),
-        children: data.children
+        concerns: '', // 子どもごとの悩みから統合
+        children: data.children.map(child => ({
+          ...child,
+          concerns: undefined // APIには送信しない
+        }))
       }
 
       const result = hasData 
@@ -257,7 +259,7 @@ export default function FamilyPageNew() {
               <div className="flex items-center space-x-3">
                 <Button 
                   onClick={() => setShowModal(true)}
-                  className="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white shadow-lg"
+                  className="bg-gradient-to-r from-gray-400 to-gray-500 hover:from-slate-700 hover:to-slate-800 text-white shadow-lg"
                 >
                   {hasData ? (
                     <>
@@ -294,7 +296,7 @@ export default function FamilyPageNew() {
                 <Button 
                   onClick={() => setShowModal(true)}
                   size="lg"
-                  className="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white shadow-lg"
+                  className="bg-gradient-to-r from-gray-400 to-gray-500 hover:from-slate-700 hover:to-slate-800 text-white shadow-lg"
                 >
                   <Plus className="h-5 w-5 mr-2" />
                   家族情報を登録する
@@ -306,12 +308,12 @@ export default function FamilyPageNew() {
             <>
               {/* 家族構成サマリー */}
               <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-slate-600 to-slate-700 text-white rounded-t-lg">
+                <CardHeader className="bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-t-lg">
                   <CardTitle className="flex items-center gap-3">
                     <Users className="h-6 w-6" />
                     家族構成
                   </CardTitle>
-                  <CardDescription className="text-slate-100">
+                  <CardDescription className="text-gray-100">
                     {familyData?.parent_name}さんのご家族
                   </CardDescription>
                 </CardHeader>
@@ -363,7 +365,7 @@ export default function FamilyPageNew() {
               {/* 子どもの詳細情報 */}
               {familyData?.children && familyData.children.length > 0 && (
                 <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                  <CardHeader className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-t-lg">
+                  <CardHeader className="bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-t-lg">
                     <CardTitle className="flex items-center gap-3">
                       <MdChildCare className="h-6 w-6" />
                       お子さんの情報
@@ -372,13 +374,13 @@ export default function FamilyPageNew() {
                   <CardContent className="p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {familyData.children.map((child, index) => (
-                        <div key={index} className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                        <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                           <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-bold text-orange-800 flex items-center gap-2">
+                            <h4 className="font-bold text-gray-800 flex items-center gap-2">
                               <Baby className="h-5 w-5" />
                               {child.name}
                             </h4>
-                            <Badge variant="outline" className="text-orange-700 border-orange-300">
+                            <Badge variant="outline" className="text-gray-700 border-gray-300">
                               {child.gender === 'male' ? '男の子' : child.gender === 'female' ? '女の子' : ''}
                             </Badge>
                           </div>
@@ -386,14 +388,28 @@ export default function FamilyPageNew() {
                           <div className="space-y-2 text-sm">
                             {child.birth_date && (
                               <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-orange-600" />
+                                <Calendar className="h-4 w-4 text-gray-600" />
                                 <span>{child.birth_date} ({calculateAge(child.birth_date)})</span>
+                              </div>
+                            )}
+                            
+                            {/* 子どもごとの悩み表示 */}
+                            {child.concerns && child.concerns.length > 0 && (
+                              <div>
+                                <div className="font-medium text-gray-700 mb-2">悩み・相談事</div>
+                                <div className="flex flex-wrap gap-1">
+                                  {child.concerns.map((concern, cIndex) => (
+                                    <Badge key={cIndex} variant="outline" className="text-xs text-gray-600 border-gray-400">
+                                      {concern}
+                                    </Badge>
+                                  ))}
+                                </div>
                               </div>
                             )}
                             
                             {child.characteristics && (
                               <div>
-                                <div className="font-medium text-orange-700 mb-1">性格・特徴</div>
+                                <div className="font-medium text-gray-700 mb-1">性格・特徴</div>
                                 <div className="text-gray-700">{child.characteristics}</div>
                               </div>
                             )}
@@ -448,28 +464,6 @@ export default function FamilyPageNew() {
                 </Card>
               )}
 
-              {/* 相談事・悩み */}
-              {familyData?.concerns && familyData.concerns.length > 0 && (
-                <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                  <CardHeader className="bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-t-lg">
-                    <CardTitle className="flex items-center gap-3">
-                      <Heart className="h-6 w-6" />
-                      子育ての悩み・相談事
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                      <div className="flex flex-wrap gap-2">
-                        {familyData.concerns.map((concern, index) => (
-                          <Badge key={index} className="bg-orange-100 text-orange-700 border-orange-300">
-                            {concern}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
             </>
           )}
         </div>

@@ -27,7 +27,8 @@ import {
   Edit,
   Grid3X3,
   List,
-  LayoutGrid
+  LayoutGrid,
+  Clock
 } from 'lucide-react'
 import { MdChildCare, MdPhotoCamera, MdTimeline } from 'react-icons/md'
 import { FaChild, FaCamera, FaChartLine, FaHeart } from 'react-icons/fa'
@@ -271,11 +272,45 @@ export default function GrowthTrackingPage() {
       records = growthRecords.filter(r => r.childName === childName)
     }
     
+    // 日付計算用
+    const now = new Date()
+    const thisMonth = records.filter(r => {
+      const recordDate = new Date(r.date)
+      return recordDate.getMonth() === now.getMonth() && recordDate.getFullYear() === now.getFullYear()
+    }).length
+    
+    // 連続記録日数計算
+    const sortedRecords = records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    let consecutiveDays = 0
+    const today = new Date()
+    
+    for (let i = 0; i < sortedRecords.length; i++) {
+      const recordDate = new Date(sortedRecords[i].date)
+      const diffDays = Math.floor((today.getTime() - recordDate.getTime()) / (1000 * 60 * 60 * 24))
+      
+      if (diffDays === consecutiveDays) {
+        consecutiveDays++
+      } else {
+        break
+      }
+    }
+    
+    // 最新記録からの日数
+    const daysSinceLastRecord = records.length > 0 ? 
+      Math.floor((now.getTime() - new Date(sortedRecords[0].date).getTime()) / (1000 * 60 * 60 * 24)) : 0
+    
+    // AI検出率
+    const aiDetectedCount = records.filter(r => r.detectedBy === 'genie').length
+    const aiDetectionRate = records.length > 0 ? Math.round((aiDetectedCount / records.length) * 100) : 0
+    
     return {
       totalRecords: records.length,
       photosCount: records.filter(r => r.imageUrl).length,
       milestonesCount: records.filter(r => r.type === 'milestone' || r.type === 'skills').length,
-      avgConfidence: records.length > 0 ? Math.round(records.reduce((acc, r) => acc + (r.confidence || 95), 0) / records.length) : 0
+      thisMonthCount: thisMonth,
+      consecutiveDays: consecutiveDays,
+      daysSinceLastRecord: daysSinceLastRecord,
+      aiDetectionRate: aiDetectionRate
     }
   }
 
@@ -284,42 +319,42 @@ export default function GrowthTrackingPage() {
   return (
     <AppLayout>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-teal-50">
-        {/* 固定ヘッダー */}
-        <div className="fixed top-0 left-0 md:left-64 right-0 z-40 bg-white/90 backdrop-blur-md border-b border-blue-100 shadow-sm">
-          <div className="max-w-6xl mx-auto px-4 py-4">
+        {/* ページヘッダー */}
+        <div className="bg-white/80 backdrop-blur-sm border-b border-blue-100">
+          <div className="max-w-6xl mx-auto px-4 py-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-teal-600 flex items-center justify-center shadow-lg">
-                  <MdTimeline className="h-5 w-5 text-white" />
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-teal-600 flex items-center justify-center shadow-lg">
+                  <MdTimeline className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-800">成長記録</h1>
-                  <p className="text-sm text-gray-600">からだ・ことば・できることを記録</p>
+                  <h1 className="text-3xl font-bold text-gray-800">お子さんの成長記録</h1>
+                  <p className="text-gray-600">からだ・ことば・できることを記録して成長を見守ります</p>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 <Button 
                   onClick={() => setShowCreateModal(true)}
-                  size="sm"
                   className="bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 text-white shadow-lg"
                 >
-                  <Plus className="h-4 w-4 mr-1" />
+                  <Plus className="h-4 w-4 mr-2" />
                   記録を追加
                 </Button>
                 <Link href="/chat">
-                  <Button variant="outline" size="sm" className="border-blue-300 text-blue-700 hover:bg-blue-50">
-                    <Camera className="h-4 w-4 mr-1" />
-                    Genie
+                  <Button variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50">
+                    <Camera className="h-4 w-4 mr-2" />
+                    Genieで記録
                   </Button>
                 </Link>
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-lg border border-blue-200">
+                  <GiMagicLamp className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-700 font-medium">AI自動検出</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* メインヘッダー（スペーサー） */}
-        <div className="h-20"></div>
 
         <div className="max-w-6xl mx-auto p-6 space-y-8">
           {/* 成長サマリーカード */}
@@ -363,26 +398,22 @@ export default function GrowthTrackingPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl">
+            <Card className="bg-gradient-to-br from-slate-400 to-slate-500 text-white border-0 shadow-xl">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-emerald-100 text-sm font-medium">記録品質</p>
-                    <p className="text-2xl font-bold mt-1">
-                      {selectedChildStats.avgConfidence >= 90 ? '優秀' : 
-                       selectedChildStats.avgConfidence >= 70 ? '良好' : 
-                       selectedChildStats.avgConfidence >= 50 ? '普通' : '要改善'}
-                    </p>
-                    <p className="text-emerald-200 text-xs">記録の詳しさ</p>
+                    <p className="text-slate-100 text-sm font-medium">今月の記録</p>
+                    <p className="text-2xl font-bold mt-1">{selectedChildStats.thisMonthCount}件</p>
+                    <p className="text-slate-200 text-xs">継続記録中</p>
                   </div>
-                  <Sparkles className="h-8 w-8 text-emerald-200" />
+                  <Calendar className="h-8 w-8 text-slate-200" />
                 </div>
               </CardContent>
             </Card>
           </div>
 
           {/* 子ども選択とフィルター */}
-          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm min-h-[140px]">
             <CardHeader className="bg-gradient-to-r from-blue-500 to-teal-600 text-white rounded-t-lg pb-4">
               <CardTitle className="flex items-center gap-3 text-lg">
                 <Baby className="h-5 w-5" />
@@ -450,7 +481,7 @@ export default function GrowthTrackingPage() {
           </Card>
 
           {/* 成長タイムライン */}
-          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm min-h-[400px]">
             <CardHeader className="bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-t-lg">
               <div className="flex items-center justify-between">
                 <div>
@@ -497,6 +528,19 @@ export default function GrowthTrackingPage() {
                     <div className="inline-flex items-center gap-2">
                       <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                       <span className="text-gray-600">成長記録を読み込み中...</span>
+                    </div>
+                    {/* スケルトンローダー */}
+                    <div className="mt-8 space-y-6">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-start gap-6">
+                          <div className="w-16 h-16 bg-gray-200 rounded-full animate-pulse"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                            <div className="h-3 bg-gray-100 rounded animate-pulse w-3/4 mb-2"></div>
+                            <div className="h-3 bg-gray-100 rounded animate-pulse w-1/2"></div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
