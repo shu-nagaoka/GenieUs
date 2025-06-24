@@ -24,7 +24,10 @@ import {
   Target,
   Award,
   Plus,
-  Edit
+  Edit,
+  Grid3X3,
+  List,
+  LayoutGrid
 } from 'lucide-react'
 import { MdChildCare, MdPhotoCamera, MdTimeline } from 'react-icons/md'
 import { FaChild, FaCamera, FaChartLine, FaHeart } from 'react-icons/fa'
@@ -63,9 +66,12 @@ interface EditableGrowthRecord {
   development_stage?: string
 }
 
+type ViewMode = 'detailed' | 'compact'
+
 export default function GrowthTrackingPage() {
   const [selectedChild, setSelectedChild] = useState<string>('all')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [viewMode, setViewMode] = useState<ViewMode>('detailed')
   const [growthRecords, setGrowthRecords] = useState<GrowthRecord[]>([])
   const [children, setChildren] = useState<ChildInfo[]>([])
   const [loading, setLoading] = useState(true)
@@ -357,15 +363,19 @@ export default function GrowthTrackingPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-sky-500 to-sky-600 text-white border-0 shadow-xl">
+            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sky-100 text-sm font-medium">AI精度</p>
-                    <p className="text-2xl font-bold mt-1">{selectedChildStats.avgConfidence}%</p>
-                    <p className="text-sky-200 text-xs">検出信頼度</p>
+                    <p className="text-emerald-100 text-sm font-medium">記録品質</p>
+                    <p className="text-2xl font-bold mt-1">
+                      {selectedChildStats.avgConfidence >= 90 ? '優秀' : 
+                       selectedChildStats.avgConfidence >= 70 ? '良好' : 
+                       selectedChildStats.avgConfidence >= 50 ? '普通' : '要改善'}
+                    </p>
+                    <p className="text-emerald-200 text-xs">記録の詳しさ</p>
                   </div>
-                  <Target className="h-8 w-8 text-sky-200" />
+                  <Sparkles className="h-8 w-8 text-emerald-200" />
                 </div>
               </CardContent>
             </Card>
@@ -373,17 +383,14 @@ export default function GrowthTrackingPage() {
 
           {/* 子ども選択とフィルター */}
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-blue-500 to-teal-600 text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-3">
-                <Baby className="h-6 w-6" />
-                成長記録フィルター
+            <CardHeader className="bg-gradient-to-r from-blue-500 to-teal-600 text-white rounded-t-lg pb-4">
+              <CardTitle className="flex items-center gap-3 text-lg">
+                <Baby className="h-5 w-5" />
+                フィルター
               </CardTitle>
-              <CardDescription className="text-blue-100">
-                お子さんと記録タイプを選択して成長を確認
-              </CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-2 block">お子さんを選択</label>
                   <Select value={selectedChild} onValueChange={setSelectedChild}>
@@ -445,18 +452,44 @@ export default function GrowthTrackingPage() {
           {/* 成長タイムライン */}
           <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-3">
-                <MdTimeline className="h-6 w-6" />
-                成長タイムライン
-              </CardTitle>
-              <CardDescription className="text-slate-100">
-                時系列で見るお子さんの成長記録
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-3">
+                    <MdTimeline className="h-6 w-6" />
+                    成長タイムライン
+                  </CardTitle>
+                  <CardDescription className="text-slate-100">
+                    時系列で見るお子さんの成長記録
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 bg-white/20 rounded-lg p-1">
+                  <Button
+                    size="sm"
+                    variant={viewMode === 'detailed' ? 'default' : 'ghost'}
+                    onClick={() => setViewMode('detailed')}
+                    className={`h-8 px-3 ${viewMode === 'detailed' ? 'bg-white text-slate-600' : 'text-white hover:bg-white/20'}`}
+                  >
+                    <LayoutGrid className="h-4 w-4 mr-1" />
+                    詳細
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={viewMode === 'compact' ? 'default' : 'ghost'}
+                    onClick={() => setViewMode('compact')}
+                    className={`h-8 px-3 ${viewMode === 'compact' ? 'bg-white text-slate-600' : 'text-white hover:bg-white/20'}`}
+                  >
+                    <List className="h-4 w-4 mr-1" />
+                    一覧
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="p-6">
               <div className="relative">
-                {/* タイムライン線 */}
-                <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 to-teal-300"></div>
+                {/* タイムライン線（詳細表示時のみ） */}
+                {viewMode === 'detailed' && (
+                  <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 to-teal-300"></div>
+                )}
                 
                 {/* ローディング表示 */}
                 {loading && (
@@ -503,8 +536,11 @@ export default function GrowthTrackingPage() {
 
                 {/* 成長記録タイムライン */}
                 {!loading && getFilteredRecords().length > 0 && (
-                  <div className="space-y-8">
-                    {getFilteredRecords().map((record, index) => (
+                  <>
+                    {viewMode === 'detailed' ? (
+                      // 詳細表示
+                      <div className="space-y-8">
+                        {getFilteredRecords().map((record, index) => (
                       <div key={record.id} className="relative flex items-start gap-6">
                         {/* タイムライン点 */}
                         <div className={`relative z-10 flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br ${getRecordColor(record.type)} flex items-center justify-center shadow-lg text-white`}>
@@ -605,9 +641,67 @@ export default function GrowthTrackingPage() {
                             </div>
                           </CardContent>
                         </Card>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    ) : (
+                      // コンパクト表示
+                      <div className="space-y-3">
+                        {getFilteredRecords().map((record, index) => (
+                          <div key={record.id} className="bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                            <div className="flex items-center gap-4 p-4">
+                              {/* アイコン */}
+                              <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br ${getRecordColor(record.type)} flex items-center justify-center text-white`}>
+                                {getRecordIcon(record.category)}
+                              </div>
+                              
+                              {/* コンテンツ */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="font-semibold text-gray-800 truncate">{record.title}</h4>
+                                  <Badge className={`text-xs bg-gradient-to-r ${getRecordColor(record.type)} text-white`}>
+                                    {categoryLabels[record.type] || 
+                                     detailCategoryLabels[record.category] ||
+                                     (record.type === 'physical' ? 'からだの成長' :
+                                      record.type === 'emotional' ? 'お友達との関わり' :
+                                      record.type === 'cognitive' ? 'できること' :
+                                      record.type === 'milestone' ? 'できること' : '写真')}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-gray-600">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {formatDate(record.date)}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Baby className="h-3 w-3" />
+                                    {record.childName}
+                                  </span>
+                                  <span>{record.ageInMonths}ヶ月</span>
+                                  {record.detectedBy === 'genie' && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <GiMagicLamp className="h-3 w-3 mr-1" />
+                                      AI検出
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* アクションボタン */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditRecord(record)}
+                                className="border-blue-300 text-blue-700 hover:bg-blue-50 flex-shrink-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </CardContent>

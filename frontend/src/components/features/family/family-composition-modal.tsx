@@ -43,13 +43,14 @@ interface FamilyComposition {
   family_members: {
     has_father: boolean
     has_mother: boolean
-    has_grandparents: boolean
+    has_grandfather: boolean
+    has_grandmother: boolean
     children_count: number
     has_pets: boolean
   }
   pets: Pet[]
   children: Child[]
-  concerns: string
+  concerns: string[]
   living_situation: string
 }
 
@@ -71,21 +72,14 @@ export function FamilyCompositionModal({
     family_members: {
       has_father: false,
       has_mother: false,
-      has_grandparents: false,
-      children_count: 1,
+      has_grandfather: false,
+      has_grandmother: false,
+      children_count: 0,
       has_pets: false
     },
     pets: [],
-    children: [{ 
-      name: '', 
-      age: '', 
-      gender: '', 
-      birth_date: '', 
-      characteristics: '', 
-      allergies: '', 
-      medical_notes: '' 
-    }],
-    concerns: '',
+    children: [],
+    concerns: [],
     living_situation: ''
   })
   
@@ -102,8 +96,9 @@ export function FamilyCompositionModal({
         family_members: {
           has_father: false,
           has_mother: false,
-          has_grandparents: false,
-          children_count: 1,
+          has_grandfather: false,
+          has_grandmother: false,
+          children_count: 0,
           has_pets: false
         },
         pets: [],
@@ -116,7 +111,7 @@ export function FamilyCompositionModal({
           allergies: '', 
           medical_notes: '' 
         }],
-        concerns: '',
+        concerns: [],
         living_situation: ''
       })
     }
@@ -288,8 +283,8 @@ export function FamilyCompositionModal({
               家族構成
             </Label>
             
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="has_father"
@@ -310,11 +305,20 @@ export function FamilyCompositionModal({
                 
                 <div className="flex items-center space-x-2">
                   <Checkbox
-                    id="has_grandparents"
-                    checked={formData.family_members.has_grandparents}
-                    onCheckedChange={(checked) => updateFamilyMember('has_grandparents', checked)}
+                    id="has_grandfather"
+                    checked={formData.family_members.has_grandfather}
+                    onCheckedChange={(checked) => updateFamilyMember('has_grandfather', checked)}
                   />
-                  <Label htmlFor="has_grandparents" className="text-sm">おじいちゃん・おばあちゃん</Label>
+                  <Label htmlFor="has_grandfather" className="text-sm">おじいちゃん</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has_grandmother"
+                    checked={formData.family_members.has_grandmother}
+                    onCheckedChange={(checked) => updateFamilyMember('has_grandmother', checked)}
+                  />
+                  <Label htmlFor="has_grandmother" className="text-sm">おばあちゃん</Label>
                 </div>
                 
                 <div className="flex items-center space-x-2">
@@ -351,7 +355,7 @@ export function FamilyCompositionModal({
                 </div>
               </div>
 
-              <div className="mt-4 p-3 bg-white rounded border border-slate-300">
+              <div className="mt-3 p-2 bg-white rounded border border-slate-300">
                 <div className="text-sm text-slate-600 mb-1">家族構成プレビュー:</div>
                 <Badge variant="outline" className="text-slate-700 border-slate-400 bg-white">
                   {getFamilyStructureDescription()}
@@ -369,8 +373,8 @@ export function FamilyCompositionModal({
               </Label>
               
               {formData.children.map((child, index) => (
-                <div key={index} className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
-                  <h4 className="font-medium text-indigo-800 mb-3">
+                <div key={index} className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                  <h4 className="font-medium text-orange-800 mb-3">
                     {index + 1}人目のお子さん
                   </h4>
                   
@@ -381,7 +385,7 @@ export function FamilyCompositionModal({
                         value={child.name}
                         onChange={(e) => updateChild(index, 'name', e.target.value)}
                         placeholder="例: 太郎"
-                        className="border-indigo-200 focus:border-indigo-400"
+                        className="border-orange-200 focus:border-orange-400"
                       />
                     </div>
                     
@@ -390,7 +394,7 @@ export function FamilyCompositionModal({
                       <select
                         value={child.gender}
                         onChange={(e) => updateChild(index, 'gender', e.target.value)}
-                        className="w-full px-3 py-2 border border-indigo-200 rounded-md focus:border-indigo-400"
+                        className="w-full px-3 py-2 border border-orange-200 rounded-md focus:border-orange-400"
                       >
                         <option value="">選択してください</option>
                         <option value="male">男の子</option>
@@ -407,7 +411,7 @@ export function FamilyCompositionModal({
                         type="date"
                         value={child.birth_date}
                         onChange={(e) => updateChild(index, 'birth_date', e.target.value)}
-                        className="border-indigo-200 focus:border-indigo-400"
+                        className="border-orange-200 focus:border-orange-400"
                       />
                     </div>
                   </div>
@@ -420,7 +424,7 @@ export function FamilyCompositionModal({
                         onChange={(e) => updateChild(index, 'allergies', e.target.value)}
                         placeholder="食物アレルギー、薬物アレルギーなど"
                         rows={2}
-                        className="border-indigo-200 focus:border-indigo-400"
+                        className="border-orange-200 focus:border-orange-400"
                       />
                     </div>
                     
@@ -431,7 +435,7 @@ export function FamilyCompositionModal({
                         onChange={(e) => updateChild(index, 'characteristics', e.target.value)}
                         placeholder="活発、人見知り、好きなことなど"
                         rows={2}
-                        className="border-indigo-200 focus:border-indigo-400"
+                        className="border-orange-200 focus:border-orange-400"
                       />
                     </div>
                   </div>
@@ -517,19 +521,69 @@ export function FamilyCompositionModal({
           )}
 
           {/* 子育ての悩み・相談事 */}
-          <div className="space-y-2">
-            <Label htmlFor="concerns" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+          <div className="space-y-4">
+            <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
               <Heart className="h-4 w-4" />
               子育ての悩み・相談事（任意）
             </Label>
-            <Textarea
-              id="concerns"
-              value={formData.concerns}
-              onChange={(e) => setFormData(prev => ({ ...prev, concerns: e.target.value }))}
-              placeholder="睡眠の悩み、食事の好き嫌い、発達について気になることなど、どんなことでもお聞かせください"
-              rows={4}
-              className="border-slate-200 focus:border-slate-400"
-            />
+            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {[
+                  '睡眠の悩み',
+                  '食事の好き嫌い',
+                  '発達について',
+                  'イヤイヤ期',
+                  'おむつ・トイレ',
+                  '言葉の発達',
+                  '運動発達',
+                  '人見知り',
+                  '夜泣き',
+                  '癇癪',
+                  '兄弟げんか',
+                  '習い事選び',
+                  '保育園・幼稚園',
+                  '友達関係',
+                  'しつけ・マナー',
+                  'その他'
+                ].map((concern) => (
+                  <div key={concern} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`concern_${concern}`}
+                      checked={formData.concerns.includes(concern)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setFormData(prev => ({
+                            ...prev,
+                            concerns: [...prev.concerns, concern]
+                          }))
+                        } else {
+                          setFormData(prev => ({
+                            ...prev,
+                            concerns: prev.concerns.filter(c => c !== concern)
+                          }))
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`concern_${concern}`} className="text-sm text-orange-800">
+                      {concern}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              
+              {formData.concerns.length > 0 && (
+                <div className="mt-3 p-2 bg-white rounded border border-orange-300">
+                  <div className="text-sm text-orange-600 mb-1">選択された悩み:</div>
+                  <div className="flex flex-wrap gap-1">
+                    {formData.concerns.map((concern, index) => (
+                      <Badge key={index} className="bg-orange-100 text-orange-700 border-orange-300">
+                        {concern}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* アクションボタン */}

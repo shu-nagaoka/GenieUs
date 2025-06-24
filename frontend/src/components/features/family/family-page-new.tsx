@@ -45,13 +45,14 @@ interface FamilyComposition {
   family_members: {
     has_father: boolean
     has_mother: boolean
-    has_grandparents: boolean
+    has_grandfather: boolean
+    has_grandmother: boolean
     children_count: number
     has_pets: boolean
   }
   pets: Pet[]
   children: Child[]
-  concerns: string
+  concerns: string[]
   living_situation: string
 }
 
@@ -90,13 +91,14 @@ export default function FamilyPageNew() {
           family_members: {
             has_father: apiData.family_structure.includes('夫婦') || apiData.family_structure.includes('パパ'),
             has_mother: apiData.family_structure.includes('夫婦') || apiData.family_structure.includes('ママ'),
-            has_grandparents: apiData.family_structure.includes('三世代') || apiData.family_structure.includes('祖父母'),
+            has_grandfather: apiData.family_structure.includes('三世代') || apiData.family_structure.includes('祖父母') || apiData.family_structure.includes('おじいちゃん'),
+            has_grandmother: apiData.family_structure.includes('三世代') || apiData.family_structure.includes('祖父母') || apiData.family_structure.includes('おばあちゃん'),
             children_count: apiData.children.length,
             has_pets: false // 既存データではペット情報がないため
           },
           pets: [], // 既存データではペット情報がないため
           children: apiData.children,
-          concerns: apiData.concerns,
+          concerns: typeof apiData.concerns === 'string' ? [apiData.concerns] : apiData.concerns || [],
           living_situation: ''
         }
         setFamilyData(convertedData)
@@ -118,7 +120,7 @@ export default function FamilyPageNew() {
       const apiData = {
         parent_name: data.parent_name,
         family_structure: generateFamilyStructureString(data.family_members),
-        concerns: data.concerns,
+        concerns: data.concerns.join(', '),
         children: data.children
       }
 
@@ -151,8 +153,11 @@ export default function FamilyPageNew() {
       parts.push(`子ども${members.children_count}人`)
     }
     
-    if (members.has_grandparents) {
-      parts.push('三世代同居')
+    if (members.has_grandfather || members.has_grandmother) {
+      const grandparents = []
+      if (members.has_grandfather) grandparents.push('おじいちゃん')
+      if (members.has_grandmother) grandparents.push('おばあちゃん')
+      parts.push(grandparents.join('・'))
     }
     
     return parts.join('+') || 'その他'
@@ -176,7 +181,7 @@ export default function FamilyPageNew() {
   const getFamilyStructureDisplay = () => {
     if (!familyData) return ''
     
-    const { has_father, has_mother, has_grandparents, children_count, has_pets } = familyData.family_members
+    const { has_father, has_mother, has_grandfather, has_grandmother, children_count, has_pets } = familyData.family_members
     
     // 基本構成を決定
     let baseStructure = ''
@@ -192,7 +197,10 @@ export default function FamilyPageNew() {
     const childrenPart = children_count > 0 ? `お子さん${children_count}人` : ''
     
     // 祖父母の情報
-    const grandparentsPart = has_grandparents ? '三世代同居' : ''
+    const grandparentsInfo = []
+    if (has_grandfather) grandparentsInfo.push('おじいちゃん')
+    if (has_grandmother) grandparentsInfo.push('おばあちゃん')
+    const grandparentsPart = grandparentsInfo.length > 0 ? grandparentsInfo.join('・') : ''
     
     // ペットの情報
     const petsPart = has_pets && familyData.pets.length > 0 ? `ペット${familyData.pets.length}匹` : ''
@@ -337,7 +345,7 @@ export default function FamilyPageNew() {
                       <Heart className="h-8 w-8 mx-auto text-purple-600 mb-2" />
                       <div className="text-sm text-gray-600">祖父母</div>
                       <div className="font-medium">
-                        {familyData?.family_members.has_grandparents ? '同居' : '別居'}
+                        {(familyData?.family_members.has_grandfather || familyData?.family_members.has_grandmother) ? '同居' : '別居'}
                       </div>
                     </div>
                     
@@ -355,7 +363,7 @@ export default function FamilyPageNew() {
               {/* 子どもの詳細情報 */}
               {familyData?.children && familyData.children.length > 0 && (
                 <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                  <CardHeader className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-t-lg">
+                  <CardHeader className="bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-t-lg">
                     <CardTitle className="flex items-center gap-3">
                       <MdChildCare className="h-6 w-6" />
                       お子さんの情報
@@ -364,13 +372,13 @@ export default function FamilyPageNew() {
                   <CardContent className="p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {familyData.children.map((child, index) => (
-                        <div key={index} className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                        <div key={index} className="bg-orange-50 p-4 rounded-lg border border-orange-200">
                           <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-bold text-blue-800 flex items-center gap-2">
+                            <h4 className="font-bold text-orange-800 flex items-center gap-2">
                               <Baby className="h-5 w-5" />
                               {child.name}
                             </h4>
-                            <Badge variant="outline" className="text-blue-700 border-blue-300">
+                            <Badge variant="outline" className="text-orange-700 border-orange-300">
                               {child.gender === 'male' ? '男の子' : child.gender === 'female' ? '女の子' : ''}
                             </Badge>
                           </div>
@@ -378,14 +386,14 @@ export default function FamilyPageNew() {
                           <div className="space-y-2 text-sm">
                             {child.birth_date && (
                               <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4 text-blue-600" />
+                                <Calendar className="h-4 w-4 text-orange-600" />
                                 <span>{child.birth_date} ({calculateAge(child.birth_date)})</span>
                               </div>
                             )}
                             
                             {child.characteristics && (
                               <div>
-                                <div className="font-medium text-blue-700 mb-1">性格・特徴</div>
+                                <div className="font-medium text-orange-700 mb-1">性格・特徴</div>
                                 <div className="text-gray-700">{child.characteristics}</div>
                               </div>
                             )}
@@ -441,17 +449,23 @@ export default function FamilyPageNew() {
               )}
 
               {/* 相談事・悩み */}
-              {familyData?.concerns && (
+              {familyData?.concerns && familyData.concerns.length > 0 && (
                 <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                  <CardHeader className="bg-gradient-to-r from-stone-600 to-stone-700 text-white rounded-t-lg">
+                  <CardHeader className="bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-t-lg">
                     <CardTitle className="flex items-center gap-3">
                       <Heart className="h-6 w-6" />
                       子育ての悩み・相談事
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-6">
-                    <div className="bg-pink-50 p-4 rounded-lg border border-pink-200">
-                      <p className="text-gray-700">{familyData.concerns}</p>
+                    <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                      <div className="flex flex-wrap gap-2">
+                        {familyData.concerns.map((concern, index) => (
+                          <Badge key={index} className="bg-orange-100 text-orange-700 border-orange-300">
+                            {concern}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
