@@ -27,7 +27,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
-import { updateGrowthRecord, deleteGrowthRecord, GrowthRecordUpdateRequest, getChildrenForGrowthRecords, ChildInfo } from '@/lib/api/growth-records'
+import { updateGrowthRecord, deleteGrowthRecord, GrowthRecordUpdateRequest, getChildrenForGrowthRecords, ChildInfo } from '@/libs/api/growth-records'
 import { ImageUpload } from '@/components/features/memories/image-upload'
 
 interface GrowthRecord {

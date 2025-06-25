@@ -18,7 +18,7 @@ import {
   Trash2
 } from 'lucide-react'
 import { FaTrophy } from 'react-icons/fa'
-import { updateEffortRecord, deleteEffortRecord, EffortRecordUpdateRequest } from '@/lib/api/effort-records'
+import { updateEffortRecord, deleteEffortRecord, EffortRecordUpdateRequest } from '@/libs/api/effort-records'
 
 interface EditEffortRecordModalProps {
   open: boolean

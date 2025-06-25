@@ -30,7 +30,7 @@ import {
 import { MdChildCare, MdFamilyRestroom } from 'react-icons/md'
 import { FaHeart, FaStar, FaTrophy } from 'react-icons/fa'
 import Link from 'next/link'
-import { getEffortRecords, getEffortRecordsStats, EffortRecord as ApiEffortRecord } from '@/lib/api/effort-records'
+import { getEffortRecords, getEffortRecordsStats, EffortRecord as ApiEffortRecord } from '@/libs/api/effort-records'
 
 interface HistoricalReport {
   id: string

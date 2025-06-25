@@ -23,7 +23,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
-import { updateMemory, deleteMemory, MemoryRecordUpdateRequest } from '@/lib/api/memories'
+import { updateMemory, deleteMemory, MemoryRecordUpdateRequest } from '@/libs/api/memories'
 import { ImageUpload } from './image-upload'
 
 interface MemoryRecord {

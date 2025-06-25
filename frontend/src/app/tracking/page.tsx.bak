@@ -30,7 +30,7 @@ import { MdChildCare, MdPhotoCamera, MdTimeline } from 'react-icons/md'
 import { FaChild, FaCamera, FaChartLine, FaHeart } from 'react-icons/fa'
 import { GiMagicLamp, GiBabyFace, GiBodyHeight } from 'react-icons/gi'
 import Link from 'next/link'
-import { getGrowthRecords, GrowthRecord as ApiGrowthRecord } from '@/lib/api/growth-records'
+import { getGrowthRecords, GrowthRecord as ApiGrowthRecord } from '@/libs/api/growth-records'
 import { CreateGrowthRecordModal } from '@/components/features/growth/create-growth-record-modal'
 import { EditGrowthRecordModal } from '@/components/features/growth/edit-growth-record-modal'
 

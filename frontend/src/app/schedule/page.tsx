@@ -30,7 +30,7 @@ import { MdEvent, MdVaccines, MdOutdoorGrill } from 'react-icons/md'
 import { FaCalendarAlt, FaStar, FaHeart, FaMapMarkerAlt } from 'react-icons/fa'
 import { GiMagicLamp } from 'react-icons/gi'
 import Link from 'next/link'
-import { getScheduleEvents, ScheduleEvent as ApiScheduleEvent } from '@/lib/api/schedules'
+import { getScheduleEvents, ScheduleEvent as ApiScheduleEvent } from '@/libs/api/schedules'
 import { CreateScheduleModal } from '@/components/features/schedule/create-schedule-modal'
 import { EditScheduleModal } from '@/components/features/schedule/edit-schedule-modal'
 

@@ -17,7 +17,7 @@ import { AlertCircle, Plus, Trash2, Edit, Users, Baby, Heart, Clock } from 'luci
 import { FaBirthdayCake, FaAllergies, FaStethoscope } from 'react-icons/fa';
 import { MdChildCare, MdFamilyRestroom } from 'react-icons/md';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import { getFamilyInfo, registerFamilyInfo, updateFamilyInfo, deleteFamilyInfo as deleteFamilyInfoAPI } from '@/lib/api/family';
+import { getFamilyInfo, registerFamilyInfo, updateFamilyInfo, deleteFamilyInfo as deleteFamilyInfoAPI } from '@/libs/api/family';
 
 interface Child {
   name: string;

@@ -19,7 +19,7 @@ import {
 } from 'react-icons/hi2'
 import { GiMagicLamp, GiSparkles } from 'react-icons/gi'
 import Link from 'next/link'
-import { getAgents, Agent } from '@/lib/api/agents'
+import { getAgents, Agent } from '@/libs/api/agents'
 
 export default function AgentsPage() {
   const [agents, setAgents] = useState<Agent[]>([])

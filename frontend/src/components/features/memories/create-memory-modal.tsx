@@ -22,7 +22,7 @@ import {
   Loader2,
   Upload
 } from 'lucide-react'
-import { createMemory, MemoryRecordCreateRequest } from '@/lib/api/memories'
+import { createMemory, MemoryRecordCreateRequest } from '@/libs/api/memories'
 import { ImageUpload } from './image-upload'
 
 interface CreateMemoryModalProps {

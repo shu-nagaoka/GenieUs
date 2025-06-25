@@ -19,7 +19,7 @@ import {
   Baby
 } from 'lucide-react'
 import { MdVaccines, MdOutdoorGrill } from 'react-icons/md'
-import { createScheduleEvent, ScheduleEventCreateRequest } from '@/lib/api/schedules'
+import { createScheduleEvent, ScheduleEventCreateRequest } from '@/libs/api/schedules'
 
 interface CreateScheduleModalProps {
   open: boolean
