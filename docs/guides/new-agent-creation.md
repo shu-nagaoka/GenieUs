@@ -1,624 +1,776 @@
 # 新エージェント作成ガイド
 
-GenieUsプロジェクトで新しいAIエージェントを作成する完全ガイド
+GenieUsプロジェクトで新しいAIエージェントを作成する完全ガイド（Agent-Firstアーキテクチャ対応）
 
-## 🎯 エージェント作成の基本フロー
+## 🎯 Agent中心設計の基本原則
 
-新エージェントは以下の**6ステップ**で作成します：
-
-```
-1. ドメイン設計 → 2. ツール作成 → 3. エージェント実装 
-     ↓                ↓                ↓
-4. DI統合 → 5. API統合 → 6. テスト・検証
-```
-
-## 📋 Step 1: ドメイン設計
-
-### 1.1 ドメイン定義
-新しいエージェントの専門領域を明確化：
+GenieUsは**Agent-Firstアーキテクチャ**を採用。以下の原則に従って新エージェントを作成します：
 
 ```
-例：睡眠専門エージェント
-- 対象年齢：0-6歳
-- 専門領域：睡眠パターン、夜泣き、昼寝
-- 連携エージェント：栄養、発達、安全性評価
+✅ Agentが担当（推奨）
+- 子育て判断・アドバイス生成
+- 安全性評価・リスク判断
+- 年齢発達評価
+- 専門知識の提供
+
+❌ Agent以外での実装禁止
+- ChildcareAdviserProtocol
+- SafetyAssessorProtocol
+- 子育て相談UseCase
+- ビジネス判断ロジック
 ```
 
-### 1.2 ディレクトリ作成
-```bash
-mkdir -p src/agents/{domain}
-mkdir -p src/tools/{domain}_tools
+## 📋 エージェント作成の基本フロー
+
+新エージェントは以下の**4ステップ**で作成します：
+
+```
+1. マルチモーダルTool準備 → 2. Agent設計・実装
+         ↓                      ↓
+3. AgentManager統合 → 4. 動作確認・テスト
 ```
 
-## 🔧 Step 2: カスタムツール作成
+## 🔧 Step 1: マルチモーダルTool準備
 
-### 2.1 Protocol定義
-まず、ドメイン固有のサービスプロトコルを定義：
+### 1.1 必要なマルチモーダル機能の特定
+
+新エージェントが使用する技術的機能を明確化：
+
+```
+例：栄養専門エージェント用Tool
+✅ 実装すべき技術機能：
+- 画像分析（食事写真の栄養成分分析）
+- 音声分析（食事状況の音声記録）
+- ファイル管理（栄養記録の保存）
+
+❌ 実装禁止（Agent内で実装）：
+- 栄養アドバイス生成
+- 食事量評価判断
+- 年齢別栄養指導
+```
+
+### 1.2 画像分析Tool実装
 
 ```python
-# src/application/interface/protocols/sleep_service.py
-from typing import Protocol, Dict, Any, Optional
-from dataclasses import dataclass
-
-@dataclass
-class SleepAnalysisResult:
-    """睡眠分析結果のデータクラス"""
-    sleep_pattern: str
-    recommendations: list[str]
-    urgency_level: str
-    confidence: float
-    metadata: Dict[str, Any]
-
-class SleepAnalyzerProtocol(Protocol):
-    """睡眠分析サービスのプロトコル"""
-    
-    def analyze_sleep_pattern(
-        self, 
-        query: str, 
-        child_age_months: int,
-        context: Optional[Dict[str, Any]] = None
-    ) -> SleepAnalysisResult:
-        """睡眠パターンを分析する"""
-        ...
-```
-
-### 2.2 Infrastructure層実装
-
-```python
-# src/infrastructure/adapters/sleep_analyzer.py
+# src/tools/image_analysis_tool.py
 import logging
 from typing import Dict, Any, Optional
-from src.application.interface.protocols.sleep_service import (
-    SleepAnalyzerProtocol, 
-    SleepAnalysisResult
-)
-
-class ExpertBasedSleepAnalyzer(SleepAnalyzerProtocol):
-    """専門家ルールベースの睡眠分析アダプター"""
-    
-    def __init__(self, logger: logging.Logger):
-        self.logger = logger
-    
-    def analyze_sleep_pattern(
-        self, 
-        query: str, 
-        child_age_months: int,
-        context: Optional[Dict[str, Any]] = None
-    ) -> SleepAnalysisResult:
-        """睡眠パターンの具体的な分析実装"""
-        try:
-            self.logger.info(f"睡眠分析開始: 月齢{child_age_months}, query長{len(query)}")
-            
-            # ドメイン固有のロジック実装
-            pattern = self._classify_sleep_pattern(query, child_age_months)
-            recommendations = self._generate_recommendations(pattern, child_age_months)
-            urgency = self._assess_urgency(query, pattern)
-            
-            result = SleepAnalysisResult(
-                sleep_pattern=pattern,
-                recommendations=recommendations,
-                urgency_level=urgency,
-                confidence=0.85,
-                metadata={
-                    "child_age_months": child_age_months,
-                    "analysis_timestamp": "now",
-                    "pattern_confidence": 0.85
-                }
-            )
-            
-            self.logger.info(f"睡眠分析完了: pattern={pattern}, urgency={urgency}")
-            return result
-            
-        except Exception as e:
-            self.logger.error(f"睡眠分析エラー: {e}")
-            return SleepAnalysisResult(
-                sleep_pattern="分析不可",
-                recommendations=["専門医への相談をお勧めします"],
-                urgency_level="中",
-                confidence=0.0,
-                metadata={"error": str(e)}
-            )
-    
-    def _classify_sleep_pattern(self, query: str, age: int) -> str:
-        """睡眠パターンの分類ロジック"""
-        # 実装詳細
-        pass
-    
-    def _generate_recommendations(self, pattern: str, age: int) -> list[str]:
-        """推奨事項の生成ロジック"""
-        # 実装詳細  
-        pass
-    
-    def _assess_urgency(self, query: str, pattern: str) -> str:
-        """緊急度評価ロジック"""
-        # 実装詳細
-        pass
-```
-
-### 2.3 UseCase層実装
-
-```python
-# src/application/usecases/sleep_consultation_usecase.py
-import logging
-from dataclasses import dataclass
-from datetime import datetime
-from typing import Any, Optional
-
-from src.application.interface.protocols.sleep_service import SleepAnalyzerProtocol
-
-@dataclass
-class SleepConsultationRequest:
-    """睡眠相談リクエスト"""
-    message: str
-    user_id: str
-    session_id: str
-    child_age_months: int
-    context: Optional[Dict[str, Any]] = None
-
-@dataclass  
-class SleepConsultationResponse:
-    """睡眠相談レスポンス"""
-    advice: str
-    pattern_analysis: str
-    recommendations: list[str]
-    urgency_level: str
-    session_id: str
-    timestamp: datetime
-    success: bool
-
-class SleepConsultationUseCase:
-    """睡眠相談ビジネスロジック"""
-    
-    def __init__(
-        self,
-        sleep_analyzer: SleepAnalyzerProtocol,
-        logger: logging.Logger
-    ):
-        self.sleep_analyzer = sleep_analyzer
-        self.logger = logger
-    
-    def consult(self, request: SleepConsultationRequest) -> SleepConsultationResponse:
-        """睡眠相談のビジネスロジック実行"""
-        try:
-            self.logger.info(f"睡眠相談開始: user={request.user_id}")
-            
-            # 睡眠分析実行
-            analysis = self.sleep_analyzer.analyze_sleep_pattern(
-                request.message,
-                request.child_age_months,
-                request.context
-            )
-            
-            # アドバイス生成
-            advice = self._generate_advice(analysis, request.child_age_months)
-            
-            return SleepConsultationResponse(
-                advice=advice,
-                pattern_analysis=analysis.sleep_pattern,
-                recommendations=analysis.recommendations,
-                urgency_level=analysis.urgency_level,
-                session_id=request.session_id,
-                timestamp=datetime.now(),
-                success=True
-            )
-            
-        except Exception as e:
-            self.logger.error(f"睡眠相談実行エラー: {e}")
-            return SleepConsultationResponse(
-                advice="申し訳ございません。睡眠に関する分析でエラーが発生しました。",
-                pattern_analysis="分析不可",
-                recommendations=[],
-                urgency_level="低",
-                session_id=request.session_id,
-                timestamp=datetime.now(),
-                success=False
-            )
-    
-    def _generate_advice(self, analysis, age_months: int) -> str:
-        """年齢に応じたアドバイス生成"""
-        # 実装詳細
-        pass
-```
-
-### 2.4 Tool層実装
-
-```python
-# src/tools/sleep_consultation_tool.py
-import logging
-from typing import Any, Dict, Optional
 from google.adk.tools import FunctionTool
+from src.application.usecases.image_analysis_usecase import ImageAnalysisUseCase
 
-from src.application.usecases.sleep_consultation_usecase import (
-    SleepConsultationRequest,
-    SleepConsultationResponse,
-    SleepConsultationUseCase
-)
-
-def create_sleep_consultation_function(
-    usecase: SleepConsultationUseCase,
-    logger: logging.Logger  # 🚨 必須: ロガーDI注入
+def create_image_analysis_function(
+    usecase: ImageAnalysisUseCase,
+    logger: logging.Logger
 ) -> callable:
-    """睡眠相談ツール関数を作成するファクトリー"""
+    """画像分析ツール関数を作成するファクトリー"""
     
-    def sleep_consultation_function(
-        message: str,
+    def image_analysis_function(
+        image_path: str,
+        analysis_prompt: str,
         user_id: str = "default_user",
-        session_id: str = "default_session", 
-        child_age_months: int = 12,
-        additional_context: Optional[Dict[str, Any]] = None
+        session_id: str = "default_session"
     ) -> Dict[str, Any]:
-        """睡眠相談を実行するADK用ツール関数"""
+        """画像分析を実行するADK用ツール関数（技術機能のみ）"""
         try:
-            # リクエスト構築
-            request = SleepConsultationRequest(
-                message=message,
-                user_id=user_id,
-                session_id=session_id,
-                child_age_months=child_age_months,
-                context=additional_context or {}
+            logger.info(f"画像分析実行: path={image_path}, prompt_length={len(analysis_prompt)}")
+            
+            # 純粋な技術処理（ビジネス判断なし）
+            analysis_result = usecase.analyze_image_with_prompt(
+                image_path=image_path,
+                prompt=analysis_prompt  # Agentから渡されるプロンプトをそのまま使用
             )
             
-            # ビジネスロジック実行
-            response: SleepConsultationResponse = usecase.consult(request)
+            return {
+                "success": True,
+                "analysis_result": analysis_result.raw_response,
+                "metadata": {
+                    "confidence": analysis_result.confidence,
+                    "processing_time_ms": analysis_result.processing_time,
+                    "session_id": session_id
+                }
+            }
             
-            # Agent向けレスポンス変換
-            if response.success:
-                agent_response = f\"\"\"
-                【{child_age_months}ヶ月のお子さまの睡眠アドバイス】
-                
-                {response.advice}
-                
-                睡眠パターン分析: {response.pattern_analysis}
-                緊急度: {response.urgency_level}
-                
-                推奨事項:
-                {chr(10).join(f"• {rec}" for rec in response.recommendations)}
-                \"\"\".strip()
-                
-                return {
-                    "success": True,
-                    "response": agent_response,
-                    "metadata": {
-                        "pattern": response.pattern_analysis,
-                        "urgency": response.urgency_level,
-                        "session_id": response.session_id,
-                        "timestamp": response.timestamp.isoformat()
-                    }
-                }
-            else:
-                return {
-                    "success": False,
-                    "response": response.advice,
-                    "metadata": {"error": "sleep_analysis_failed"}
-                }
-                
         except Exception as e:
-            logger.error(f"睡眠相談ツールエラー: {e}")  # ✅ 注入されたロガー使用
+            logger.error(f"画像分析ツールエラー: {e}")
             return {
                 "success": False,
-                "response": "睡眠に関するご相談で問題が発生しました。お子さまの安全に関わる場合は医療機関にご相談ください。",
+                "analysis_result": "画像分析でエラーが発生しました",
                 "metadata": {"error": str(e)}
             }
     
-    return sleep_consultation_function
+    return image_analysis_function
 
-def create_sleep_consultation_tool(
-    usecase: SleepConsultationUseCase,
-    logger: logging.Logger  # 🚨 必須: ロガーDI注入
+def create_image_analysis_tool(
+    usecase: ImageAnalysisUseCase,
+    logger: logging.Logger
 ) -> FunctionTool:
-    """睡眠相談FunctionTool作成（ロガーDI統合版）"""
-    consultation_func = create_sleep_consultation_function(usecase, logger)
-    return FunctionTool(func=consultation_func)
+    """画像分析FunctionTool作成"""
+    analysis_func = create_image_analysis_function(usecase, logger)
+    return FunctionTool(func=analysis_func)
 ```
 
-## 🤖 Step 3: エージェント実装
+### 1.3 音声分析Tool実装
 
 ```python
-# src/agents/sleep_agent.py
+# src/tools/voice_analysis_tool.py
 import logging
+from typing import Dict, Any
+from google.adk.tools import FunctionTool
+from src.application.usecases.voice_analysis_usecase import VoiceAnalysisUseCase
+
+def create_voice_analysis_function(
+    usecase: VoiceAnalysisUseCase,
+    logger: logging.Logger
+) -> callable:
+    """音声分析ツール関数を作成するファクトリー"""
+    
+    def voice_analysis_function(
+        voice_path: str,
+        analysis_prompt: str,
+        user_id: str = "default_user",
+        session_id: str = "default_session"
+    ) -> Dict[str, Any]:
+        """音声分析を実行するADK用ツール関数（技術機能のみ）"""
+        try:
+            logger.info(f"音声分析実行: path={voice_path}, prompt_length={len(analysis_prompt)}")
+            
+            # 純粋な技術処理（ビジネス判断なし）
+            analysis_result = usecase.analyze_voice_with_prompt(
+                voice_path=voice_path,
+                prompt=analysis_prompt  # Agentから渡されるプロンプトをそのまま使用
+            )
+            
+            return {
+                "success": True,
+                "analysis_result": analysis_result.raw_response,
+                "metadata": {
+                    "duration_seconds": analysis_result.duration,
+                    "confidence": analysis_result.confidence,
+                    "session_id": session_id
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"音声分析ツールエラー: {e}")
+            return {
+                "success": False,
+                "analysis_result": "音声分析でエラーが発生しました",
+                "metadata": {"error": str(e)}
+            }
+    
+    return voice_analysis_function
+
+def create_voice_analysis_tool(
+    usecase: VoiceAnalysisUseCase,
+    logger: logging.Logger
+) -> FunctionTool:
+    """音声分析FunctionTool作成"""
+    analysis_func = create_voice_analysis_function(usecase, logger)
+    return FunctionTool(func=analysis_func)
+```
+
+### 1.4 記録管理Tool実装
+
+```python
+# src/tools/record_management_tool.py
+import logging
+from typing import Dict, Any, List
+from google.adk.tools import FunctionTool
+from src.application.usecases.record_management_usecase import RecordManagementUseCase
+
+def create_record_management_function(
+    usecase: RecordManagementUseCase,
+    logger: logging.Logger
+) -> callable:
+    """記録管理ツール関数を作成するファクトリー"""
+    
+    def record_management_function(
+        operation: str,  # "save", "retrieve", "update", "delete"
+        record_data: Dict[str, Any],
+        user_id: str = "default_user",
+        session_id: str = "default_session"
+    ) -> Dict[str, Any]:
+        """記録管理を実行するADK用ツール関数（技術機能のみ）"""
+        try:
+            logger.info(f"記録管理実行: operation={operation}, user={user_id}")
+            
+            # 純粋な技術処理（ビジネス判断なし）
+            if operation == "save":
+                result = usecase.save_record(record_data, user_id)
+            elif operation == "retrieve":
+                result = usecase.retrieve_records(record_data.get("criteria", {}), user_id)
+            elif operation == "update":
+                result = usecase.update_record(record_data.get("record_id"), record_data, user_id)
+            elif operation == "delete":
+                result = usecase.delete_record(record_data.get("record_id"), user_id)
+            else:
+                raise ValueError(f"Unknown operation: {operation}")
+            
+            return {
+                "success": True,
+                "operation": operation,
+                "result": result.to_dict(),
+                "metadata": {
+                    "records_affected": result.records_affected,
+                    "session_id": session_id
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"記録管理ツールエラー: {e}")
+            return {
+                "success": False,
+                "operation": operation,
+                "result": {},
+                "metadata": {"error": str(e)}
+            }
+    
+    return record_management_function
+
+def create_record_management_tool(
+    usecase: RecordManagementUseCase,
+    logger: logging.Logger
+) -> FunctionTool:
+    """記録管理FunctionTool作成"""
+    management_func = create_record_management_function(usecase, logger)
+    return FunctionTool(func=management_func)
+```
+
+## 🤖 Step 2: Agent設計・実装
+
+### 2.1 Agent専用プロンプト設計
+
+```python
+# src/agents/nutrition_agent.py
+import logging
+from typing import List
 from google.adk import Agent
 from google.adk.tools import FunctionTool
 
-def create_sleep_specialist_agent(
-    sleep_tool: FunctionTool, 
-    logger: logging.Logger  # 🚨 必須: ログDI注入
+def create_nutrition_specialist_agent(
+    image_analysis_tool: FunctionTool,
+    voice_analysis_tool: FunctionTool,
+    record_management_tool: FunctionTool,
+    logger: logging.Logger
 ) -> Agent:
-    """睡眠専門エージェント作成（ロガーDI統合版）"""
-    logger.info("睡眠専門エージェント作成開始")
+    """栄養専門エージェント作成"""
+    logger.info("栄養専門エージェント作成開始")
     
     try:
         agent = Agent(
             model="gemini-2.5-flash-preview-05-20",
-            name="SleepSpecialist",
-            instruction=create_sleep_instruction(),
-            tools=[sleep_tool],
+            name="NutritionSpecialist",
+            instruction=create_nutrition_instruction(),
+            tools=[image_analysis_tool, voice_analysis_tool, record_management_tool],
         )
         
-        logger.info("睡眠専門エージェント作成完了")
+        logger.info("栄養専門エージェント作成完了")
         return agent
         
     except Exception as e:
-        logger.error(f"睡眠エージェント作成エラー: {e}")
+        logger.error(f"栄養エージェント作成エラー: {e}")
         raise
 
-def create_sleep_instruction() -> str:
-    """睡眠専門エージェント用指示文"""
-    return \"\"\"
-    あなたは子どもの睡眠に特化した専門家です。
+def create_nutrition_instruction() -> str:
+    """栄養専門エージェント用指示文（Agent中心設計）"""
+    return """
+    あなたは乳幼児の栄養に特化した専門エージェントです。
     
-    専門領域:
-    - 新生児〜6歳の睡眠パターン
-    - 夜泣き、昼寝、睡眠リズムの調整
-    - 年齢別睡眠の悩み解決
+    ## 専門領域
+    - 0-6歳の栄養指導・食事評価
+    - 離乳食の進め方・アレルギー対応
+    - 成長段階に応じた栄養バランス評価
     
-    対応方針:
-    1. 子どもの月齢・年齢を考慮したアドバイス
-    2. 安全性を最優先とした提案
-    3. 親の負担軽減も配慮
-    4. 緊急性がある場合は医療機関への相談を推奨
+    ## 利用可能なツール
+    1. **image_analysis_tool**: 食事写真を分析して栄養成分を評価
+    2. **voice_analysis_tool**: 食事状況の音声記録を分析
+    3. **record_management_tool**: 栄養記録の保存・取得・更新
     
-    常に優しく、実践的なアドバイスを提供してください。
-    \"\"\"
+    ## ツール使用方針
+    ### 画像分析時のプロンプト構築
+    ```
+    image_analysis_tool(
+        image_path="user_provided_path",
+        analysis_prompt="この食事写真を分析して、以下の情報を提供してください：
+        1. 食材の種類と量の推定
+        2. 栄養成分（カロリー、タンパク質、炭水化物、脂質、ビタミン、ミネラル）
+        3. 年齢別適切な分量との比較
+        4. 食材の調理方法と安全性
+        5. アレルギーリスクの評価
+        
+        回答は具体的な数値と根拠を含めて詳細に記載してください。",
+        user_id=user_id,
+        session_id=session_id
+    )
+    ```
+    
+    ### 音声分析時のプロンプト構築
+    ```
+    voice_analysis_tool(
+        voice_path="user_provided_path", 
+        analysis_prompt="この音声記録を分析して、以下の情報を抽出してください：
+        1. 食事中の子どもの様子（喜び、拒否、満足度）
+        2. 食べるペースと咀嚼音の特徴
+        3. 親との食事時のやり取り
+        4. 食事への興味・関心度
+        5. 気になる行動や反応
+        
+        子どもの月齢・年齢を考慮した評価を含めてください。",
+        user_id=user_id,
+        session_id=session_id
+    )
+    ```
+    
+    ### 記録管理の活用
+    ```
+    # 記録保存
+    record_management_tool(
+        operation="save",
+        record_data={
+            "type": "nutrition_analysis",
+            "date": "2024-01-01",
+            "meal_type": "breakfast",
+            "analysis_result": "画像・音声分析結果",
+            "recommendations": ["具体的な改善提案"],
+            "follow_up_date": "2024-01-08"
+        },
+        user_id=user_id
+    )
+    
+    # 過去の記録取得
+    record_management_tool(
+        operation="retrieve",
+        record_data={
+            "criteria": {
+                "type": "nutrition_analysis",
+                "date_range": "last_30_days"
+            }
+        },
+        user_id=user_id
+    )
+    ```
+    
+    ## 応答方針
+    1. **年齢適応**: 子どもの月齢・年齢を必ず考慮した指導
+    2. **安全最優先**: アレルギーや誤嚥リスクを常に評価
+    3. **実践的指導**: 具体的で実行可能なアドバイス
+    4. **成長追跡**: 過去の記録と比較した成長評価
+    5. **緊急時対応**: 危険な状況は医療機関への相談を推奨
+    
+    ## 判断・評価の実行
+    あなたは画像・音声・記録データを総合的に分析し、以下を自動実行してください：
+    - 栄養バランスの評価判断
+    - 年齢適正性の安全性評価  
+    - 改善提案の優先順位付け
+    - フォローアップの必要性判断
+    
+    常に温かく、専門的で信頼できるアドバイスを提供してください。
+    """
 ```
 
-## 💉 Step 4: DI統合
-
-### 4.1 DIコンテナ更新
+### 2.2 Agent中心のマルチモーダル処理
 
 ```python
-# src/di_provider/container.py に追加
-from src.infrastructure.adapters.sleep_analyzer import ExpertBasedSleepAnalyzer
-from src.application.usecases.sleep_consultation_usecase import SleepConsultationUseCase
-from src.tools.sleep_consultation_tool import create_sleep_consultation_tool
+# Agentが自動でマルチモーダル処理を統合する例
 
-class DIContainer(containers.DeclarativeContainer):
-    # 既存のprovider...
+def create_comprehensive_nutrition_instruction() -> str:
+    """包括的な栄養分析Agent指示文"""
+    return """
+    ## マルチモーダル統合評価手順
     
-    # ========== INFRASTRUCTURE LAYER - Sleep Domain ==========
-    sleep_analyzer: providers.Provider[SleepAnalyzerProtocol] = providers.Singleton(
-        ExpertBasedSleepAnalyzer,
-        logger=logger,
-    )
+    ユーザーから食事に関する相談を受けた場合：
     
-    # ========== APPLICATION LAYER - Sleep Domain ==========
-    sleep_consultation_usecase: providers.Provider[SleepConsultationUseCase] = providers.Factory(
-        SleepConsultationUseCase,
-        sleep_analyzer=sleep_analyzer,
-        logger=logger,
-    )
-    
-    # ========== TOOLS LAYER - Sleep Domain ==========
-    sleep_consultation_tool = providers.Factory(
-        create_sleep_consultation_tool,
-        usecase=sleep_consultation_usecase,
-        logger=logger,  # 🚨 必須: ロガーDI注入
-    )
+    1. **画像がある場合**
+       - image_analysis_toolで食事内容を詳細分析
+       - 栄養成分・分量・安全性を評価
+       
+    2. **音声がある場合**  
+       - voice_analysis_toolで食事状況を分析
+       - 子どもの反応・食べ方を評価
+       
+    3. **過去の記録確認**
+       - record_management_toolで履歴を取得
+       - 成長パターン・改善傾向を評価
+       
+    4. **統合判断の実行**
+       - 全ての情報を総合して専門判断
+       - 年齢・発達段階に応じたアドバイス生成
+       - 安全性リスクの評価・警告
+       
+    5. **記録保存**
+       - 分析結果と推奨事項を記録
+       - フォローアップスケジュールを設定
+       
+    各ステップで具体的で実行可能なアドバイスを提供し、
+    必要に応じて医療機関への相談を推奨してください。
+    """
 ```
 
-### 4.2 エージェント統合
+## 💉 Step 3: AgentManager統合
+
+### 3.1 AgentManager更新
 
 ```python
-# ❌ 非推奨: 個別エージェント初期化は AgentManager に移行
-# ✅ 推奨: src/agents/agent_manager.py で一元管理
+# src/agents/agent_manager.py に追加
+from src.agents.nutrition_agent import create_nutrition_specialist_agent
 
 class AgentManager:
-    def _initialize_sleep_agent(self) -> None:
-        \"\"\"睡眠エージェント初期化（AgentManagerパターン）\"\"\"
-        try:
-            sleep_tool = self.container.sleep_consultation_tool()
-            agent = create_sleep_specialist_agent(sleep_tool, self.logger)
-            self._agents["sleep"] = agent
-            self.logger.info("睡眠エージェント初期化完了")
-        except Exception as e:
-            self.logger.error(f"睡眠エージェント初期化エラー: {e}")
-            raise
+    """エージェント一元管理クラス"""
+    
+    def __init__(self, container: DIContainer):
+        self.container = container
+        self.logger = container.logger()
+        self._agents: Dict[str, Agent] = {}
     
     def initialize_all_agents(self) -> None:
-        \"\"\"全エージェントを初期化\"\"\"
+        """全エージェント初期化"""
         self.logger.info("全エージェント初期化開始")
         
         try:
-            # 各エージェントを順次初期化
+            # 既存エージェント
             self._initialize_childcare_agent()
-            self._initialize_sleep_agent()  # 睡眠エージェント追加
-            # 将来: self._initialize_nutrition_agent()
             
-            self.logger.info(f"全エージェント初期化完了: {len(self._agents)}個")
+            # 新規追加
+            self._initialize_nutrition_agent()
+            
+            # 将来予定
+            # self._initialize_sleep_agent()
+            # self._initialize_development_agent()
+            
+            self.logger.info(f"全エージェント初期化完了: {len(self._agents)}個のエージェント")
+            
         except Exception as e:
             self.logger.error(f"エージェント初期化エラー: {e}")
             raise
+    
+    def _initialize_nutrition_agent(self) -> None:
+        """栄養専門エージェント初期化"""
+        try:
+            # マルチモーダルツールを取得
+            image_tool = self.container.image_analysis_tool()
+            voice_tool = self.container.voice_analysis_tool()
+            record_tool = self.container.record_management_tool()
+            
+            # エージェント作成（マルチモーダル対応）
+            agent = create_nutrition_specialist_agent(
+                image_analysis_tool=image_tool,
+                voice_analysis_tool=voice_tool,
+                record_management_tool=record_tool,
+                logger=self.logger
+            )
+            
+            self._agents["nutrition"] = agent
+            self.logger.info("栄養専門エージェント初期化完了")
+            
+        except Exception as e:
+            self.logger.error(f"栄養エージェント初期化エラー: {e}")
+            raise
+    
+    def get_agent(self, agent_type: str) -> Agent:
+        """指定されたタイプのエージェントを取得"""
+        if agent_type not in self._agents:
+            available = list(self._agents.keys())
+            raise ValueError(f"エージェント '{agent_type}' が見つかりません. 利用可能: {available}")
+        
+        return self._agents[agent_type]
+    
+    def route_multimodal_query(
+        self, 
+        message: str, 
+        image_path: str = None, 
+        voice_path: str = None,
+        user_context: Dict[str, Any] = None
+    ) -> str:
+        """マルチモーダル対応のクエリルーティング"""
+        try:
+            # 簡単なルーティングロジック（実際はより高度に）
+            if "栄養" in message or "食事" in message or image_path or voice_path:
+                agent = self.get_agent("nutrition")
+            else:
+                agent = self.get_agent("childcare")  # デフォルト
+            
+            # Agentがマルチモーダル処理を自動実行
+            response = agent.run(message)
+            return response
+            
+        except Exception as e:
+            self.logger.error(f"マルチモーダルクエリルーティングエラー: {e}")
+            return "申し訳ございません。処理中にエラーが発生しました。"
 ```
 
-## 🌐 Step 5: API統合
+### 3.2 Composition Root統合
 
-### 5.1 APIエンドポイント追加
+新エージェントの統合は**Composition Root**で行います。DIContainerは使用しません。
 
 ```python
-# src/presentation/api/routes/sleep.py
-import logging
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel, Field
-from dependency_injector.wiring import inject, Provide
-
-from src.di_provider.container import DIContainer
-
-router = APIRouter()
-
-class SleepConsultationMessage(BaseModel):
-    message: str = Field(..., description="睡眠に関する相談内容")
-    user_id: str = Field(default="anonymous", description="ユーザーID")
-    session_id: str = Field(default="default", description="セッションID")
-    child_age_months: int = Field(default=12, description="子どもの月齢")
-
-class SleepConsultationResponse(BaseModel):
-    response: str = Field(..., description="睡眠専門家からの応答")
-    status: str = Field(default="success", description="処理状況")
-    session_id: str = Field(..., description="セッションID")
-    agent_info: dict = Field(default_factory=dict, description="エージェント情報")
-
-@router.post("/sleep/consultation", response_model=SleepConsultationResponse)
-@inject  # 🚨 必須: DI注入有効化
-async def sleep_consultation_endpoint(
-    consultation: SleepConsultationMessage,
-    # ✅ FastAPI Depends + DI統合パターン
-    tool = Depends(Provide[DIContainer.sleep_consultation_tool]),
-    logger = Depends(Provide[DIContainer.logger]),
-):
-    \"\"\"睡眠専門相談エンドポイント（DI完全統合版）\"\"\"
-    try:
-        logger.info(f"睡眠相談リクエスト受信: user={consultation.user_id}")
+# src/di_provider/composition_root.py に追加
+class CompositionRoot:
+    """アプリケーション全体の依存関係組み立て（main.py中央集約）"""
+    
+    def _build_tool_layer(self) -> None:
+        """Tool層組み立て（ADK FunctionTool）"""
         
-        # 注入されたツールを使用（グローバル変数不要）
-        tool_result = tool.func(
-            message=consultation.message,
-            user_id=consultation.user_id,
-            session_id=consultation.session_id,
-            child_age_months=consultation.child_age_months
-        )
+        # 既存ツール
+        image_usecase = self._usecases.get_required("image_analysis")
+        image_tool = self._create_image_analysis_tool(image_usecase)
+        self._tools.register("image_analysis", image_tool)
         
-        if tool_result.get("success", False):
-            response_text = tool_result["response"]
-            agent_info = {
-                "specialist": "sleep",
-                "metadata": tool_result.get("metadata", {})
-            }
-        else:
-            response_text = tool_result.get("response", "睡眠相談でエラーが発生しました。")
-            agent_info = {"error": tool_result.get("metadata", {})}
+        voice_usecase = self._usecases.get_required("voice_analysis")
+        voice_tool = self._create_voice_analysis_tool(voice_usecase)
+        self._tools.register("voice_analysis", voice_tool)
         
-        return SleepConsultationResponse(
-            response=response_text,
-            session_id=consultation.session_id,
-            agent_info=agent_info
-        )
+        # 新規追加: 栄養専門用ツール（必要に応じて）
+        # nutrition_usecase = self._usecases.get_required("nutrition_analysis")
+        # nutrition_tool = self._create_nutrition_analysis_tool(nutrition_usecase)
+        # self._tools.register("nutrition_analysis", nutrition_tool)
         
-    except Exception as e:
-        logger.error(f"睡眠相談エンドポイントエラー: {e}")
-        return SleepConsultationResponse(
-            response="睡眠相談でシステムエラーが発生しました。",
-            status="error",
-            session_id=consultation.session_id,
-            agent_info={"error": str(e)}
-        )
-
-# ❌ 非推奨: setup_routes関数は使用禁止
-# ✅ 推奨: main.pyでcontainer.wire()により自動統合
-
-# main.py での統合例:
-# container.wire(modules=["src.presentation.api.routes.sleep"])
-# app.include_router(sleep_router, prefix="/api/v1", tags=["sleep"])
+        # 記録管理ツール
+        record_usecase = self._usecases.get_required("record_management")
+        record_tool = self._create_record_management_tool(record_usecase)
+        self._tools.register("record_management", record_tool)
+        
+        self.logger.info("Tool層組み立て完了")
+    
+    # 新ツール作成メソッド追加例
+    def _create_nutrition_analysis_tool(self, usecase: NutritionAnalysisUseCase) -> FunctionTool:
+        """栄養分析ツール作成"""
+        from src.tools.nutrition_analysis_tool import create_nutrition_analysis_tool
+        return create_nutrition_analysis_tool(nutrition_analysis_usecase=usecase, logger=self.logger)
 ```
 
-### 5.2 main.py統合（推奨パターン）
+### 3.3 AgentManager統合（Composition Root統合版）
+
+```python
+# src/agents/agent_manager.py に追加
+class AgentManager:
+    """Agent中心のコンポーネント管理（CompositionRoot統合）"""
+    
+    def __init__(self, tools: dict[str, FunctionTool], logger: logging.Logger, settings: AppSettings):
+        """CompositionRootから必要なコンポーネントのみ注入"""
+        self.tools = tools
+        self.logger = logger  
+        self.settings = settings
+        self._agents: dict[str, Agent] = {}
+    
+    def initialize_all_components(self) -> None:
+        """全エージェント初期化（CompositionRoot統合）"""
+        self.logger.info("AgentManager初期化開始（CompositionRoot統合）")
+        
+        try:
+            # 既存エージェント
+            self._initialize_childcare_agent()
+            
+            # 新規追加: 栄養専門エージェント
+            self._initialize_nutrition_agent()
+            
+            # 将来予定
+            # self._initialize_sleep_agent()
+            # self._initialize_development_agent()
+            
+            self.logger.info(f"AgentManager初期化完了: {len(self._agents)}個のエージェント")
+            
+        except Exception as e:
+            self.logger.error(f"AgentManager初期化エラー: {e}")
+            raise
+    
+    def _initialize_nutrition_agent(self) -> None:
+        """栄養専門エージェント初期化（CompositionRoot統合）"""
+        try:
+            # CompositionRootから注入されたツールを使用
+            image_tool = self.tools.get("image_analysis")
+            voice_tool = self.tools.get("voice_analysis")
+            record_tool = self.tools.get("record_management")
+            # nutrition_tool = self.tools.get("nutrition_analysis")  # 専用ツールがあれば
+            
+            # エージェント作成（マルチモーダル対応）
+            agent = create_nutrition_specialist_agent(
+                image_analysis_tool=image_tool,
+                voice_analysis_tool=voice_tool,
+                record_management_tool=record_tool,
+                logger=self.logger
+            )
+            
+            self._agents["nutrition"] = agent
+            self.logger.info("栄養専門エージェント初期化完了（CompositionRoot統合）")
+            
+        except Exception as e:
+            self.logger.error(f"栄養エージェント初期化エラー: {e}")
+            raise
+```
+
+### 3.4 main.py統合（Composition Root中央集約）
 
 ```python
 # src/main.py での統合（推奨パターン）
-def create_app() -> FastAPI:
-    \"\"\"FastAPIアプリケーションファクトリー\"\"\"
-    container = DIContainer()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Pure CompositionRoot Pattern"""
     
-    # ⭐ AgentManager による一元管理
-    agent_manager = AgentManager(container)
-    agent_manager.initialize_all_agents()  # 睡眠エージェントも自動初期化
+    # 🎯 1. CompositionRoot一元初期化（アプリケーション全体で1度だけ）
+    composition_root = CompositionRootFactory.create()
+    logger = composition_root.logger
+    logger.info("✅ CompositionRoot初期化完了")
     
-    app = FastAPI()
-    app.container = container
+    # 🎯 2. AgentManagerに必要なツールのみ注入
+    all_tools = composition_root.get_all_tools()
+    agent_manager = AgentManager(
+        tools=all_tools, 
+        logger=logger, 
+        settings=composition_root.settings
+    )
+    agent_manager.initialize_all_components()  # 栄養エージェントも自動初期化
+    logger.info("✅ AgentManager初期化完了（Pure Composition Root）")
+    
+    # 🎯 3. FastAPIアプリには必要なコンポーネントのみ注入
     app.agent_manager = agent_manager
+    app.logger = logger
+    app.composition_root = composition_root  # UseCase直接アクセス用
+    logger.info("✅ FastAPIアプリ関連付け完了（Pure CompositionRoot）")
     
-    # ⭐ FastAPI Depends統合（グローバル変数・setup_routes不要）
-    container.wire(modules=[
-        "src.presentation.api.routes.chat",
-        "src.presentation.api.routes.sleep",  # 睡眠ルート追加
-    ])
-    
-    # ルーター登録（依存関係は自動注入）
-    app.include_router(sleep_router, prefix="/api/v1", tags=["sleep"])
-    
-    return app
+    yield
+
+# アプリケーション作成
+app = FastAPI(lifespan=lifespan)
+
+# ルーター登録（依存関係は自動注入）
+app.include_router(multiagent_chat_router, prefix="/api/v1", tags=["multiagent"])
+app.include_router(family_router, prefix="/api/v1", tags=["family"])
 ```
 
-## ✅ Step 6: テスト・検証
+## ✅ Step 4: 動作確認・テスト
 
-### 6.1 統合テスト作成
+### 4.1 統合テスト作成
 
 ```python
-# test_sleep_agent_integration.py
+# tests/test_nutrition_agent_integration.py
 import pytest
 from src.di_provider.factory import get_container
-from src.agents.di_based_childcare_agent import get_childcare_agent
+from src.agents.agent_manager import AgentManager
 
-def test_sleep_agent_integration():
-    \"\"\"睡眠エージェント統合テスト\"\"\"
-    # DIコンテナ初期化
-    container = get_container()
+class TestNutritionAgentIntegration:
+    """栄養エージェント統合テスト"""
     
-    # ツール・エージェント作成
-    sleep_tool = container.sleep_consultation_tool()
-    sleep_agent = get_childcare_agent("sleep", None, sleep_tool=sleep_tool)
+    def setup_method(self):
+        """テストセットアップ"""
+        self.container = get_container()
+        self.agent_manager = AgentManager(self.container)
+        self.agent_manager.initialize_all_agents()
     
-    # 基本動作確認
-    assert sleep_agent.name == "SleepSpecialist"
-    assert len(sleep_agent.tools) == 1
+    def test_nutrition_agent_creation(self):
+        """栄養エージェント作成テスト"""
+        agent = self.agent_manager.get_agent("nutrition")
+        
+        assert agent.name == "NutritionSpecialist"
+        assert len(agent.tools) == 3  # image, voice, record
     
-    # ツール実行テスト
-    result = sleep_tool.func(
-        message="3ヶ月の赤ちゃんが夜泣きします",
-        child_age_months=3
-    )
+    def test_multimodal_nutrition_consultation(self):
+        """マルチモーダル栄養相談テスト"""
+        response = self.agent_manager.route_multimodal_query(
+            message="1歳の子どもの離乳食について相談したいです",
+            image_path="/path/to/meal_photo.jpg",
+            voice_path="/path/to/eating_sound.wav"
+        )
+        
+        assert "栄養" in response
+        assert "離乳食" in response
+        assert len(response) > 100  # 詳細な回答
     
-    assert result["success"] is True
-    assert "睡眠" in result["response"]
-    assert "metadata" in result
+    def test_agent_tool_integration(self):
+        """エージェント・ツール統合テスト"""
+        # 個別ツールテスト
+        image_tool = self.container.image_analysis_tool()
+        voice_tool = self.container.voice_analysis_tool()
+        record_tool = self.container.record_management_tool()
+        
+        # ツール動作確認
+        assert image_tool is not None
+        assert voice_tool is not None
+        assert record_tool is not None
+        
+        # Agent経由でのツール使用確認
+        agent = self.agent_manager.get_agent("nutrition")
+        # 実際のAgent.run()テストは環境に依存するためモック使用推奨
 ```
 
-### 6.2 API動作確認
+### 4.2 APIエンドポイント統合テスト
 
-```bash
-# エンドポイントテスト
-curl -X POST "http://localhost:8000/api/v1/sleep/consultation" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "message": "1歳の子どもが夜中に何度も起きます",
-    "child_age_months": 12,
-    "user_id": "test_user"
-  }'
+```python
+# tests/test_nutrition_api_integration.py
+import pytest
+from fastapi.testclient import TestClient
+from src.main import create_app
+
+class TestNutritionAPIIntegration:
+    """栄養API統合テスト"""
+    
+    def setup_method(self):
+        """テストセットアップ"""
+        app = create_app()
+        self.client = TestClient(app)
+    
+    def test_multimodal_nutrition_endpoint(self):
+        """マルチモーダル栄養エンドポイントテスト"""
+        response = self.client.post(
+            "/api/v1/multiagent/chat",
+            json={
+                "message": "離乳食の量が適切か相談したいです",
+                "user_id": "test_user",
+                "session_id": "test_session",
+                "message_type": "image",
+                "has_image": True,
+                "image_path": "base64_encoded_image_data",
+                "multimodal_context": {
+                    "type": "image",
+                    "image_description": "離乳食の写真"
+                }
+            }
+        )
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert "栄養" in data["response"]
+        assert data["agent_info"]["specialist"] == "nutrition"
 ```
 
 ## 📋 チェックリスト
 
 新エージェント作成完了前の確認事項：
 
-### ✅ 実装チェック
-- [ ] Protocol定義完了
-- [ ] Infrastructure層実装完了
-- [ ] UseCase層実装完了  
-- [ ] Tool層実装完了
-- [ ] Agent実装完了
-- [ ] DI統合完了
-- [ ] API統合完了
+### ✅ Agent中心設計チェック
+- [ ] **マルチモーダルツール実装完了**（画像・音声・記録管理）
+- [ ] **Agent指示文にツール使用方針記載**（プロンプト構築含む）
+- [ ] **Agent内でビジネス判断実装**（Protocol/UseCase禁止）
+- [ ] **AgentManager統合完了**（個別初期化禁止）
 
-### ✅ 品質チェック
-- [ ] 型アノテーション完備
-- [ ] エラーハンドリング実装
+### ✅ 実装品質チェック
+- [ ] **型アノテーション完備**
+- [ ] **エラーハンドリング実装**
 - [ ] **ロガーDI注入実装**（個別初期化禁止）
-- [ ] **AgentManager統合**（個別エージェント初期化禁止）
-- [ ] **FastAPI Depends統合**（グローバル変数・setup_routes禁止）
-- [ ] テストケース作成
-- [ ] import文がファイル先頭配置
+- [ ] **FastAPI Depends統合**（グローバル変数禁止）
+- [ ] **import文がファイル先頭配置**
 
-### ✅ 動作確認
-- [ ] 統合テスト通過
-- [ ] APIエンドポイント動作確認
-- [ ] エラーケース動作確認
-- [ ] パフォーマンス確認
+### ✅ 禁止事項回避チェック
+- [ ] **ChildcareAdviserProtocol等を実装していない**
+- [ ] **SafetyAssessorProtocol等を実装していない**
+- [ ] **consultation_usecase等を実装していない**
+- [ ] **ビジネス概念をInfrastructure層で扱っていない**
+- [ ] **DIContainer・setup_routes関数を使用していない**
+- [ ] **Composition Rootパターンを使用している**
+
+### ✅ 動作確認チェック
+- [ ] **統合テスト通過**
+- [ ] **マルチモーダル対応確認**
+- [ ] **エージェントルーティング動作確認**
+- [ ] **エラーケース動作確認**
 
 ## 🔗 関連ドキュメント
 
-- [新ツール開発ガイド](./new-tool-development.md) - ツール開発詳細
 - [コーディング規約](../development/coding-standards.md) - 必須の実装規約
+- [アーキテクチャ概要](../architecture/overview.md) - Agent中心設計理解
+- [Composition Root設計](../architecture/composition-root-design.md) - 中央集約型依存関係組み立て
+- [新ツール開発ガイド](./new-tool-development.md) - マルチモーダルツール開発
 - [ADKベストプラクティス](../technical/adk-best-practices.md) - ADK制約・パターン
-- [アーキテクチャ概要](../architecture/overview.md) - 全体設計理解
 
 ---
 
-**💡 重要**: 新エージェント作成は段階的に進めることを推奨。まずはシンプルな実装から始めて、動作確認後に機能拡張することで、安定性を確保できます。
+**💡 重要**: Agent-Firstアーキテクチャでは、Agentが中心となってマルチモーダル処理・ビジネス判断・専門知識提供を統合的に実行します。Tool/UseCase/Infrastructureは純粋な技術機能（画像・音声・ファイル・記録）のみに特化し、依存関係の組み立てはComposition Rootパターンで中央集約してください。

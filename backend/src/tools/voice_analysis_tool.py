@@ -23,7 +23,7 @@ def create_voice_analysis_tool(voice_analysis_usecase: VoiceAnalysisUseCase, log
 
     async def analyze_child_voice(
         voice_text: str,
-        child_id: str,
+        child_id: str = "default_child",
         analysis_type: str = "general",
         **kwargs: Any,
     ) -> dict[str, Any]:
@@ -31,7 +31,7 @@ def create_voice_analysis_tool(voice_analysis_usecase: VoiceAnalysisUseCase, log
 
         Args:
             voice_text: 音声認識されたテキスト
-            child_id: 子どものID
+            child_id: 子どものID（デフォルト: "default_child"）
             analysis_type: 分析タイプ（general, feeding, sleep等）
             **kwargs: 追加のコンテキスト情報
 

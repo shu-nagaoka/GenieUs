@@ -59,24 +59,48 @@ export function EffortReportCard({
       setLoading(true)
       setError(null)
       
-      const response = await fetch('/api/v2/effort-report', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          parent_id: parentId, 
-          child_id: childId, 
-          period_days: periodDays 
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error(`レポート生成に失敗しました: ${response.status}`)
+      // サンプルデータを使用（API実装前）
+      await new Promise(resolve => setTimeout(resolve, 1000)) // 読み込み感を演出
+      
+      const sampleData: EffortReportApiResponse = {
+        status: "success",
+        child_name: "日佳梨",
+        period: `過去${periodDays}日間`,
+        overall_score: 8.7,
+        achievements: [
+          {
+            metric_name: "記録継続日数",
+            value: 21,
+            unit: "日",
+            comparison: "先週比+7日",
+            impact: "素晴らしい継続力です"
+          },
+          {
+            metric_name: "努力記録数",
+            value: 27,
+            unit: "回",
+            comparison: "先週比+3回",
+            impact: "着実に増加しています"
+          },
+          {
+            metric_name: "成長記録",
+            value: 12,
+            unit: "件",
+            comparison: "多様な成長を記録",
+            impact: "バランスの取れた記録"
+          }
+        ],
+        growth_evidence: [
+          "初めて「パパ」と言いました！",
+          "睡眠時間が30分改善しました",
+          "離乳食を完食する日が増えました",
+          "笑顔の回数が大幅に増加"
+        ],
+        affirmation: "この期間、あなたの愛情深い子育てが実を結んでいます。お子さんの言葉の発達と睡眠の改善は、あなたの毎日の努力の成果です。特に語りかけや寝かしつけのルーティンが素晴らしい効果を生んでいます。",
+        report_id: `report_${Date.now()}`
       }
-
-      const data: EffortReportApiResponse = await response.json()
-      setReport(data)
+      
+      setReport(sampleData)
       setLastGenerated(new Date())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'レポート生成中にエラーが発生しました')

@@ -91,3 +91,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* スクロールバーを非表示にするユーティリティクラス */
+@layer utilities {
+  .scrollbar-hide {
+    /* Firefox */
+    scrollbar-width: none;
+    /* Safari and Chrome */
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+}

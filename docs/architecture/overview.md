@@ -18,8 +18,8 @@ GenieUsは、Google Agent Development Kit (ADK)を核として構築された次
 ├─────────────────────┬───────────────────────────────────────┤
 │    Frontend         │           Backend                     │
 │                     │                                       │
-│  Next.js 15         │  FastAPI + Google ADK                │
-│  TypeScript         │  Python 3.12+                        │
+│  Next.js 15         │  FastAPI + Google ADK                 │
+│  TypeScript         │  Python 3.12+                         │
 │  Tailwind CSS       │                                       │
 │  shadcn/ui          │  ┌─────────────────────────────────┐  │
 │                     │  │        Agent Layer              │  │

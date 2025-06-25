@@ -1,453 +1,773 @@
 'use client'
+
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
-import { DailyPredictionCard } from '@/components/v2/prediction/DailyPredictionCard'
-import { FloatingVoiceButton } from '@/components/v2/voice-recording/FloatingVoiceButton'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardTitle, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
-  Brain,
-  Sparkles,
   TrendingUp,
-  Baby,
-  Heart,
-  Eye,
-  Calendar,
-  BarChart3,
-  Lightbulb,
   Camera,
-  Mic,
-  Play,
-  Clock,
-  Target,
+  Sparkles,
+  Heart,
+  Baby,
+  Ruler,
+  Scale,
+  MessageCircle,
+  Smile,
   Star,
-  Zap
+  Calendar,
+  Eye,
+  Image,
+  BarChart3,
+  Target,
+  Award,
+  Plus,
+  Edit,
+  Grid3X3,
+  List,
+  LayoutGrid,
+  Clock
 } from 'lucide-react'
+import { MdChildCare, MdPhotoCamera, MdTimeline } from 'react-icons/md'
+import { FaChild, FaCamera, FaChartLine, FaHeart } from 'react-icons/fa'
+import { GiMagicLamp, GiBabyFace, GiBodyHeight } from 'react-icons/gi'
+import Link from 'next/link'
+import { getGrowthRecords, GrowthRecord as ApiGrowthRecord, getChildrenForGrowthRecords, ChildInfo } from '@/lib/api/growth-records'
+import { CreateGrowthRecordModal } from '@/components/features/growth/create-growth-record-modal'
+import { EditGrowthRecordModal } from '@/components/features/growth/edit-growth-record-modal'
 
-interface GrowthInsight {
+// バックエンドAPIから取得したデータを表示用に変換するインターフェース
+interface GrowthRecord extends Omit<ApiGrowthRecord, 'user_id' | 'created_at' | 'updated_at'> {
+  childName: string
+  ageInMonths: number
+  imageUrl?: string
+  detectedBy: 'genie' | 'parent'
+  developmentStage?: string
+}
+
+// EditGrowthRecordModalが期待する形式
+interface EditableGrowthRecord {
   id: string
-  type: 'pattern' | 'milestone' | 'prediction' | 'achievement'
+  child_id?: string
+  child_name: string
+  date: string
+  age_in_months: number
+  type: 'body_growth' | 'language_growth' | 'skills' | 'social_skills' | 'hobbies' | 'life_skills' | 'physical' | 'emotional' | 'cognitive' | 'milestone' | 'photo'
+  category: 'height' | 'weight' | 'speech' | 'smile' | 'movement' | 'expression' | 'achievement' | 'first_words' | 'vocabulary' | 'colors' | 'numbers' | 'puzzle' | 'drawing' | 'playing_together' | 'helping' | 'sharing' | 'kindness' | 'piano' | 'swimming' | 'dancing' | 'sports' | 'toilet' | 'brushing' | 'dressing' | 'cleaning'
   title: string
   description: string
-  confidence: number
-  timeframe: string
-  category: 'feeding' | 'sleep' | 'development' | 'mood' | 'social'
-  isNew?: boolean
-  evidence?: string[]
+  value?: string | number
+  unit?: string
+  image_url?: string
+  detected_by: 'genie' | 'parent'
+  confidence?: number
+  emotions?: string[]
+  development_stage?: string
 }
 
-interface VisualRecord {
-  id: string
-  type: 'photo' | 'video' | 'voice'
-  timestamp: Date
-  insights: string[]
-  aiAnalysis?: string
-}
+type ViewMode = 'detailed' | 'compact'
 
-export default function GrowthInsightsPage() {
-  const [insights, setInsights] = useState<GrowthInsight[]>([
-    {
-      id: '1',
-      type: 'pattern',
-      title: '睡眠パターンの改善',
-      description: '過去2週間で夜間の睡眠時間が30分延びています。18:30の入浴ルーティンが効果的です。',
-      confidence: 0.87,
-      timeframe: '過去2週間',
-      category: 'sleep',
-      isNew: true,
-      evidence: ['連続睡眠時間の増加', '寝つきまでの時間短縮', '夜泣き頻度の減少']
-    },
-    {
-      id: '2',
-      type: 'milestone',
-      title: 'バイバイ動作の習得',
-      description: 'お子さんが意図的にバイバイの仕草をするようになりました。社会性発達の重要な節目です。',
-      confidence: 0.92,
-      timeframe: '昨日確認',
-      category: 'social',
-      isNew: true,
-      evidence: ['反復的な手の動き', 'アイコンタクトと同時実行', '大人の反応への注目']
-    },
-    {
-      id: '3',
-      type: 'prediction',
-      title: '離乳食の好み変化予測',
-      description: '来週頃から甘味のある食材（さつまいも、にんじん）への興味が高まる可能性があります。',
-      confidence: 0.73,
-      timeframe: '来週予測',
-      category: 'feeding',
-      evidence: ['味覚発達の段階', '現在の食べ方パターン', '月齢に基づく予測']
-    },
-    {
-      id: '4',
-      type: 'achievement',
-      title: '親子のコミュニケーション向上',
-      description: 'あなたの語りかけ頻度が増え、お子さんの反応も豊かになっています。素晴らしい成果です。',
-      confidence: 0.95,
-      timeframe: '過去1ヶ月',
-      category: 'social',
-      evidence: ['語りかけ回数の増加', '子供の笑顔頻度向上', '相互反応の質向上']
-    }
-  ])
+export default function GrowthTrackingPage() {
+  const [selectedChild, setSelectedChild] = useState<string>('all')
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [viewMode, setViewMode] = useState<ViewMode>('detailed')
+  const [growthRecords, setGrowthRecords] = useState<GrowthRecord[]>([])
+  const [children, setChildren] = useState<ChildInfo[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedRecord, setSelectedRecord] = useState<EditableGrowthRecord | null>(null)
 
-  const [visualRecords, setVisualRecords] = useState<VisualRecord[]>([
-    {
-      id: '1',
-      type: 'photo',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      insights: ['表情：とても嬉しそう', '姿勢：安定したお座り', '注目：おもちゃに集中'],
-      aiAnalysis: '発達良好。集中力と情緒の安定が見られます。'
-    },
-    {
-      id: '2',
-      type: 'voice',
-      timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000),
-      insights: ['音声：バブリング増加', '音程：多様な声色', '反応：親の声に敏感'],
-      aiAnalysis: '言語発達の準備段階が順調に進んでいます。'
-    }
-  ])
-
-  const getInsightIcon = (type: GrowthInsight['type']) => {
-    switch (type) {
-      case 'pattern': return <TrendingUp className="h-5 w-5 text-purple-600" />
-      case 'milestone': return <Target className="h-5 w-5 text-emerald-600" />
-      case 'prediction': return <Brain className="h-5 w-5 text-indigo-600" />
-      case 'achievement': return <Star className="h-5 w-5 text-amber-600" />
+  // APIから成長記録データと子ども情報を取得
+  const loadData = async () => {
+    try {
+      setLoading(true)
+      
+      // 並行して子ども情報と成長記録を取得
+      const [childrenResult, recordsResult] = await Promise.all([
+        getChildrenForGrowthRecords(),
+        getGrowthRecords({ user_id: 'frontend_user' })
+      ])
+      
+      // 子ども情報を設定
+      if (childrenResult.success && childrenResult.data) {
+        setChildren(childrenResult.data)
+      }
+      
+      // 成長記録を設定
+      if (recordsResult.success && recordsResult.data) {
+        // APIデータを表示用に変換
+        const convertedRecords: GrowthRecord[] = recordsResult.data.map(apiRecord => ({
+          id: apiRecord.id,
+          childName: apiRecord.child_name,
+          date: apiRecord.date,
+          ageInMonths: apiRecord.age_in_months,
+          type: apiRecord.type,
+          category: apiRecord.category,
+          title: apiRecord.title,
+          description: apiRecord.description,
+          value: apiRecord.value,
+          unit: apiRecord.unit,
+          imageUrl: apiRecord.image_url,
+          detectedBy: apiRecord.detected_by,
+          confidence: apiRecord.confidence,
+          emotions: apiRecord.emotions,
+          developmentStage: apiRecord.development_stage
+        }))
+        setGrowthRecords(convertedRecords)
+      } else {
+        console.error('成長記録の取得に失敗しました:', recordsResult.message)
+      }
+    } catch (error) {
+      console.error('データ読み込みエラー:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const getInsightColor = (type: GrowthInsight['type']) => {
-    switch (type) {
-      case 'pattern': return 'from-purple-50 to-violet-50 border-purple-200'
-      case 'milestone': return 'from-emerald-50 to-green-50 border-emerald-200'
-      case 'prediction': return 'from-indigo-50 to-blue-50 border-indigo-200'
-      case 'achievement': return 'from-amber-50 to-yellow-50 border-amber-200'
+  // 初回ロード
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const getFilteredRecords = () => {
+    let filtered = growthRecords.filter(record => 
+      selectedChild === 'all' || record.childName === children.find(c => c.child_id === selectedChild)?.name
+    )
+    
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(record => record.type === selectedCategory || record.category === selectedCategory)
     }
+    
+    return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   }
 
-  const getCategoryIcon = (category: GrowthInsight['category']) => {
+  // 親しみやすいカテゴリ名マッピング
+  const categoryLabels = {
+    'body_growth': 'からだの成長',
+    'language_growth': 'ことばの成長', 
+    'skills': 'できること',
+    'social_skills': 'お友達との関わり',
+    'hobbies': '習い事・特技',
+    'life_skills': '生活スキル'
+  }
+
+  const detailCategoryLabels = {
+    'height': '身長・体重',
+    'weight': '身長・体重',
+    'speech': 'おしゃべり',
+    'smile': '表情・感情',
+    'movement': '運動・歩行',
+    'expression': '感情表現',
+    'achievement': '達成・成功体験',
+    'social': 'お友達と遊ぶ',
+    'helping': 'お手伝い',
+    'rule_following': 'ルールを守る',
+    'piano': 'ピアノ',
+    'swimming': '水泳',
+    'drawing': 'お絵描き',
+    'dancing': 'ダンス',
+    'toilet': 'トイレ',
+    'brushing': '歯磨き',
+    'dressing': 'お着替え',
+    'cleaning': 'お片付け'
+  }
+
+  const getRecordIcon = (category: string) => {
     switch (category) {
-      case 'feeding': return '🍼'
-      case 'sleep': return '😴'
-      case 'development': return '🧸'
-      case 'mood': return '😊'
-      case 'social': return '👶'
+      case 'height':
+      case 'weight': return <Ruler className="h-5 w-5" />
+      case 'speech': return <MessageCircle className="h-5 w-5" />
+      case 'smile':
+      case 'expression': return <Smile className="h-5 w-5" />
+      case 'movement': return <TrendingUp className="h-5 w-5" />
+      case 'achievement': return <Award className="h-5 w-5" />
+      case 'social':
+      case 'helping':
+      case 'rule_following': return <Heart className="h-5 w-5" />
+      case 'piano':
+      case 'swimming':
+      case 'drawing':
+      case 'dancing': return <Star className="h-5 w-5" />
+      case 'toilet':
+      case 'brushing':
+      case 'dressing':
+      case 'cleaning': return <Target className="h-5 w-5" />
+      default: return <Star className="h-5 w-5" />
     }
   }
+
+  const getRecordColor = (type: string) => {
+    switch (type) {
+      case 'body_growth': return 'from-blue-500 to-blue-600'
+      case 'language_growth': return 'from-green-500 to-green-600'
+      case 'skills': return 'from-purple-500 to-purple-600'
+      case 'social_skills': return 'from-pink-500 to-pink-600'
+      case 'hobbies': return 'from-amber-500 to-amber-600'
+      case 'life_skills': return 'from-teal-500 to-teal-600'
+      // 従来のタイプも保持（後方互換性）
+      case 'physical': return 'from-blue-500 to-blue-600'
+      case 'emotional': return 'from-teal-500 to-teal-600'
+      case 'cognitive': return 'from-purple-500 to-purple-600'
+      case 'milestone': return 'from-green-500 to-green-600'
+      case 'photo': return 'from-amber-500 to-amber-600'
+      default: return 'from-gray-500 to-gray-600'
+    }
+  }
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('ja-JP', { 
+      year: 'numeric',
+      month: 'short', 
+      day: 'numeric'
+    })
+  }
+
+  const handleEditRecord = (record: GrowthRecord) => {
+    // 対応する child_id を取得
+    const matchedChild = children.find(child => child.name === record.childName)
+    
+    // GrowthRecord を EditableGrowthRecord に変換
+    const editableRecord: EditableGrowthRecord = {
+      id: record.id,
+      child_id: matchedChild?.child_id,
+      child_name: record.childName,
+      date: record.date,
+      age_in_months: record.ageInMonths,
+      type: record.type,
+      category: record.category,
+      title: record.title,
+      description: record.description,
+      value: record.value,
+      unit: record.unit,
+      image_url: record.imageUrl,
+      detected_by: record.detectedBy,
+      confidence: record.confidence,
+      emotions: record.emotions,
+      development_stage: record.developmentStage
+    }
+    setSelectedRecord(editableRecord)
+    setShowEditModal(true)
+  }
+
+  const handleRecordUpdated = () => {
+    loadData()
+  }
+
+  const handleRecordDeleted = () => {
+    loadData()
+  }
+
+  const handleRecordCreated = () => {
+    loadData()
+  }
+
+  const getStatsForChild = (childId: string) => {
+    let records = growthRecords
+    if (childId !== 'all') {
+      const childName = children.find(c => c.child_id === childId)?.name || ''
+      records = growthRecords.filter(r => r.childName === childName)
+    }
+    
+    // 日付計算用
+    const now = new Date()
+    const thisMonth = records.filter(r => {
+      const recordDate = new Date(r.date)
+      return recordDate.getMonth() === now.getMonth() && recordDate.getFullYear() === now.getFullYear()
+    }).length
+    
+    // 連続記録日数計算
+    const sortedRecords = records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    let consecutiveDays = 0
+    const today = new Date()
+    
+    for (let i = 0; i < sortedRecords.length; i++) {
+      const recordDate = new Date(sortedRecords[i].date)
+      const diffDays = Math.floor((today.getTime() - recordDate.getTime()) / (1000 * 60 * 60 * 24))
+      
+      if (diffDays === consecutiveDays) {
+        consecutiveDays++
+      } else {
+        break
+      }
+    }
+    
+    // 最新記録からの日数
+    const daysSinceLastRecord = records.length > 0 ? 
+      Math.floor((now.getTime() - new Date(sortedRecords[0].date).getTime()) / (1000 * 60 * 60 * 24)) : 0
+    
+    // AI検出率
+    const aiDetectedCount = records.filter(r => r.detectedBy === 'genie').length
+    const aiDetectionRate = records.length > 0 ? Math.round((aiDetectedCount / records.length) * 100) : 0
+    
+    return {
+      totalRecords: records.length,
+      photosCount: records.filter(r => r.imageUrl).length,
+      milestonesCount: records.filter(r => r.type === 'milestone' || r.type === 'skills').length,
+      thisMonthCount: thisMonth,
+      consecutiveDays: consecutiveDays,
+      daysSinceLastRecord: daysSinceLastRecord,
+      aiDetectionRate: aiDetectionRate
+    }
+  }
+
+  const selectedChildStats = getStatsForChild(selectedChild)
 
   return (
     <AppLayout>
-      {/* v2.0 ページヘッダー */}
-      <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50">
-        <div className="px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-400 to-indigo-400 flex items-center justify-center">
-                <Eye className="h-4 w-4 text-white" />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-teal-50">
+        {/* ページヘッダー */}
+        <div className="bg-white/80 backdrop-blur-sm border-b border-blue-100">
+          <div className="max-w-6xl mx-auto px-4 py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-teal-600 flex items-center justify-center shadow-lg">
+                  <MdTimeline className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-800">お子さんの成長記録</h1>
+                  <p className="text-gray-600">からだ・ことば・できることを記録して成長を見守ります</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-heading font-semibold text-gray-800">成長洞察</h1>
-                <p className="text-sm text-purple-600">AI分析による見えない成長の可視化</p>
+              
+              <div className="flex items-center space-x-3">
+                <Button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 text-white shadow-lg"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  記録を追加
+                </Button>
+                <Link href="/chat">
+                  <Button variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50">
+                    <Camera className="h-4 w-4 mr-2" />
+                    Genieで記録
+                  </Button>
+                </Link>
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-lg border border-blue-200">
+                  <GiMagicLamp className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm text-blue-700 font-medium">AI自動検出</span>
+                </div>
               </div>
-            </div>
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-lg border border-purple-200">
-              <Sparkles className="h-4 w-4 text-purple-600" />
-              <span className="text-sm text-purple-700 font-medium">リアルタイム分析</span>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="container mx-auto px-8 py-8">
-        {/* AI洞察サマリー */}
-        <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
-            <CardContent className="p-6 text-center">
-              <Target className="h-8 w-8 mx-auto mb-3 text-emerald-600" />
-              <h3 className="font-heading text-xl font-bold text-emerald-700">12</h3>
-              <p className="text-sm text-emerald-600">今月の新しい洞察</p>
-              <Badge className="mt-2 bg-emerald-100 text-emerald-700">+3 先週比</Badge>
-            </CardContent>
-          </Card>
+        <div className="max-w-6xl mx-auto p-6 space-y-8">
+          {/* 成長サマリーカード */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <Card className="bg-gradient-to-br from-blue-600 to-blue-700 text-white border-0 shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-100 text-sm font-medium">記録総数</p>
+                    <p className="text-2xl font-bold mt-1">{selectedChildStats.totalRecords}件</p>
+                    <p className="text-blue-200 text-xs">継続観察中</p>
+                  </div>
+                  <BarChart3 className="h-8 w-8 text-blue-200" />
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
-            <CardContent className="p-6 text-center">
-              <Brain className="h-8 w-8 mx-auto mb-3 text-purple-600" />
-              <h3 className="font-heading text-xl font-bold text-purple-700">87%</h3>
-              <p className="text-sm text-purple-600">平均予測精度</p>
-              <Badge className="mt-2 bg-purple-100 text-purple-700">高精度</Badge>
-            </CardContent>
-          </Card>
+            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-100 text-sm font-medium">写真記録</p>
+                    <p className="text-2xl font-bold mt-1">{selectedChildStats.photosCount}枚</p>
+                    <p className="text-blue-200 text-xs">AI解析済み</p>
+                  </div>
+                  <Camera className="h-8 w-8 text-blue-200" />
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
-            <CardContent className="p-6 text-center">
-              <Star className="h-8 w-8 mx-auto mb-3 text-amber-600" />
-              <h3 className="font-heading text-xl font-bold text-amber-700">8.9</h3>
-              <p className="text-sm text-amber-600">成長スコア</p>
-              <Badge className="mt-2 bg-amber-100 text-amber-700">優秀</Badge>
-            </CardContent>
-          </Card>
-        </div>
+            <Card className="bg-gradient-to-br from-slate-500 to-slate-600 text-white border-0 shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-100 text-sm font-medium">できること</p>
+                    <p className="text-2xl font-bold mt-1">{selectedChildStats.milestonesCount}個</p>
+                    <p className="text-slate-200 text-xs">新しくできた</p>
+                  </div>
+                  <Award className="h-8 w-8 text-slate-200" />
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* 今日の予測洞察 */}
-        <div className="mb-8">
-          <DailyPredictionCard className="w-full" />
-        </div>
+            <Card className="bg-gradient-to-br from-slate-400 to-slate-500 text-white border-0 shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-100 text-sm font-medium">今月の記録</p>
+                    <p className="text-2xl font-bold mt-1">{selectedChildStats.thisMonthCount}件</p>
+                    <p className="text-slate-200 text-xs">継続記録中</p>
+                  </div>
+                  <Calendar className="h-8 w-8 text-slate-200" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* AI洞察とビジュアル記録のタブ */}
-        <Tabs defaultValue="insights" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-white/60 backdrop-blur-sm">
-            <TabsTrigger value="insights" className="data-[state=active]:bg-purple-100">
-              <Brain className="h-4 w-4 mr-2" />
-              AI洞察
-            </TabsTrigger>
-            <TabsTrigger value="visual" className="data-[state=active]:bg-emerald-100">
-              <Camera className="h-4 w-4 mr-2" />
-              ビジュアル記録
-            </TabsTrigger>
-            <TabsTrigger value="patterns" className="data-[state=active]:bg-indigo-100">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              成長パターン
-            </TabsTrigger>
-          </TabsList>
-
-          {/* AI洞察タブ */}
-          <TabsContent value="insights" className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-800">最新のAI洞察</h3>
-              <Button variant="outline" size="sm" className="border-purple-300 text-purple-600 hover:bg-purple-50">
-                <Sparkles className="h-4 w-4 mr-2" />
-                更新
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {insights.map((insight) => (
-                <Card 
-                  key={insight.id} 
-                  className={`bg-gradient-to-br ${getInsightColor(insight.type)} hover:shadow-lg transition-all duration-300 ${
-                    insight.isNew ? 'ring-2 ring-purple-400 ring-opacity-50' : ''
-                  }`}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {getInsightIcon(insight.type)}
-                        <CardTitle className="text-base font-medium text-gray-800">
-                          {insight.title}
-                        </CardTitle>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs">{getCategoryIcon(insight.category)}</span>
-                        {insight.isNew && (
-                          <Badge className="bg-red-100 text-red-700 text-xs">NEW</Badge>
-                        )}
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-500">{insight.timeframe}</p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-gray-700 leading-relaxed">
-                      {insight.description}
-                    </p>
-
-                    {/* 信頼度 */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-600">信頼度</span>
-                        <span className="text-xs font-semibold text-gray-700">
-                          {Math.round(insight.confidence * 100)}%
-                        </span>
-                      </div>
-                      <Progress value={insight.confidence * 100} className="h-2" />
-                    </div>
-
-                    {/* エビデンス */}
-                    {insight.evidence && (
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium text-gray-600">根拠データ</p>
-                        <div className="space-y-1">
-                          {insight.evidence.slice(0, 2).map((evidence, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <div className="h-1.5 w-1.5 rounded-full bg-gray-400" />
-                              <span className="text-xs text-gray-600">{evidence}</span>
-                            </div>
-                          ))}
+          {/* 子ども選択とフィルター */}
+          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm min-h-[140px]">
+            <CardHeader className="bg-gradient-to-r from-blue-500 to-teal-600 text-white rounded-t-lg pb-4">
+              <CardTitle className="flex items-center gap-3 text-lg">
+                <Baby className="h-5 w-5" />
+                フィルター
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">お子さんを選択</label>
+                  <Select value={selectedChild} onValueChange={setSelectedChild}>
+                    <SelectTrigger className="border-blue-200 focus:border-blue-400">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        <div className="flex items-center gap-2">
+                          <Baby className="h-4 w-4" />
+                          <span>すべてのお子さん</span>
                         </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* ビジュアル記録タブ */}
-          <TabsContent value="visual" className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-800">ビジュアル記録とAI分析</h3>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="border-emerald-300 text-emerald-600 hover:bg-emerald-50">
-                  <Camera className="h-4 w-4 mr-2" />
-                  写真
-                </Button>
-                <Button variant="outline" size="sm" className="border-blue-300 text-blue-600 hover:bg-blue-50">
-                  <Mic className="h-4 w-4 mr-2" />
-                  音声
-                </Button>
+                      </SelectItem>
+                      {children.map(child => (
+                        <SelectItem key={child.child_id} value={child.child_id}>
+                          <div className="flex items-center gap-2">
+                            <Baby className="h-4 w-4" />
+                            <span>{child.name} ({child.age}歳)</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">記録カテゴリ</label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger className="border-blue-200 focus:border-blue-400">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">
+                        <div className="flex items-center gap-2">
+                          <Star className="h-4 w-4" />
+                          <span>すべて</span>
+                        </div>
+                      </SelectItem>
+                      {Object.entries(categoryLabels).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>
+                          <div className="flex items-center gap-2">
+                            {key === 'body_growth' && <Ruler className="h-4 w-4" />}
+                            {key === 'language_growth' && <MessageCircle className="h-4 w-4" />}
+                            {key === 'skills' && <Star className="h-4 w-4" />}
+                            {key === 'social_skills' && <Heart className="h-4 w-4" />}
+                            {key === 'hobbies' && <Award className="h-4 w-4" />}
+                            {key === 'life_skills' && <Target className="h-4 w-4" />}
+                            <span>{label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {visualRecords.map((record) => (
-                <Card key={record.id} className="bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all duration-300">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {record.type === 'photo' && <Camera className="h-4 w-4 text-emerald-600" />}
-                        {record.type === 'video' && <Play className="h-4 w-4 text-blue-600" />}
-                        {record.type === 'voice' && <Mic className="h-4 w-4 text-purple-600" />}
-                        <span className="text-sm font-medium capitalize">{record.type}</span>
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        {record.timestamp.toLocaleTimeString('ja-JP', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </span>
+          {/* 成長タイムライン */}
+          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm min-h-[400px]">
+            <CardHeader className="bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-3">
+                    <MdTimeline className="h-6 w-6" />
+                    成長タイムライン
+                  </CardTitle>
+                  <CardDescription className="text-slate-100">
+                    時系列で見るお子さんの成長記録
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 bg-white/20 rounded-lg p-1">
+                  <Button
+                    size="sm"
+                    variant={viewMode === 'detailed' ? 'default' : 'ghost'}
+                    onClick={() => setViewMode('detailed')}
+                    className={`h-8 px-3 ${viewMode === 'detailed' ? 'bg-white text-slate-600' : 'text-white hover:bg-white/20'}`}
+                  >
+                    <LayoutGrid className="h-4 w-4 mr-1" />
+                    詳細
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={viewMode === 'compact' ? 'default' : 'ghost'}
+                    onClick={() => setViewMode('compact')}
+                    className={`h-8 px-3 ${viewMode === 'compact' ? 'bg-white text-slate-600' : 'text-white hover:bg-white/20'}`}
+                  >
+                    <List className="h-4 w-4 mr-1" />
+                    一覧
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="relative">
+                {/* タイムライン線（詳細表示時のみ） */}
+                {viewMode === 'detailed' && (
+                  <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-300 to-teal-300"></div>
+                )}
+                
+                {/* ローディング表示 */}
+                {loading && (
+                  <div className="text-center py-12">
+                    <div className="inline-flex items-center gap-2">
+                      <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-gray-600">成長記録を読み込み中...</span>
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* AI分析結果 */}
-                    {record.aiAnalysis && (
-                      <div className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Brain className="h-4 w-4 text-purple-600" />
-                          <span className="text-sm font-medium text-purple-800">AI分析</span>
+                    {/* スケルトンローダー */}
+                    <div className="mt-8 space-y-6">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-start gap-6">
+                          <div className="w-16 h-16 bg-gray-200 rounded-full animate-pulse"></div>
+                          <div className="flex-1">
+                            <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                            <div className="h-3 bg-gray-100 rounded animate-pulse w-3/4 mb-2"></div>
+                            <div className="h-3 bg-gray-100 rounded animate-pulse w-1/2"></div>
+                          </div>
                         </div>
-                        <p className="text-sm text-purple-700">{record.aiAnalysis}</p>
-                      </div>
-                    )}
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                    {/* 詳細洞察 */}
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-gray-600">検出された特徴</p>
-                      <div className="space-y-1">
-                        {record.insights.map((insight, index) => (
-                          <div key={index} className="flex items-center gap-2">
-                            <Zap className="h-3 w-3 text-yellow-500" />
-                            <span className="text-xs text-gray-700">{insight}</span>
+                {/* 記録が見つからない場合 */}
+                {!loading && getFilteredRecords().length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="mb-4">
+                      <TrendingUp className="h-16 w-16 mx-auto text-gray-300" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-700 mb-2">
+                      {growthRecords.length === 0 ? '成長記録がありません' : '成長記録が見つかりません'}
+                    </h3>
+                    <p className="text-gray-500 mb-4">
+                      {growthRecords.length === 0 
+                        ? '最初の成長記録を作成しましょう' 
+                        : 'フィルター条件を変更するか、新しい記録を作成してください'
+                      }
+                    </p>
+                    <div className="flex gap-3 justify-center">
+                      <Button 
+                        onClick={() => setShowCreateModal(true)}
+                        className="bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 text-white"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        記録を作成
+                      </Button>
+                      <Link href="/chat">
+                        <Button variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50">
+                          <Camera className="h-4 w-4 mr-2" />
+                          Genieで記録
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
+                {/* 成長記録タイムライン */}
+                {!loading && getFilteredRecords().length > 0 && (
+                  <>
+                    {viewMode === 'detailed' ? (
+                      // 詳細表示
+                      <div className="space-y-8">
+                        {getFilteredRecords().map((record, index) => (
+                      <div key={record.id} className="relative flex items-start gap-6">
+                        {/* タイムライン点 */}
+                        <div className={`relative z-10 flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br ${getRecordColor(record.type)} flex items-center justify-center shadow-lg text-white`}>
+                          {getRecordIcon(record.category)}
+                          <div className="absolute -top-1 -right-1">
+                            {record.detectedBy === 'genie' && (
+                              <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                                <GiMagicLamp className="h-3 w-3 text-white" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 記録カード */}
+                        <Card className="flex-1 border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all duration-300">
+                          <CardContent className="p-6">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h4 className="font-bold text-lg text-gray-800">{record.title}</h4>
+                                  <Badge className={`bg-gradient-to-r ${getRecordColor(record.type)} text-white`}>
+                                    {categoryLabels[record.type] || 
+                                     detailCategoryLabels[record.category] ||
+                                     (record.type === 'physical' ? 'からだの成長' :
+                                      record.type === 'emotional' ? 'お友達との関わり' :
+                                      record.type === 'cognitive' ? 'できること' :
+                                      record.type === 'milestone' ? 'できること' : '写真')}
+                                  </Badge>
+                                  {record.confidence && (
+                                    <Badge variant="outline" className="text-xs">
+                                      信頼度 {Math.round(record.confidence * 100)}%
+                                    </Badge>
+                                  )}
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-blue-600" />
+                                    <span>{formatDate(record.date)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Baby className="h-4 w-4 text-blue-600" />
+                                    <span>{record.ageInMonths}ヶ月</span>
+                                  </div>
+                                  {record.value && (
+                                    <div className="flex items-center gap-2">
+                                      <BarChart3 className="h-4 w-4 text-blue-600" />
+                                      <span>{record.value}{record.unit}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <p className="text-gray-700 mb-3">{record.description}</p>
+                                
+                                {record.developmentStage && (
+                                  <div className="mb-3">
+                                    <Badge className="bg-green-100 text-green-700">
+                                      {record.developmentStage}
+                                    </Badge>
+                                  </div>
+                                )}
+                                
+                                {record.emotions && record.emotions.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 mb-3">
+                                    {record.emotions.map((emotion, idx) => (
+                                      <Badge key={idx} variant="outline" className="text-xs">
+                                        {emotion}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
+                                
+                                {/* 編集ボタン */}
+                                <div className="mt-4 flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleEditRecord(record)}
+                                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                                  >
+                                    <Edit className="h-4 w-4 mr-1" />
+                                    編集
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              {record.imageUrl && (
+                                <div className="ml-4 flex-shrink-0">
+                                  <div className="w-32 h-24 rounded-lg border border-blue-200 overflow-hidden">
+                                    <img 
+                                      src={record.imageUrl.startsWith('/api/') ? `http://localhost:8000${record.imageUrl}` : record.imageUrl}
+                                      alt={record.title}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
                           </div>
                         ))}
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* 空状態 */}
-            {visualRecords.length === 0 && (
-              <Card className="bg-white/80 backdrop-blur-sm">
-                <CardContent className="p-12 text-center">
-                  <Camera className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium text-gray-600 mb-2">ビジュアル記録がありません</h3>
-                  <p className="text-sm text-gray-500 mb-4">
-                    写真や音声を記録して、AIによる成長分析を受けてみましょう
-                  </p>
-                  <Button className="bg-emerald-500 hover:bg-emerald-600">
-                    <Camera className="h-4 w-4 mr-2" />
-                    最初の記録を作成
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          {/* 成長パターンタブ */}
-          <TabsContent value="patterns" className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-800">長期的な成長パターン</h3>
-              <Button variant="outline" size="sm" className="border-indigo-300 text-indigo-600 hover:bg-indigo-50">
-                <Calendar className="h-4 w-4 mr-2" />
-                期間変更
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-blue-700">
-                    <BarChart3 className="h-5 w-5" />
-                    発達推移グラフ
-                  </CardTitle>
-                  <CardDescription>過去3ヶ月の総合的な成長推移</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-48 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center border border-blue-200">
-                    <div className="text-center">
-                      <BarChart3 className="h-12 w-12 mx-auto mb-3 text-blue-500" />
-                      <p className="text-blue-700 font-medium">インタラクティブグラフ</p>
-                      <p className="text-xs text-blue-600">近日実装予定</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-emerald-700">
-                    <Target className="h-5 w-5" />
-                    マイルストーン達成
-                  </CardTitle>
-                  <CardDescription>月齢に応じた発達目標の達成状況</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
-                      <div className="flex items-center gap-3">
-                        <div className="h-3 w-3 rounded-full bg-green-500" />
-                        <span className="text-sm font-medium">首すわり</span>
+                    ) : (
+                      // コンパクト表示
+                      <div className="space-y-3">
+                        {getFilteredRecords().map((record, index) => (
+                          <div key={record.id} className="bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                            <div className="flex items-center gap-4 p-4">
+                              {/* アイコン */}
+                              <div className={`flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br ${getRecordColor(record.type)} flex items-center justify-center text-white`}>
+                                {getRecordIcon(record.category)}
+                              </div>
+                              
+                              {/* コンテンツ */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="font-semibold text-gray-800 truncate">{record.title}</h4>
+                                  <Badge className={`text-xs bg-gradient-to-r ${getRecordColor(record.type)} text-white`}>
+                                    {categoryLabels[record.type] || 
+                                     detailCategoryLabels[record.category] ||
+                                     (record.type === 'physical' ? 'からだの成長' :
+                                      record.type === 'emotional' ? 'お友達との関わり' :
+                                      record.type === 'cognitive' ? 'できること' :
+                                      record.type === 'milestone' ? 'できること' : '写真')}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-gray-600">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {formatDate(record.date)}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Baby className="h-3 w-3" />
+                                    {record.childName}
+                                  </span>
+                                  <span>{record.ageInMonths}ヶ月</span>
+                                  {record.detectedBy === 'genie' && (
+                                    <Badge variant="outline" className="text-xs">
+                                      <GiMagicLamp className="h-3 w-3 mr-1" />
+                                      AI検出
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* アクションボタン */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditRecord(record)}
+                                className="border-blue-300 text-blue-700 hover:bg-blue-50 flex-shrink-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <Badge className="bg-green-100 text-green-700">達成</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
-                      <div className="flex items-center gap-3">
-                        <div className="h-3 w-3 rounded-full bg-green-500" />
-                        <span className="text-sm font-medium">寝返り</span>
-                      </div>
-                      <Badge className="bg-green-100 text-green-700">達成</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-amber-50 border border-amber-200">
-                      <div className="flex items-center gap-3">
-                        <div className="h-3 w-3 rounded-full bg-amber-500" />
-                        <span className="text-sm font-medium">お座り</span>
-                      </div>
-                      <Badge className="bg-amber-100 text-amber-700">進行中</Badge>
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-200">
-                      <div className="flex items-center gap-3">
-                        <div className="h-3 w-3 rounded-full bg-gray-400" />
-                        <span className="text-sm font-medium">つかまり立ち</span>
-                      </div>
-                      <Badge variant="outline">予定</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        {/* フローティング音声ボタン */}
-        <FloatingVoiceButton position="bottom-right" />
+                    )}
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
+
+      {/* 成長記録作成モーダル */}
+      <CreateGrowthRecordModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        onRecordCreated={handleRecordCreated}
+      />
+
+      {/* 成長記録編集モーダル */}
+      <EditGrowthRecordModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        record={selectedRecord}
+        onRecordUpdated={handleRecordUpdated}
+        onRecordDeleted={handleRecordDeleted}
+      />
     </AppLayout>
   )
 }

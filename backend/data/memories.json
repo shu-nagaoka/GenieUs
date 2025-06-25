@@ -1,0 +1,76 @@
+{
+  "b4e94d74-f4d5-4b8f-89bf-0a82fbebf066": {
+    "id": "b4e94d74-f4d5-4b8f-89bf-0a82fbebf066",
+    "user_id": "frontend_user",
+    "title": "初めてのひとり歩き",
+    "description": "花子ちゃんが初めてひとりで歩いた瞬間を撮影しました。とても嬉しそうな表情でした！",
+    "date": "2025-06-24",
+    "type": "photo",
+    "category": "milestone",
+    "media_url": null,
+    "thumbnail_url": null,
+    "location": "リビングルーム",
+    "tags": [
+      "ひとり歩き",
+      "マイルストーン",
+      "感動",
+      "成長"
+    ],
+    "favorited": false,
+    "created_at": "2025-06-24T13:15:16.420726",
+    "updated_at": "2025-06-24T13:30:36.643410"
+  },
+  "1c5ac6e9-8ce1-48a6-9dd0-b41a98e418d6": {
+    "id": "1c5ac6e9-8ce1-48a6-9dd0-b41a98e418d6",
+    "user_id": "frontend_user",
+    "title": "今日の笑顔",
+    "description": "ご機嫌な一日でした！",
+    "date": "2025-06-24",
+    "type": "photo",
+    "category": "daily",
+    "media_url": null,
+    "thumbnail_url": null,
+    "location": "お家",
+    "tags": [
+      "笑顔",
+      "元気"
+    ],
+    "favorited": false,
+    "created_at": "2025-06-24T13:26:11.803965",
+    "updated_at": "2025-06-24T13:34:17.042799"
+  },
+  "c5a75e51-b91f-4694-8462-e5948cf90f97": {
+    "id": "c5a75e51-b91f-4694-8462-e5948cf90f97",
+    "user_id": "frontend_user",
+    "title": "初めてのつかまり立ち",
+    "description": "本当気づかないうちに振り返ったら立ってた！パパが見つけたんだけど、ママもみたかったなー。",
+    "date": "2025-06-24",
+    "type": "photo",
+    "category": "daily",
+    "media_url": null,
+    "thumbnail_url": null,
+    "location": "",
+    "tags": [
+      "つかまり立ち"
+    ],
+    "favorited": false,
+    "created_at": "2025-06-24T13:28:23.523675",
+    "updated_at": "2025-06-24T13:28:47.426320"
+  },
+  "fcacaf35-98c1-4fac-a091-e70fb9b67d77": {
+    "id": "fcacaf35-98c1-4fac-a091-e70fb9b67d77",
+    "user_id": "frontend_user",
+    "title": "モデル赤ちゃん",
+    "description": "ddd",
+    "date": "2025-06-24",
+    "type": "photo",
+    "category": "daily",
+    "media_url": "/api/v1/files/images/2b38b640-be11-465c-8dec-4c1c79fa869d.jpeg",
+    "thumbnail_url": "/api/v1/files/images/2b38b640-be11-465c-8dec-4c1c79fa869d.jpeg",
+    "location": "",
+    "tags": [],
+    "favorited": false,
+    "created_at": "2025-06-24T13:44:05.020484",
+    "updated_at": "2025-06-24T18:02:30.460845"
+  }
+}

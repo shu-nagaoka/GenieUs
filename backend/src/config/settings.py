@@ -22,7 +22,7 @@ class AppSettings(BaseSettings):
     LOG_LEVEL: str = Field(default="INFO")
     ROOT_DIR: str | None = None
 
-    model_config = SettingsConfigDict(env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env.dev", env_file_encoding="utf-8", extra="ignore")
 
     @field_validator("ROOT_DIR", mode="before")
     @classmethod

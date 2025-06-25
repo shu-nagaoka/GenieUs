@@ -26,7 +26,7 @@ def create_record_management_tool(
 
     def manage_child_records(
         operation: str,
-        child_id: str,
+        child_id: str = "default_child",
         event_type: str = "",
         description: str = "",
         days_back: int = 7,
@@ -36,7 +36,7 @@ def create_record_management_tool(
 
         Args:
             operation: 操作タイプ（save, get, patterns）
-            child_id: 子どものID
+            child_id: 子どものID（デフォルト: "default_child"）
             event_type: イベントタイプ（feeding, sleep, mood等）
             description: 記録の説明（save時に必要）
             days_back: 取得する過去の日数（get時）
@@ -102,7 +102,7 @@ def create_record_management_tool(
             return _create_error_response(operation, f"記録管理中にエラーが発生しました: {e!s}")
 
     def _create_pattern_analysis_response(child_id: str, analysis_days: int) -> str:
-        """パターン分析結果のw自然言語レスポンス"""
+        """パターン分析結果の自然言語レスポンス"""
         return f"""
         お子さん（ID: {child_id}）の過去{analysis_days}日間の記録パターンを分析中です。
 

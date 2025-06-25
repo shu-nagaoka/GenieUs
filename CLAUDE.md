@@ -25,7 +25,7 @@ Google ADKを使用したAI子育て支援フルスタックアプリケーシ�
 - **[アーキテクチャ概要](docs/architecture/overview.md)** - 全体設計の理解（**まずはここから**）
 - **[ADKファースト設計](docs/architecture/adk-first-design.md)** - 核心思想
 - **[Clean Architecture](docs/architecture/clean-architecture.md)** - 層責務と依存関係
-- **[DI設計パターン](docs/architecture/di-container-design.md)** - Composition Root理解
+- **[Composition Root設計](docs/architecture/composition-root-design.md)** - 中央集約型依存関係組み立て
 
 ### 現在の実装状況
 ```
@@ -125,16 +125,16 @@ Infrastructure   ← 外部システム統合
 ### DI統合（Composition Root）
 ```python
 # main.py - 中央集約組み立て
-container = get_container()
-childcare_tool = container.childcare_consultation_tool()
-agent = get_childcare_agent("simple", childcare_tool)
-setup_routes(container, agent)
+composition_root = CompositionRootFactory.create()
+all_tools = composition_root.get_all_tools()
+agent_manager = AgentManager(tools=all_tools, logger=composition_root.logger)
+agent_manager.initialize_all_components()
 ```
 
 ### 重要原則
 1. **ADKファースト**: エージェント中心の設計
 2. **段階的複雑性**: シンプル→複雑へ段階的発展
-3. **Composition Root**: main.pyでの中央組み立て
+3. **Composition Root**: main.pyでの中央集約組み立て（DIContainer完全置換）
 4. **Import文先頭配置**: 依存関係の明確化（最重要）
 5. **段階的フォールバック**: プライマリ→セカンダリ→フォールバック
 
@@ -157,7 +157,7 @@ setup_routes(container, agent)
 
 ---
 
-## 🤖 Claude Code向け自律参照ガイド
+## 🤖 AI開発支援ツール向け自律参照ガイド
 
 ### **🚨 重要**: 実装前必読ドキュメント
 **すべての実装タスクで以下を必ず参照してください**:
@@ -173,9 +173,9 @@ setup_routes(container, agent)
 | **🔧 新ツール開発** | [新ツール開発](docs/guides/new-tool-development.md) + [コーディング規約](docs/development/coding-standards.md) | Protocol定義、薄いアダプター、エラーハンドリング、**ロガー注入** |
 | **📋 UseCase実装** | [新UseCase実装](docs/guides/new-usecase-impl.md) + [アーキテクチャ概要](docs/architecture/overview.md) | レイヤー責務、依存関係の方向 |
 | **🌐 API実装** | [FastAPI DI統合](docs/technical/fastapi-di-integration.md) + [コーディング規約](docs/development/coding-standards.md) | **Depends統合**、エラーハンドリング、**@inject使用** |
-| **🎨 UI実装** | [UIコンポーネントガイド](docs/guides/ui-component-guide.md) + [コーディング規約](docs/development/coding-standards.md) | shadcn/ui、TypeScript規約 |
+| **🎨 UI実装** | [UIコンポーネントガイド](docs/guides/ui-component-guide.md) + [コーディング規約](docs/development/coding-standards.md) | shadcn/ui、TypeScript規約、シンプルヘッダー設計 |
 | **🐛 バグ修正** | [トラブルシューティング](docs/guides/troubleshooting.md) + [デバッグガイド](docs/development/debugging.md) | 段階的フォールバック、ログ確認 |
-| **🏗️ アーキテクチャ変更** | [アーキテクチャ概要](docs/architecture/overview.md) + [DI設計](docs/architecture/di-container-design.md) | 設計思想、影響範囲 |
+| **🏗️ アーキテクチャ変更** | [アーキテクチャ概要](docs/architecture/overview.md) + [Composition Root設計](docs/architecture/composition-root-design.md) | 設計思想、影響範囲 |
 | **⚡ DI統合・マイグレーション** | [DI統合マイグレーション](docs/guides/di-migration-guide.md) + [FastAPI DI統合](docs/technical/fastapi-di-integration.md) | **ロガーDI化**、**Depends統合**、グローバル変数削除 |
 
 ### **⚠️ 実装前チェックリスト**

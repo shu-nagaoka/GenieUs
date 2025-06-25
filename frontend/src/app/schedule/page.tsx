@@ -1,638 +1,828 @@
 'use client'
+
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
-import { DailyPredictionCard } from '@/components/v2/prediction/DailyPredictionCard'
-import { FloatingVoiceButton } from '@/components/v2/voice-recording/FloatingVoiceButton'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardTitle, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   Calendar,
   Clock,
-  AlertCircle,
+  Sparkles,
+  MapPin,
+  Stethoscope,
+  Heart,
+  Baby,
+  Users,
+  Target,
   CheckCircle,
   Plus,
-  Bell,
-  MapPin,
-  FileText,
-  Brain,
-  Sparkles,
-  TrendingUp,
-  Baby,
-  Target,
   Star,
-  Lightbulb,
-  Zap,
-  Eye,
-  BarChart3,
-  Activity
+  Grid3X3,
+  LayoutList,
+  ChevronLeft,
+  ChevronRight,
+  Edit
 } from 'lucide-react'
+import { MdEvent, MdVaccines, MdOutdoorGrill } from 'react-icons/md'
+import { FaCalendarAlt, FaStar, FaHeart, FaMapMarkerAlt } from 'react-icons/fa'
+import { GiMagicLamp } from 'react-icons/gi'
+import Link from 'next/link'
+import { getScheduleEvents, ScheduleEvent as ApiScheduleEvent } from '@/lib/api/schedules'
+import { CreateScheduleModal } from '@/components/features/schedule/create-schedule-modal'
+import { EditScheduleModal } from '@/components/features/schedule/edit-schedule-modal'
 
-interface PredictiveScheduleItem {
-  id: string
-  title: string
-  type: 'prediction' | 'milestone' | 'vaccination' | 'checkup' | 'development'
-  predictedDate: Date
-  confidence: number
-  category: 'health' | 'development' | 'behavior' | 'feeding' | 'sleep'
-  aiReasoning: string
-  suggestedActions: string[]
-  status: 'predicted' | 'scheduled' | 'completed' | 'modified'
-  priority: 'high' | 'medium' | 'low'
-  parentInfluence?: string
-  basedOnData: string[]
+// APIから取得したデータを表示用に変換するインターフェース
+interface ScheduleEvent extends Omit<ApiScheduleEvent, 'user_id' | 'created_at' | 'updated_at' | 'created_by'> {
+  subtype?: 'vaccination' | 'checkup' | 'event' | 'ceremony' | 'class'
+  createdBy: 'genie' | 'user'
 }
 
-interface SmartReminder {
-  id: string
-  title: string
-  message: string
-  timing: 'morning' | 'before_event' | 'evening'
-  frequency: 'daily' | 'weekly' | 'custom'
-  isAiGenerated: boolean
-  nextTrigger: Date
-  adaptiveReason?: string
-}
+export default function SchedulePlanningPage() {
+  const [selectedTab, setSelectedTab] = useState<string>('all')
+  const [viewMode, setViewMode] = useState<'cards' | 'calendar'>('cards')
+  const [scheduleEvents, setScheduleEvents] = useState<ScheduleEvent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedEvent, setSelectedEvent] = useState<ApiScheduleEvent | null>(null)
 
-export default function PredictiveSchedulePage() {
-  const [predictiveItems, setPredictiveItems] = useState<PredictiveScheduleItem[]>([
+  // APIからスケジュールデータを取得
+  const loadScheduleEvents = async () => {
+    try {
+      setLoading(true)
+      const result = await getScheduleEvents({ user_id: 'frontend_user' })
+      
+      if (result.success && result.data) {
+        // APIデータを表示用に変換
+        const convertedEvents: ScheduleEvent[] = result.data.map(apiEvent => ({
+          id: apiEvent.id,
+          title: apiEvent.title,
+          date: apiEvent.date,
+          time: apiEvent.time,
+          type: apiEvent.type,
+          location: apiEvent.location,
+          description: apiEvent.description,
+          status: apiEvent.status,
+          createdBy: apiEvent.created_by,
+          // 既存のフロントエンドロジック用にsubtypeを推定
+          subtype: apiEvent.type === 'medical' ? 
+            (apiEvent.title.includes('ワクチン') || apiEvent.title.includes('接種') ? 'vaccination' : 'checkup') :
+            undefined
+        }))
+        setScheduleEvents(convertedEvents)
+      } else {
+        console.error('スケジュール取得に失敗しました:', result.message)
+      }
+    } catch (error) {
+      console.error('スケジュール読み込みエラー:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // 初回ロード
+  useEffect(() => {
+    loadScheduleEvents()
+  }, [])
+
+  // サンプルデータ（バックアップ用）
+  const sampleScheduleEvents: ScheduleEvent[] = [
     {
       id: '1',
-      title: '成長スパート期間の開始',
-      type: 'prediction',
-      predictedDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-      confidence: 0.84,
-      category: 'development',
-      aiReasoning: '過去の成長パターンと現在の食事量増加から、3日後頃から成長スパート期に入る可能性が高いです。',
-      suggestedActions: [
-        '栄養価の高い食事を準備',
-        '睡眠時間を十分確保',
-        '成長による不機嫌への心構え'
-      ],
-      status: 'predicted',
-      priority: 'high',
-      parentInfluence: 'あなたのバランスの良い食事計画が成長を促進しています',
-      basedOnData: ['食事量パターン', '睡眠の質向上', '体重増加トレンド']
+      title: '1歳6ヶ月健診',
+      date: '2025-07-03',
+      time: '14:00',
+      type: 'medical',
+      subtype: 'checkup',
+      location: 'みなと保健センター',
+      description: '成長の確認と育児相談',
+      status: 'upcoming',
+      createdBy: 'genie'
     },
     {
-      id: '2',
-      title: '離乳食の新食材導入適期',
-      type: 'prediction',
-      predictedDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      confidence: 0.78,
-      category: 'feeding',
-      aiReasoning: 'お子さんの消化機能の発達と現在の食べ方から、来週が新しい食材にチャレンジする最適なタイミングです。',
-      suggestedActions: [
-        'にんじんやさつまいもを準備',
-        '小さじ1から開始',
-        'アレルギー反応に注意深く観察'
-      ],
-      status: 'predicted',
-      priority: 'medium',
-      basedOnData: ['消化機能発達段階', '現在の食べ方パターン', '月齢発達指標']
+      id: '2', 
+      title: '水族館デビュー',
+      date: '2025-07-07',
+      time: '10:00',
+      type: 'outing',
+      location: 'すみだ水族館',
+      description: '暑い夏にぴったりの涼しいお出かけをGenieが提案',
+      status: 'upcoming',
+      createdBy: 'genie'
     },
     {
       id: '3',
-      title: 'お座り完全習得の目安',
-      type: 'milestone',
-      predictedDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-      confidence: 0.91,
-      category: 'development',
-      aiReasoning: '現在の首や体幹の発達状況から、2週間後頃にお座りが完全に安定する見込みです。',
-      suggestedActions: [
-        'お座り練習の時間を増やす',
-        '周囲の安全確保',
-        '達成時の写真撮影準備'
-      ],
-      status: 'predicted',
-      priority: 'high',
-      parentInfluence: '毎日の お座り練習サポートが効果的です',
-      basedOnData: ['体幹筋力測定', 'バランス感覚テスト', '発達マイルストーン']
+      title: 'MRワクチン接種',
+      date: '2025-07-15',
+      time: '16:30',
+      type: 'medical',
+      subtype: 'vaccination',
+      location: 'かわい小児科',
+      description: '麻疹・風疹の予防接種',
+      status: 'upcoming',
+      createdBy: 'genie'
     },
     {
       id: '4',
-      title: '夜泣き減少期の到来',
-      type: 'prediction',
-      predictedDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
-      confidence: 0.73,
-      category: 'sleep',
-      aiReasoning: '睡眠パターンの改善傾向と生活リズムの安定化から、夜泣きが大幅に減少する時期が近づいています。',
-      suggestedActions: [
-        '現在の寝かしつけルーティンを継続',
-        '睡眠環境の更なる最適化',
-        '親の休息時間確保の準備'
-      ],
-      status: 'predicted',
-      priority: 'medium',
-      parentInfluence: 'あなたの一貫した寝かしつけが良い結果を生んでいます',
-      basedOnData: ['睡眠時間推移', '夜泣き頻度データ', '入眠パターン']
+      title: '夏祭りお出かけ',
+      date: '2025-07-20',
+      time: '18:00',
+      type: 'outing',
+      location: '地域夏祭り会場',
+      description: '親子で楽しむ夏の思い出作り',
+      status: 'upcoming',
+      createdBy: 'user'
     },
     {
       id: '5',
-      title: 'BCG予防接種 (スケジュール済み)',
-      type: 'vaccination',
-      predictedDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-      confidence: 1.0,
-      category: 'health',
-      aiReasoning: '定期接種スケジュールに基づく確定予定',
-      suggestedActions: [
-        '母子手帳を持参',
-        '体調確認',
-        '接種後の経過観察'
-      ],
-      status: 'scheduled',
-      priority: 'high',
-      basedOnData: ['定期接種スケジュール']
-    }
-  ])
-
-  const [smartReminders, setSmartReminders] = useState<SmartReminder[]>([
-    {
-      id: '1',
-      title: '成長スパート準備',
-      message: '明日から成長スパート期が予測されています。栄養価の高い食事と十分な睡眠を準備しましょう。',
-      timing: 'morning',
-      frequency: 'custom',
-      isAiGenerated: true,
-      nextTrigger: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      adaptiveReason: 'AI予測に基づく先回りサポート'
+      title: 'BCGワクチン接種',
+      date: '2025-06-25',
+      time: '11:00',
+      type: 'medical',
+      subtype: 'vaccination',
+      location: 'みなと小児科クリニック',
+      description: 'Genieが推奨時期に自動登録',
+      status: 'completed',
+      createdBy: 'genie'
     },
     {
-      id: '2',
-      title: '毎日の成長記録',
-      message: '今日の様子はいかがでしたか？音声で記録すると、より正確な予測が可能になります。',
-      timing: 'evening',
-      frequency: 'daily',
-      isAiGenerated: true,
-      nextTrigger: new Date(Date.now() + 6 * 60 * 60 * 1000),
-      adaptiveReason: 'データ精度向上のための記録促進'
+      id: '6',
+      title: 'プール開き準備',
+      date: '2025-07-25',
+      time: '09:30',
+      type: 'outing',
+      location: '市民プール',
+      description: '夏の水遊びデビュー',
+      status: 'upcoming',
+      createdBy: 'user'
+    },
+    {
+      id: '7',
+      title: '4種混合ワクチン',
+      date: '2025-06-30',
+      time: '15:00',
+      type: 'medical',
+      subtype: 'vaccination',
+      location: 'ファミリークリニック',
+      description: 'ジフテリア・破傷風・百日咳・ポリオの予防接種',
+      status: 'completed',
+      createdBy: 'genie'
+    },
+    {
+      id: '8',
+      title: '七夕イベント',
+      date: '2025-07-07',
+      time: '15:30',
+      type: 'outing',
+      location: '地域センター',
+      description: '短冊に願いを込めて',
+      status: 'upcoming',
+      createdBy: 'genie'
+    },
+    {
+      id: '9',
+      title: '入園式',
+      date: '2025-04-08',
+      time: '10:00',
+      type: 'school',
+      subtype: 'ceremony',
+      location: 'みらい保育園',
+      description: '新しい生活のスタート。制服着用',
+      status: 'completed',
+      createdBy: 'user'
+    },
+    {
+      id: '10',
+      title: '運動会',
+      date: '2025-10-15',
+      time: '09:00',
+      type: 'school',
+      subtype: 'event',
+      location: '保育園園庭',
+      description: 'かけっこやダンスの発表会',
+      status: 'upcoming',
+      createdBy: 'user'
+    },
+    {
+      id: '11',
+      title: 'お芋掘り遠足',
+      date: '2025-10-22',
+      time: '09:30',
+      type: 'school',
+      subtype: 'event',
+      location: 'みどり農園',
+      description: '秋の収穫体験。汚れても良い服装で',
+      status: 'upcoming',
+      createdBy: 'user'
+    },
+    {
+      id: '12',
+      title: 'クリスマス発表会',
+      date: '2025-12-20',
+      time: '14:00',
+      type: 'school',
+      subtype: 'event',
+      location: '保育園ホール',
+      description: '歌とダンスの発表。家族みんなで参加',
+      status: 'upcoming',
+      createdBy: 'user'
+    },
+    {
+      id: '13',
+      title: '親子参観日',
+      date: '2025-09-10',
+      time: '10:30',
+      type: 'school',
+      subtype: 'class',
+      location: 'みらい保育園',
+      description: '日頃の保育の様子を見学',
+      status: 'upcoming',
+      createdBy: 'user'
     }
-  ])
+  ]
 
-  const getTypeIcon = (type: PredictiveScheduleItem['type']) => {
+  const handleEditEvent = (event: ScheduleEvent) => {
+    // ScheduleEvent を ApiScheduleEvent に変換
+    const apiEvent: ApiScheduleEvent = {
+      id: event.id,
+      user_id: 'frontend_user',
+      title: event.title,
+      date: event.date,
+      time: event.time,
+      type: event.type,
+      location: event.location,
+      description: event.description,
+      status: event.status,
+      created_by: event.createdBy,
+      created_at: '',
+      updated_at: ''
+    }
+    setSelectedEvent(apiEvent)
+    setShowEditModal(true)
+  }
+
+  const handleEventUpdated = () => {
+    loadScheduleEvents()
+  }
+
+  const handleEventDeleted = () => {
+    loadScheduleEvents()
+  }
+
+  const getEventsByType = (type: string) => {
+    if (type === 'all') return scheduleEvents
+    return scheduleEvents.filter(event => event.type === type)
+  }
+
+  const getUpcomingCount = () => scheduleEvents.filter(e => e.status === 'upcoming').length
+  const getCompletedCount = () => scheduleEvents.filter(e => e.status === 'completed').length
+  const getGenieCreatedCount = () => scheduleEvents.filter(e => e.createdBy === 'genie').length
+
+  const getTypeIcon = (type: string, subtype?: string) => {
     switch (type) {
-      case 'prediction': return <Brain className="h-5 w-5 text-purple-600" />
-      case 'milestone': return <Target className="h-5 w-5 text-emerald-600" />
-      case 'vaccination': return <AlertCircle className="h-5 w-5 text-red-600" />
-      case 'checkup': return <Activity className="h-5 w-5 text-blue-600" />
-      case 'development': return <TrendingUp className="h-5 w-5 text-indigo-600" />
+      case 'medical': 
+        return subtype === 'vaccination' ? <MdVaccines className="h-5 w-5" /> : <Stethoscope className="h-5 w-5" />
+      case 'outing': return <MapPin className="h-5 w-5" />
+      case 'school': return <Users className="h-5 w-5" />
+      default: return <Calendar className="h-5 w-5" />
     }
   }
 
-  const getTypeColor = (type: PredictiveScheduleItem['type']) => {
+  const getTypeColor = (type: string) => {
     switch (type) {
-      case 'prediction': return 'from-purple-50 to-indigo-50 border-purple-200'
-      case 'milestone': return 'from-emerald-50 to-green-50 border-emerald-200'
-      case 'vaccination': return 'from-red-50 to-rose-50 border-red-200'
-      case 'checkup': return 'from-blue-50 to-cyan-50 border-blue-200'
-      case 'development': return 'from-indigo-50 to-blue-50 border-indigo-200'
+      case 'medical': return 'bg-red-500'
+      case 'outing': return 'bg-green-500'
+      case 'school': return 'bg-purple-500'
+      default: return 'bg-gray-500'
     }
   }
 
-  const getCategoryEmoji = (category: PredictiveScheduleItem['category']) => {
-    switch (category) {
-      case 'health': return '🏥'
-      case 'development': return '🧸'
-      case 'behavior': return '😊'
-      case 'feeding': return '🍼'
-      case 'sleep': return '😴'
-    }
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('ja-JP', { 
+      month: 'short', 
+      day: 'numeric',
+      weekday: 'short'
+    })
   }
 
-  const getStatusBadge = (status: PredictiveScheduleItem['status']) => {
-    switch (status) {
-      case 'predicted': return <Badge className="bg-purple-100 text-purple-700">AI予測</Badge>
-      case 'scheduled': return <Badge className="bg-blue-100 text-blue-700">確定済み</Badge>
-      case 'completed': return <Badge className="bg-green-100 text-green-700">完了</Badge>
-      case 'modified': return <Badge className="bg-amber-100 text-amber-700">調整済み</Badge>
+  // カレンダービュー用の日付管理
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 6, 1)) // 2025年7月
+  
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear()
+    const month = date.getMonth()
+    const firstDay = new Date(year, month, 1)
+    const lastDay = new Date(year, month + 1, 0)
+    const daysInMonth = lastDay.getDate()
+    const startDate = new Date(firstDay)
+    startDate.setDate(startDate.getDate() - firstDay.getDay()) // 日曜日から開始
+    
+    const days = []
+    for (let i = 0; i < 42; i++) { // 6週間分
+      const currentDay = new Date(startDate)
+      currentDay.setDate(startDate.getDate() + i)
+      days.push(currentDay)
     }
+    return days
   }
 
-  const formatPredictedDate = (date: Date) => {
+  const getEventsForDate = (date: Date) => {
+    const dateString = date.toISOString().split('T')[0]
+    return getEventsByType(selectedTab).filter(event => event.date === dateString)
+  }
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    const newDate = new Date(currentDate)
+    newDate.setMonth(currentDate.getMonth() + (direction === 'next' ? 1 : -1))
+    setCurrentDate(newDate)
+  }
+
+  const isToday = (date: Date) => {
     const today = new Date()
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    const dayAfter = new Date(today)
-    dayAfter.setDate(dayAfter.getDate() + 2)
-
-    if (date.toDateString() === today.toDateString()) {
-      return '今日'
-    } else if (date.toDateString() === tomorrow.toDateString()) {
-      return '明日'
-    } else if (date.toDateString() === dayAfter.toDateString()) {
-      return '明後日'
-    } else {
-      const days = Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-      return `${days}日後`
-    }
+    return date.toDateString() === today.toDateString()
   }
 
-  const upcomingPredictions = predictiveItems
-    .filter(item => item.predictedDate > new Date())
-    .sort((a, b) => a.predictedDate.getTime() - b.predictedDate.getTime())
-
-  const highConfidencePredictions = upcomingPredictions.filter(item => item.confidence >= 0.8)
-  const mediumConfidencePredictions = upcomingPredictions.filter(item => item.confidence >= 0.6 && item.confidence < 0.8)
+  const isCurrentMonth = (date: Date) => {
+    return date.getMonth() === currentDate.getMonth()
+  }
 
   return (
     <AppLayout>
-      {/* v2.0 ページヘッダー */}
-      <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50">
-        <div className="px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-400 to-indigo-400 flex items-center justify-center">
-                <Brain className="h-4 w-4 text-white" />
+      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-slate-50">
+        {/* ページヘッダー */}
+        <div className="bg-white/80 backdrop-blur-sm border-b border-cyan-100">
+          <div className="max-w-6xl mx-auto px-4 py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
+                  <FaCalendarAlt className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-800">予定を立てたこと</h1>
+                  <p className="text-gray-600">Genieと一緒に計画した大切なスケジュール</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-heading font-semibold text-gray-800">予測管理</h1>
-                <p className="text-sm text-purple-600">AI予測で先回りして子育てをサポート</p>
+              
+              <div className="flex items-center space-x-3">
+                <Button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  予定を追加
+                </Button>
+                <Link href="/chat">
+                  <Button variant="outline" className="border-cyan-300 text-cyan-700 hover:bg-cyan-50">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Genieに相談
+                  </Button>
+                </Link>
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-lg border border-cyan-200">
+                  <GiMagicLamp className="h-4 w-4 text-cyan-600" />
+                  <span className="text-sm text-cyan-700 font-medium">AI自動提案</span>
+                </div>
               </div>
             </div>
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-lg border border-purple-200">
-              <Sparkles className="h-4 w-4 text-purple-600" />
-              <span className="text-sm text-purple-700 font-medium">スマート予測</span>
+          </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto p-6 space-y-8">
+          {/* スケジュールサマリーカード */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <Card className="bg-gradient-to-br from-cyan-600 to-cyan-700 text-white border-0 shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-cyan-100 text-sm font-medium">今後の予定</p>
+                    <p className="text-2xl font-bold mt-1">{getUpcomingCount()}件</p>
+                    <p className="text-cyan-200 text-xs">今月予定あり</p>
+                  </div>
+                  <Calendar className="h-8 w-8 text-cyan-200" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-cyan-500 to-cyan-600 text-white border-0 shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-cyan-100 text-sm font-medium">完了済み</p>
+                    <p className="text-2xl font-bold mt-1">{getCompletedCount()}件</p>
+                    <p className="text-cyan-200 text-xs">実行完了</p>
+                  </div>
+                  <CheckCircle className="h-8 w-8 text-cyan-200" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-100 text-sm font-medium">Genie提案</p>
+                    <p className="text-2xl font-bold mt-1">{getGenieCreatedCount()}件</p>
+                    <p className="text-blue-200 text-xs">AI自動作成</p>
+                  </div>
+                  <GiMagicLamp className="h-8 w-8 text-blue-200" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-slate-500 to-slate-600 text-white border-0 shadow-xl">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-100 text-sm font-medium">効率スコア</p>
+                    <p className="text-2xl font-bold mt-1">9.2</p>
+                    <p className="text-slate-200 text-xs">予定管理評価</p>
+                  </div>
+                  <Star className="h-8 w-8 text-slate-200" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 予定タブ切り替え */}
+          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-3">
+                <Target className="h-6 w-6" />
+                予定カテゴリ
+              </CardTitle>
+              <CardDescription className="text-cyan-100">
+                カテゴリ別に整理されたあなたの大切な予定
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              {/* ビューモード切り替えとタブ */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Tabs value={selectedTab} onValueChange={setSelectedTab} className="flex-1">
+                    <TabsList className="grid w-full grid-cols-4">
+                      <TabsTrigger value="all" className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        すべて
+                      </TabsTrigger>
+                      <TabsTrigger value="medical" className="flex items-center gap-2">
+                        <Stethoscope className="h-4 w-4" />
+                        医療・健康
+                      </TabsTrigger>
+                      <TabsTrigger value="outing" className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        お出かけ
+                      </TabsTrigger>
+                      <TabsTrigger value="school" className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        学校行事
+                      </TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                  
+                  <div className="flex items-center gap-2 ml-4">
+                    <Button
+                      variant={viewMode === 'cards' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('cards')}
+                      className="flex items-center gap-2"
+                    >
+                      <LayoutList className="h-4 w-4" />
+                      カード
+                    </Button>
+                    <Button
+                      variant={viewMode === 'calendar' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setViewMode('calendar')}
+                      className="flex items-center gap-2"
+                    >
+                      <Grid3X3 className="h-4 w-4" />
+                      カレンダー
+                    </Button>
+                  </div>
+                </div>
+
+                {/* カードビュー */}
+                {viewMode === 'cards' && (
+                  <div className="space-y-4">
+                    {/* ローディング表示 */}
+                    {loading && (
+                      <div className="text-center py-12">
+                        <div className="inline-flex items-center gap-2">
+                          <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                          <span className="text-gray-600">予定を読み込み中...</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 予定が見つからない場合 */}
+                    {!loading && getEventsByType(selectedTab).length === 0 && (
+                      <div className="text-center py-12">
+                        <div className="mb-4">
+                          <Calendar className="h-16 w-16 mx-auto text-gray-300" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-700 mb-2">
+                          {scheduleEvents.length === 0 ? '予定がありません' : '予定が見つかりません'}
+                        </h3>
+                        <p className="text-gray-500 mb-4">
+                          {scheduleEvents.length === 0 
+                            ? '最初の予定を作成しましょう' 
+                            : 'フィルター条件を変更するか、新しい予定を作成してください'
+                          }
+                        </p>
+                        <div className="flex gap-3 justify-center">
+                          <Button 
+                            onClick={() => setShowCreateModal(true)}
+                            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            予定を作成
+                          </Button>
+                          <Link href="/chat">
+                            <Button variant="outline" className="border-cyan-300 text-cyan-700 hover:bg-cyan-50">
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Genieに相談
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+
+                    {!loading && getEventsByType(selectedTab).map((event) => (
+                      <Card key={event.id} className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all duration-300">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-4 flex-1">
+                              <div className={`h-12 w-12 rounded-full ${getTypeColor(event.type)} flex items-center justify-center text-white shadow-lg`}>
+                                {getTypeIcon(event.type, event.subtype)}
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h4 className="font-bold text-lg text-gray-800">{event.title}</h4>
+                                  {event.subtype && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {event.subtype === 'vaccination' ? '予防接種' :
+                                       event.subtype === 'checkup' ? '健診' :
+                                       event.subtype === 'ceremony' ? '式典' :
+                                       event.subtype === 'event' ? 'イベント' :
+                                       event.subtype === 'class' ? '授業' : event.subtype}
+                                    </Badge>
+                                  )}
+                                  {event.createdBy === 'genie' && (
+                                    <Badge className="bg-gradient-to-r from-purple-500 to-violet-600 text-white">
+                                      <GiMagicLamp className="h-3 w-3 mr-1" />
+                                      Genie提案
+                                    </Badge>
+                                  )}
+                                  <Badge 
+                                    className={`${
+                                      event.status === 'completed' 
+                                        ? 'bg-green-500' 
+                                        : event.status === 'upcoming'
+                                        ? 'bg-blue-500'
+                                        : 'bg-gray-500'
+                                    } text-white`}
+                                  >
+                                    {event.status === 'completed' ? '完了' : 
+                                     event.status === 'upcoming' ? '予定' : 'キャンセル'}
+                                  </Badge>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="h-4 w-4 text-cyan-600" />
+                                    <span>{formatDate(event.date)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-cyan-600" />
+                                    <span>{event.time}</span>
+                                  </div>
+                                  {event.location && (
+                                    <div className="flex items-center gap-2">
+                                      <FaMapMarkerAlt className="h-4 w-4 text-cyan-600" />
+                                      <span>{event.location}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {event.description && (
+                                  <div className="mt-3 p-3 bg-emerald-50 rounded-lg border border-cyan-200">
+                                    <p className="text-sm text-cyan-700">{event.description}</p>
+                                  </div>
+                                )}
+                                
+                                {/* 編集ボタン */}
+                                <div className="mt-4 flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleEditEvent(event)}
+                                    className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+                                  >
+                                    <Edit className="h-4 w-4 mr-1" />
+                                    編集
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* カレンダービュー */}
+                {viewMode === 'calendar' && (
+                  <div className="space-y-4">
+                    {/* カレンダーヘッダー */}
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-cyan-200">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigateMonth('prev')}
+                        className="text-cyan-700 hover:bg-emerald-100"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      
+                      <h3 className="text-lg font-semibold text-cyan-800">
+                        {currentDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })}
+                      </h3>
+                      
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigateMonth('next')}
+                        className="text-cyan-700 hover:bg-emerald-100"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* カレンダーグリッド */}
+                    <div className="bg-white rounded-lg border border-cyan-200 overflow-hidden">
+                      {/* 曜日ヘッダー */}
+                      <div className="grid grid-cols-7 bg-emerald-100">
+                        {['日', '月', '火', '水', '木', '金', '土'].map((day, index) => (
+                          <div key={day} className={`p-3 text-center font-medium text-cyan-800 ${
+                            index === 0 ? 'text-red-600' : index === 6 ? 'text-blue-600' : ''
+                          }`}>
+                            {day}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* カレンダー日付 */}
+                      <div className="grid grid-cols-7">
+                        {getDaysInMonth(currentDate).map((date, index) => {
+                          const dayEvents = getEventsForDate(date)
+                          const isCurrentMonthDay = isCurrentMonth(date)
+                          const isTodayDate = isToday(date)
+                          
+                          return (
+                            <div 
+                              key={index} 
+                              className={`min-h-[120px] p-2 border-r border-b border-cyan-100 ${
+                                !isCurrentMonthDay ? 'bg-gray-50 text-gray-400' : 'bg-white'
+                              } ${isTodayDate ? 'bg-emerald-50 ring-2 ring-emerald-300' : ''}`}
+                            >
+                              <div className={`text-sm font-medium mb-2 ${
+                                isTodayDate ? 'text-cyan-700' : 
+                                !isCurrentMonthDay ? 'text-gray-400' : 'text-gray-700'
+                              }`}>
+                                {date.getDate()}
+                              </div>
+                              
+                              <div className="space-y-1">
+                                {dayEvents.slice(0, 3).map((event) => (
+                                  <div 
+                                    key={event.id} 
+                                    className={`text-xs p-1 rounded text-white truncate cursor-pointer hover:opacity-80 transition-opacity ${
+                                      getTypeColor(event.type).split(' ')[0]
+                                    }`}
+                                    title={`${event.title} - ${event.time}`}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      {getTypeIcon(event.type)}
+                                      <span className="truncate">{event.title}</span>
+                                    </div>
+                                    <div className="text-xs opacity-90">{event.time}</div>
+                                  </div>
+                                ))}
+                                {dayEvents.length > 3 && (
+                                  <div className="text-xs text-gray-500 text-center py-1">
+                                    +{dayEvents.length - 3}件
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* カレンダー凡例 */}
+                    <div className="flex items-center justify-center gap-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-cyan-200">
+                      <div className="flex items-center gap-2">
+                        <div className="h-3 w-3 rounded bg-red-500"></div>
+                        <span className="text-xs text-gray-600">予防接種</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-3 w-3 rounded bg-green-500"></div>
+                        <span className="text-xs text-gray-600">お出かけ</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-3 w-3 rounded bg-blue-500"></div>
+                        <span className="text-xs text-gray-600">健診</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <GiMagicLamp className="h-3 w-3 text-purple-600" />
+                        <span className="text-xs text-gray-600">Genie提案</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+
+          {/* AIチャット連携カード */}
+          <Card className="shadow-xl border-0 bg-gradient-to-br from-emerald-50 to-teal-50">
+            <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-3">
+                <Sparkles className="h-6 w-6" />
+                Genieとの予定作成連携
+              </CardTitle>
+              <CardDescription className="text-cyan-100">
+                Genieがあなたのライフスタイルに合わせて最適な予定を提案・作成します
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="bg-white/60 p-4 rounded-lg border border-cyan-200">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+                    <GiMagicLamp className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-cyan-800 font-medium mb-2">
+                      💡 Genieができること：
+                    </p>
+                    <ul className="text-sm text-cyan-700 space-y-1">
+                      <li>• 子どもの年齢に応じた予防接種スケジュールを自動提案</li>
+                      <li>• 発達に良いお出かけ先を季節や天気を考慮して推奨</li>
+                      <li>• 健診や検診の適切なタイミングをリマインド</li>
+                      <li>• 家族の予定を考慮した最適な時間帯を提案</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Link href="/chat" className="flex-1">
+                    <Button className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg">
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Genieに予定を相談
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="outline"
+                    className="border-cyan-300 text-cyan-700 hover:bg-emerald-50"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    手動で追加
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 自動提案の説明 */}
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-cyan-200">
+              <GiMagicLamp className="h-4 w-4 text-cyan-600" />
+              <span className="text-sm text-cyan-700 font-medium">Genieが24時間自動で最適な予定を提案します</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-8 py-8">
-        {/* 予測サマリー */}
-        <div className="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
-            <CardContent className="p-6 text-center">
-              <Brain className="h-8 w-8 mx-auto mb-3 text-purple-600" />
-              <h3 className="font-heading text-xl font-bold text-purple-700">{upcomingPredictions.length}</h3>
-              <p className="text-sm text-purple-600">AI予測項目</p>
-              <Badge className="mt-2 bg-purple-100 text-purple-700">アクティブ</Badge>
-            </CardContent>
-          </Card>
+      {/* 予定作成モーダル */}
+      <CreateScheduleModal
+        open={showCreateModal}
+        onOpenChange={setShowCreateModal}
+        onEventCreated={loadScheduleEvents}
+      />
 
-          <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
-            <CardContent className="p-6 text-center">
-              <Target className="h-8 w-8 mx-auto mb-3 text-emerald-600" />
-              <h3 className="font-heading text-xl font-bold text-emerald-700">{highConfidencePredictions.length}</h3>
-              <p className="text-sm text-emerald-600">高精度予測</p>
-              <Badge className="mt-2 bg-emerald-100 text-emerald-700">80%以上</Badge>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
-            <CardContent className="p-6 text-center">
-              <Lightbulb className="h-8 w-8 mx-auto mb-3 text-amber-600" />
-              <h3 className="font-heading text-xl font-bold text-amber-700">{smartReminders.length}</h3>
-              <p className="text-sm text-amber-600">スマートリマインダー</p>
-              <Badge className="mt-2 bg-amber-100 text-amber-700">自動生成</Badge>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
-            <CardContent className="p-6 text-center">
-              <Calendar className="h-8 w-8 mx-auto mb-3 text-blue-600" />
-              <h3 className="font-heading text-xl font-bold text-blue-700">7</h3>
-              <p className="text-sm text-blue-600">日間先読み</p>
-              <Badge className="mt-2 bg-blue-100 text-blue-700">動的調整</Badge>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 今日の予測 */}
-        <div className="mb-8">
-          <DailyPredictionCard className="w-full" />
-        </div>
-
-        {/* 予測管理タブ */}
-        <Tabs defaultValue="predictions" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-white/60 backdrop-blur-sm">
-            <TabsTrigger value="predictions" className="data-[state=active]:bg-purple-100">
-              <Brain className="h-4 w-4 mr-2" />
-              AI予測
-            </TabsTrigger>
-            <TabsTrigger value="timeline" className="data-[state=active]:bg-indigo-100">
-              <Calendar className="h-4 w-4 mr-2" />
-              予測タイムライン
-            </TabsTrigger>
-            <TabsTrigger value="reminders" className="data-[state=active]:bg-amber-100">
-              <Bell className="h-4 w-4 mr-2" />
-              スマートリマインダー
-            </TabsTrigger>
-            <TabsTrigger value="insights" className="data-[state=active]:bg-emerald-100">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              予測精度
-            </TabsTrigger>
-          </TabsList>
-
-          {/* AI予測タブ */}
-          <TabsContent value="predictions" className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-800">アクティブな予測</h3>
-              <Button variant="outline" size="sm" className="border-purple-300 text-purple-600 hover:bg-purple-50">
-                <Sparkles className="h-4 w-4 mr-2" />
-                予測更新
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              {upcomingPredictions.map((item) => (
-                <Card 
-                  key={item.id} 
-                  className={`bg-gradient-to-br ${getTypeColor(item.type)} hover:shadow-lg transition-all duration-300`}
-                >
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {getTypeIcon(item.type)}
-                        <div>
-                          <CardTitle className="text-base font-medium text-gray-800">
-                            {item.title}
-                          </CardTitle>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs">{getCategoryEmoji(item.category)}</span>
-                            <span className="text-xs text-gray-500">
-                              {formatPredictedDate(item.predictedDate)}頃
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(item.status)}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    {/* AI分析理由 */}
-                    <div className="p-3 bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Eye className="h-4 w-4 text-purple-600" />
-                        <span className="text-sm font-medium text-purple-800">AI分析</span>
-                      </div>
-                      <p className="text-sm text-gray-700">{item.aiReasoning}</p>
-                    </div>
-
-                    {/* 予測精度 */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-600">予測精度</span>
-                        <span className="text-sm font-semibold text-gray-700">
-                          {Math.round(item.confidence * 100)}%
-                        </span>
-                      </div>
-                      <Progress value={item.confidence * 100} className="h-2" />
-                    </div>
-
-                    {/* 提案アクション */}
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-gray-600">推奨アクション</p>
-                      <div className="space-y-1">
-                        {item.suggestedActions.slice(0, 2).map((action, index) => (
-                          <div key={index} className="flex items-center gap-2">
-                            <Zap className="h-3 w-3 text-yellow-500" />
-                            <span className="text-sm text-gray-700">{action}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* 親の影響 */}
-                    {item.parentInfluence && (
-                      <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Star className="h-4 w-4 text-amber-600" />
-                          <span className="text-sm font-medium text-amber-800">あなたの影響</span>
-                        </div>
-                        <p className="text-sm text-amber-700">{item.parentInfluence}</p>
-                      </div>
-                    )}
-
-                    {/* 根拠データ */}
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-gray-600">根拠データ</p>
-                      <div className="flex flex-wrap gap-1">
-                        {item.basedOnData.map((data, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {data}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* 予測タイムラインタブ */}
-          <TabsContent value="timeline" className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-800">7日間予測タイムライン</h3>
-              <Button variant="outline" size="sm" className="border-indigo-300 text-indigo-600 hover:bg-indigo-50">
-                <Calendar className="h-4 w-4 mr-2" />
-                期間変更
-              </Button>
-            </div>
-
-            <Card className="bg-white/80 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="space-y-6">
-                  {[0, 1, 2, 3, 4, 5, 6].map((dayOffset) => {
-                    const date = new Date()
-                    date.setDate(date.getDate() + dayOffset)
-                    
-                    const dayPredictions = upcomingPredictions.filter(item => 
-                      item.predictedDate.toDateString() === date.toDateString()
-                    )
-
-                    return (
-                      <div key={dayOffset} className="flex gap-4">
-                        <div className="w-20 flex-shrink-0 text-center">
-                          <div className={`text-sm font-medium ${dayOffset === 0 ? 'text-purple-700' : 'text-gray-600'}`}>
-                            {dayOffset === 0 ? '今日' : dayOffset === 1 ? '明日' : `${dayOffset}日後`}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}
-                          </div>
-                        </div>
-                        
-                        <div className="flex-1 space-y-2">
-                          {dayPredictions.length > 0 ? (
-                            dayPredictions.map((prediction) => (
-                              <div 
-                                key={prediction.id}
-                                className="flex items-center gap-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200"
-                              >
-                                {getTypeIcon(prediction.type)}
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-gray-800">{prediction.title}</p>
-                                  <p className="text-xs text-gray-600">信頼度 {Math.round(prediction.confidence * 100)}%</p>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="p-3 text-center text-gray-400 text-sm">
-                              予測なし
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* スマートリマインダータブ */}
-          <TabsContent value="reminders" className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-800">アクティブなリマインダー</h3>
-              <Button variant="outline" size="sm" className="border-amber-300 text-amber-600 hover:bg-amber-50">
-                <Plus className="h-4 w-4 mr-2" />
-                追加
-              </Button>
-            </div>
-
-            <div className="space-y-3">
-              {smartReminders.map((reminder) => (
-                <Card key={reminder.id} className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-start gap-3">
-                        <Bell className="h-5 w-5 text-amber-600 mt-0.5" />
-                        <div>
-                          <h4 className="font-medium text-gray-800">{reminder.title}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{reminder.message}</p>
-                          {reminder.adaptiveReason && (
-                            <p className="text-xs text-amber-700 mt-2">
-                              📍 {reminder.adaptiveReason}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {reminder.isAiGenerated && (
-                          <Badge className="bg-purple-100 text-purple-700 text-xs">AI生成</Badge>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span>
-                        {reminder.timing === 'morning' && '朝'}
-                        {reminder.timing === 'before_event' && 'イベント前'}
-                        {reminder.timing === 'evening' && '夜'}
-                        • {reminder.frequency === 'daily' ? '毎日' : reminder.frequency === 'weekly' ? '週1回' : '状況に応じて'}
-                      </span>
-                      <span>
-                        次回: {reminder.nextTrigger.toLocaleString('ja-JP', { 
-                          month: 'short', 
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* 予測精度タブ */}
-          <TabsContent value="insights" className="space-y-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-800">予測精度と改善</h3>
-              <Button variant="outline" size="sm" className="border-emerald-300 text-emerald-600 hover:bg-emerald-50">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                詳細分析
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-emerald-700">
-                    <Target className="h-5 w-5" />
-                    予測精度統計
-                  </CardTitle>
-                  <CardDescription>過去30日間の予測精度分析</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
-                      <span className="text-sm font-medium">発達予測</span>
-                      <Badge className="bg-green-100 text-green-700">92%</Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 border border-green-200">
-                      <span className="text-sm font-medium">睡眠パターン</span>
-                      <Badge className="bg-green-100 text-green-700">87%</Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-50 border border-yellow-200">
-                      <span className="text-sm font-medium">食事の好み</span>
-                      <Badge className="bg-yellow-100 text-yellow-700">74%</Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 border border-blue-200">
-                      <span className="text-sm font-medium">体調変化</span>
-                      <Badge className="bg-blue-100 text-blue-700">81%</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-purple-700">
-                    <Lightbulb className="h-5 w-5" />
-                    AI学習状況
-                  </CardTitle>
-                  <CardDescription>あなたのデータからの学習進捗</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Brain className="h-4 w-4 text-purple-600" />
-                      <span className="text-sm font-medium text-purple-800">学習データ量</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>記録データ</span>
-                        <span className="font-medium">347件</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>音声データ</span>
-                        <span className="font-medium">89件</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>画像データ</span>
-                        <span className="font-medium">156件</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="h-4 w-4 text-emerald-600" />
-                      <span className="text-sm font-medium text-emerald-800">予測改善</span>
-                    </div>
-                    <p className="text-sm text-emerald-700">
-                      継続的な記録により、予測精度が月平均5%向上しています
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        {/* フローティング音声ボタン */}
-        <FloatingVoiceButton position="bottom-right" />
-      </div>
+      {/* 予定編集モーダル */}
+      <EditScheduleModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        event={selectedEvent}
+        onEventUpdated={handleEventUpdated}
+        onEventDeleted={handleEventDeleted}
+      />
     </AppLayout>
   )
 }
