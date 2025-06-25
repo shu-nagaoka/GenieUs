@@ -400,6 +400,276 @@ class ImageRecordingData:
 
 
 @dataclass
+class GrowthRecord:
+    """成長記録エンティティ"""
+
+    record_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str = ""
+    child_id: Optional[str] = None
+    child_name: str = ""
+    date: str = ""
+    age_in_months: int = 0
+    type: str = ""
+    category: str = ""
+    title: str = ""
+    description: str = ""
+    value: Optional[str] = None
+    unit: Optional[str] = None
+    image_url: Optional[str] = None
+    detected_by: str = "parent"
+    confidence: Optional[float] = None
+    emotions: Optional[List[str]] = None
+    development_stage: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+    def __post_init__(self):
+        """バリデーション"""
+        if not self.user_id.strip():
+            raise ValueError("user_id is required")
+        if not self.child_name.strip():
+            raise ValueError("child_name is required")
+        if not self.title.strip():
+            raise ValueError("title is required")
+
+    @classmethod
+    def from_dict(cls, user_id: str, record_data: dict) -> "GrowthRecord":
+        """辞書データから成長記録エンティティを作成"""
+        now = datetime.now().isoformat()
+        return cls(
+            record_id=record_data.get("id", str(uuid.uuid4())),
+            user_id=user_id,
+            child_id=record_data.get("child_id"),
+            child_name=record_data.get("child_name", ""),
+            date=record_data.get("date", ""),
+            age_in_months=record_data.get("age_in_months", 0),
+            type=record_data.get("type", ""),
+            category=record_data.get("category", ""),
+            title=record_data.get("title", ""),
+            description=record_data.get("description", ""),
+            value=record_data.get("value"),
+            unit=record_data.get("unit"),
+            image_url=record_data.get("image_url"),
+            detected_by=record_data.get("detected_by", "parent"),
+            confidence=record_data.get("confidence"),
+            emotions=record_data.get("emotions"),
+            development_stage=record_data.get("development_stage"),
+            created_at=record_data.get("created_at", now),
+            updated_at=record_data.get("updated_at", now),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """辞書形式に変換"""
+        return {
+            "id": self.record_id,
+            "user_id": self.user_id,
+            "child_id": self.child_id,
+            "child_name": self.child_name,
+            "date": self.date,
+            "age_in_months": self.age_in_months,
+            "type": self.type,
+            "category": self.category,
+            "title": self.title,
+            "description": self.description,
+            "value": self.value,
+            "unit": self.unit,
+            "image_url": self.image_url,
+            "detected_by": self.detected_by,
+            "confidence": self.confidence,
+            "emotions": self.emotions,
+            "development_stage": self.development_stage,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+
+@dataclass
+class MemoryRecord:
+    """メモリー記録エンティティ"""
+
+    memory_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str = ""
+    title: str = ""
+    description: str = ""
+    date: str = ""
+    type: str = ""  # photo, video, album
+    category: str = ""  # milestone, daily, family, special
+    media_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    location: Optional[str] = None
+    tags: List[str] = field(default_factory=list)
+    favorited: bool = False
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+    def __post_init__(self):
+        """バリデーション"""
+        if not self.user_id.strip():
+            raise ValueError("user_id is required")
+        if not self.title.strip():
+            raise ValueError("title is required")
+
+    @classmethod
+    def from_dict(cls, user_id: str, memory_data: dict) -> "MemoryRecord":
+        """辞書データからメモリー記録エンティティを作成"""
+        now = datetime.now().isoformat()
+        return cls(
+            memory_id=memory_data.get("id", str(uuid.uuid4())),
+            user_id=user_id,
+            title=memory_data.get("title", ""),
+            description=memory_data.get("description", ""),
+            date=memory_data.get("date", ""),
+            type=memory_data.get("type", ""),
+            category=memory_data.get("category", ""),
+            media_url=memory_data.get("media_url"),
+            thumbnail_url=memory_data.get("thumbnail_url"),
+            location=memory_data.get("location"),
+            tags=memory_data.get("tags", []),
+            favorited=memory_data.get("favorited", False),
+            created_at=memory_data.get("created_at", now),
+            updated_at=memory_data.get("updated_at", now),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """辞書形式に変換"""
+        return {
+            "id": self.memory_id,
+            "user_id": self.user_id,
+            "title": self.title,
+            "description": self.description,
+            "date": self.date,
+            "type": self.type,
+            "category": self.category,
+            "media_url": self.media_url,
+            "thumbnail_url": self.thumbnail_url,
+            "location": self.location,
+            "tags": self.tags,
+            "favorited": self.favorited,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+
+@dataclass
+class ScheduleEvent:
+    """予定イベントエンティティ"""
+
+    event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str = ""
+    title: str = ""
+    date: str = ""
+    time: str = ""
+    type: str = ""  # vaccination, outing, checkup, other
+    location: Optional[str] = None
+    description: Optional[str] = None
+    status: str = "upcoming"  # upcoming, completed, cancelled
+    created_by: str = "genie"
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+    def __post_init__(self):
+        """バリデーション"""
+        if not self.user_id.strip():
+            raise ValueError("user_id is required")
+        if not self.title.strip():
+            raise ValueError("title is required")
+
+    @classmethod
+    def from_dict(cls, user_id: str, event_data: dict) -> "ScheduleEvent":
+        """辞書データから予定イベントエンティティを作成"""
+        now = datetime.now().isoformat()
+        return cls(
+            event_id=event_data.get("id", str(uuid.uuid4())),
+            user_id=user_id,
+            title=event_data.get("title", ""),
+            date=event_data.get("date", ""),
+            time=event_data.get("time", ""),
+            type=event_data.get("type", ""),
+            location=event_data.get("location"),
+            description=event_data.get("description"),
+            status=event_data.get("status", "upcoming"),
+            created_by=event_data.get("created_by", "genie"),
+            created_at=event_data.get("created_at", now),
+            updated_at=event_data.get("updated_at", now),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """辞書形式に変換"""
+        return {
+            "id": self.event_id,
+            "user_id": self.user_id,
+            "title": self.title,
+            "date": self.date,
+            "time": self.time,
+            "type": self.type,
+            "location": self.location,
+            "description": self.description,
+            "status": self.status,
+            "created_by": self.created_by,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+
+@dataclass
+class EffortReportRecord:
+    """努力レポートエンティティ"""
+
+    report_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str = ""
+    period_days: int = 7
+    effort_count: int = 0
+    score: float = 0.0
+    highlights: List[str] = field(default_factory=list)
+    categories: Dict[str, int] = field(default_factory=dict)
+    summary: str = ""
+    achievements: List[str] = field(default_factory=list)
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+    def __post_init__(self):
+        """バリデーション"""
+        if not self.user_id.strip():
+            raise ValueError("user_id is required")
+        if not 0.0 <= self.score <= 100.0:
+            raise ValueError("score must be between 0.0 and 100.0")
+
+    @classmethod
+    def from_dict(cls, user_id: str, report_data: dict) -> "EffortReportRecord":
+        """辞書データから努力レポートエンティティを作成"""
+        now = datetime.now().isoformat()
+        return cls(
+            report_id=report_data.get("id", str(uuid.uuid4())),
+            user_id=user_id,
+            period_days=report_data.get("period_days", 7),
+            effort_count=report_data.get("effort_count", 0),
+            score=report_data.get("score", 0.0),
+            highlights=report_data.get("highlights", []),
+            categories=report_data.get("categories", {}),
+            summary=report_data.get("summary", ""),
+            achievements=report_data.get("achievements", []),
+            created_at=report_data.get("created_at", now),
+            updated_at=report_data.get("updated_at", now),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """辞書形式に変換"""
+        return {
+            "id": self.report_id,
+            "user_id": self.user_id,
+            "period_days": self.period_days,
+            "effort_count": self.effort_count,
+            "score": self.score,
+            "highlights": self.highlights,
+            "categories": self.categories,
+            "summary": self.summary,
+            "achievements": self.achievements,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+
+@dataclass
 class FamilyInfo:
     """家族情報エンティティ"""
 

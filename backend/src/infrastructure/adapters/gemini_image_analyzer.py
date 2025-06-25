@@ -17,7 +17,7 @@ from src.application.interface.protocols.image_analyzer import ImageAnalyzerProt
 class GeminiImageAnalyzer(ImageAnalyzerProtocol):
     """Geminiを使用した画像分析の具体的実装"""
 
-    def __init__(self, logger: logging.Logger, model_name: str = "gemini-2.5-flash-preview-05-20") -> None:
+    def __init__(self, logger: logging.Logger, model_name: str = "gemini-2.5-flash") -> None:
         self.model_name = model_name
         self.logger = logger  # DIコンテナから必須注入
         self.model = genai.GenerativeModel(model_name)

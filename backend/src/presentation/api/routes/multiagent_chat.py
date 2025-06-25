@@ -25,6 +25,8 @@ class ChatResponse(BaseModel):
     response: str = Field(..., description="AIエージェントからの応答")
     status: str = Field(default="success", description="処理状況")
     session_id: str = Field(..., description="セッションID")
+    agent_info: dict = Field(default_factory=dict, description="使用されたエージェント情報")
+    routing_path: list = Field(default_factory=list, description="ルーティングパス")
 
 
 @router.post("/chat", response_model=ChatResponse)
@@ -48,14 +50,20 @@ async def chat_endpoint(
         tool_names = [name for name, tool in all_tools.items() if tool is not None]
         logger.info(f"🔧 利用可能ツール: {tool_names}")
 
-        # AgentManagerで直接実行
-        response_text = await agent_manager.route_query_async(
+        # AgentManagerで直接実行（拡張レスポンス付き）
+        result = await agent_manager.route_query_async_with_info(
             message=chat_message.message, user_id=chat_message.user_id, session_id=chat_message.session_id
         )
 
-        logger.info(f"✅ レスポンス生成完了: 文字数={len(response_text)}")
+        logger.info(f"✅ レスポンス生成完了: 文字数={len(result['response'])}")
 
-        return ChatResponse(response=response_text, status="success", session_id=chat_message.session_id)
+        return ChatResponse(
+            response=result["response"],
+            status="success",
+            session_id=chat_message.session_id,
+            agent_info=result.get("agent_info", {}),
+            routing_path=result.get("routing_path", []),
+        )
 
     except Exception as e:
         logger.error(f"チャット処理エラー: {e}")

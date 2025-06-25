@@ -15,6 +15,7 @@ router = APIRouter(prefix="/family", tags=["family"])
 
 class FamilyRegistrationRequest(BaseModel):
     """家族情報登録リクエスト"""
+
     parent_name: str = ""
     family_structure: str = ""
     concerns: str = ""
@@ -24,6 +25,7 @@ class FamilyRegistrationRequest(BaseModel):
 
 class FamilyUpdateRequest(BaseModel):
     """家族情報更新リクエスト"""
+
     parent_name: str = ""
     family_structure: str = ""
     concerns: str = ""
@@ -41,11 +43,8 @@ async def register_family_info(
         # リクエストボディからuser_idを取得、なければデフォルト値を使用
         request_data = request.dict()
         user_id = request_data.get("user_id", "frontend_user")
-        
-        result = await family_usecase.register_family_info(
-            user_id=user_id,
-            family_data=request_data
-        )
+
+        result = await family_usecase.register_family_info(user_id=user_id, family_data=request_data)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -59,17 +58,11 @@ async def get_family_info(
     """家族情報を取得"""
     try:
         family_info = await family_usecase.get_family_info(user_id)
-        
+
         if family_info:
-            return {
-                "success": True,
-                "data": family_info
-            }
+            return {"success": True, "data": family_info}
         else:
-            return {
-                "success": False,
-                "message": "家族情報が見つかりません"
-            }
+            return {"success": False, "message": "家族情報が見つかりません"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -84,11 +77,8 @@ async def update_family_info(
         # リクエストボディからuser_idを取得、なければデフォルト値を使用
         request_data = request.dict()
         user_id = request_data.get("user_id", "frontend_user")
-        
-        result = await family_usecase.update_family_info(
-            user_id=user_id,
-            family_data=request_data
-        )
+
+        result = await family_usecase.update_family_info(user_id=user_id, family_data=request_data)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

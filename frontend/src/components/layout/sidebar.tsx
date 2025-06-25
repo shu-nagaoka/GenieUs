@@ -25,7 +25,8 @@ import {
 import {
   FaBookOpen,
   FaHeart,
-  FaMicrophone
+  FaMicrophone,
+  FaUtensils
 } from 'react-icons/fa'
 import { GiMagicLamp } from 'react-icons/gi'
 import {
@@ -38,11 +39,13 @@ import {
 const mainNavigation = [
   { name: 'ホーム', href: '/dashboard', icon: AiOutlineHome },
   { name: 'Genieと話す', href: '/chat', icon: GiMagicLamp, badge: 'AI Agent' },
+  { name: 'GenieUs Agents', href: '/agents', icon: HiOutlineSparkles, badge: '18人の' },
 ]
 
 const recordNavigation = [
   { name: '撮影したメモリー', href: '/records', icon: FaBookOpen },
   { name: '見守った成長', href: '/tracking', icon: AiOutlineBarChart },
+  { name: '食事管理', href: '/food-management', icon: FaUtensils, badge: 'New' },
   { name: '予定を立てたこと', href: '/schedule', icon: AiOutlineCalendar },
   { name: 'がんばったこと', href: '/effort-report', icon: FaHeart },
 ]
@@ -147,6 +150,7 @@ function SidebarContent({ isCollapsed = false }: { isCollapsed?: boolean }) {
                     "h-4 w-4",
                     item.name === '撮影したメモリー' && "text-blue-500",
                     item.name === '見守った成長' && "text-teal-500", 
+                    item.name === '食事管理' && "text-orange-500",
                     item.name === '予定を立てたこと' && "text-cyan-600",
                     item.name === 'がんばったこと' && "text-emerald-800"
                   )} />
@@ -154,7 +158,7 @@ function SidebarContent({ isCollapsed = false }: { isCollapsed?: boolean }) {
                     <>
                       <span>{item.name}</span>
                       {item.badge && (
-                        <Badge variant="secondary" className="ml-auto text-xs">
+                        <Badge className="ml-auto text-xs px-1.5 py-0.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 hover:scale-105 hover:from-green-600 hover:to-emerald-700 transition-all duration-500 ease-in-out min-w-0 flex-shrink-0 shadow-sm hover:shadow-lg hover:shadow-green-300/50">
                           {item.badge}
                         </Badge>
                       )}
@@ -250,25 +254,27 @@ function SidebarContent({ isCollapsed = false }: { isCollapsed?: boolean }) {
 
         {/* クイックアクション */}
         {!isCollapsed && (
-          <Card>
-            <CardContent className="p-4">
-              <h3 className="text-sm font-medium mb-3">クイックアクション</h3>
-              <div className="space-y-2">
-                <Button variant="outline" size="sm" className="w-full justify-start gap-2" asChild>
-                  <Link href="/chat">
-                    <AiOutlineMessage className="h-4 w-4" />
-                    Genieと話す
-                  </Link>
-                </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start gap-2" asChild>
-                  <Link href="/chat">
-                    <FaMicrophone className="h-4 w-4" />
-                    音声で記録
-                  </Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="mt-6">
+            <Card>
+              <CardContent className="p-4">
+                <h3 className="text-sm font-medium mb-3">クイックアクション</h3>
+                <div className="space-y-2">
+                  <Button variant="outline" size="sm" className="w-full justify-start gap-2" asChild>
+                    <Link href="/chat">
+                      <AiOutlineMessage className="h-4 w-4" />
+                      Genieと話す
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start gap-2" asChild>
+                    <Link href="/chat">
+                      <FaMicrophone className="h-4 w-4" />
+                      音声で記録
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
 

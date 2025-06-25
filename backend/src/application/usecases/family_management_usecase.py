@@ -38,18 +38,11 @@ class FamilyManagementUseCase:
             result = await self.family_repository.save_family_info(family_info)
 
             self.logger.info(f"家族情報登録完了: user_id={user_id}")
-            return {
-                "success": True,
-                "message": "家族情報を登録しました",
-                "family_id": result.get("family_id")
-            }
+            return {"success": True, "message": "家族情報を登録しました", "family_id": result.get("family_id")}
 
         except Exception as e:
             self.logger.error(f"家族情報登録エラー: user_id={user_id}, error={e}")
-            return {
-                "success": False,
-                "error": f"家族情報の登録に失敗しました: {str(e)}"
-            }
+            return {"success": False, "error": f"家族情報の登録に失敗しました: {str(e)}"}
 
     async def get_family_info(self, user_id: str) -> Optional[dict]:
         """家族情報を取得
@@ -64,7 +57,7 @@ class FamilyManagementUseCase:
             self.logger.info(f"家族情報取得開始: user_id={user_id}")
 
             family_info = await self.family_repository.get_family_info(user_id)
-            
+
             if family_info:
                 self.logger.info(f"家族情報取得成功: user_id={user_id}")
                 return family_info.to_dict()
@@ -92,10 +85,7 @@ class FamilyManagementUseCase:
             # 既存の家族情報を取得
             existing_family = await self.family_repository.get_family_info(user_id)
             if not existing_family:
-                return {
-                    "success": False,
-                    "error": "更新対象の家族情報が見つかりません"
-                }
+                return {"success": False, "error": "更新対象の家族情報が見つかりません"}
 
             # 家族情報エンティティ更新
             updated_family = FamilyInfo.from_dict(user_id, family_data)
@@ -105,17 +95,11 @@ class FamilyManagementUseCase:
             await self.family_repository.save_family_info(updated_family)
 
             self.logger.info(f"家族情報更新完了: user_id={user_id}")
-            return {
-                "success": True,
-                "message": "家族情報を更新しました"
-            }
+            return {"success": True, "message": "家族情報を更新しました"}
 
         except Exception as e:
             self.logger.error(f"家族情報更新エラー: user_id={user_id}, error={e}")
-            return {
-                "success": False,
-                "error": f"家族情報の更新に失敗しました: {str(e)}"
-            }
+            return {"success": False, "error": f"家族情報の更新に失敗しました: {str(e)}"}
 
     async def delete_family_info(self, user_id: str) -> dict:
         """家族情報を削除
@@ -134,20 +118,11 @@ class FamilyManagementUseCase:
 
             if deleted:
                 self.logger.info(f"家族情報削除完了: user_id={user_id}")
-                return {
-                    "success": True,
-                    "message": "家族情報を削除しました"
-                }
+                return {"success": True, "message": "家族情報を削除しました"}
             else:
                 self.logger.info(f"削除対象の家族情報が見つかりません: user_id={user_id}")
-                return {
-                    "success": False,
-                    "message": "削除対象の家族情報が見つかりません"
-                }
+                return {"success": False, "message": "削除対象の家族情報が見つかりません"}
 
         except Exception as e:
             self.logger.error(f"家族情報削除エラー: user_id={user_id}, error={e}")
-            return {
-                "success": False,
-                "error": f"家族情報の削除に失敗しました: {str(e)}"
-            }
+            return {"success": False, "error": f"家族情報の削除に失敗しました: {str(e)}"}

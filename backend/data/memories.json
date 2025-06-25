@@ -69,8 +69,8 @@
     "thumbnail_url": "/api/v1/files/images/2b38b640-be11-465c-8dec-4c1c79fa869d.jpeg",
     "location": "",
     "tags": [],
-    "favorited": true,
+    "favorited": false,
     "created_at": "2025-06-24T13:44:05.020484",
-    "updated_at": "2025-06-24T15:12:33.140472"
+    "updated_at": "2025-06-24T18:02:30.460845"
   }
 }

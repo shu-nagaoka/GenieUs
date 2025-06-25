@@ -16,6 +16,15 @@ import {
 } from 'react-icons/io5'
 import { GiMagicLamp } from 'react-icons/gi'
 
+// グローバル重複防止機能
+let globalStreamingRequests = new Set<string>()
+const cleanupGlobalRequests = () => {
+  // 30秒後に自動クリーンアップ
+  setTimeout(() => {
+    globalStreamingRequests.clear()
+  }, 30000)
+}
+
 interface ProgressUpdate {
   type: string
   message: string
@@ -42,6 +51,7 @@ interface GenieStyleProgressProps {
   sessionId?: string
   onComplete?: (response: string) => void
   onError?: (error: string) => void
+  onFollowupQuestions?: (questions: string[]) => void
   className?: string
 }
 
@@ -51,16 +61,118 @@ export function GenieStyleProgress({
   sessionId = "default-session",
   onComplete,
   onError,
+  onFollowupQuestions,
   className = ""
 }: GenieStyleProgressProps) {
   const [progressUpdates, setProgressUpdates] = useState<ProgressUpdate[]>([])
   const [isComplete, setIsComplete] = useState(false)
   const [finalResponse, setFinalResponse] = useState<string>("")
+  const [cleanedFinalResponse, setCleanedFinalResponse] = useState<string>("")
   const [isStreaming, setIsStreaming] = useState(false)
   const [genieSteps, setGenieSteps] = useState<GenieStep[]>([])
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const eventSourceRef = useRef<EventSource | null>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
+
+  // フォローアップクエスチョンを抽出し、本文から除去
+  const extractFollowupQuestions = (response: string): { questions: string[], cleanResponse: string } => {
+    try {
+      const questions: string[] = []
+      
+      console.log('=== レスポンス内容確認 ===')
+      console.log('レスポンス文字数:', response.length)
+      console.log('レスポンス全文:')
+      console.log(response)
+      console.log('=== 💭検索開始 ===')
+      
+      // 💭マークの直接検索
+      const thinkingCount = (response.match(/💭/g) || []).length
+      const unicodeCount = (response.match(/\ud83d\udcad/g) || []).length
+      console.log('💭マーク数:', thinkingCount)
+      console.log('Unicode💭マーク数:', unicodeCount)
+      
+      // 💭マークを含む行を個別に処理
+      const lines = response.split('\n')
+      
+      for (const line of lines) {
+        const trimmedLine = line.trim()
+        
+        // 💭マークを含む行から質問を抽出
+        if (trimmedLine.includes('💭') || trimmedLine.includes('\ud83d\udcad')) {
+          console.log('💭マーク行発見:', trimmedLine)
+          // 一行に複数の💭マークがある場合に対応
+          const questionMatches = trimmedLine.match(/💭\s*([^💭\n?]+\?)/g) || []
+          const unicodeMatches = trimmedLine.match(/\ud83d\udcad\s*([^\ud83d\udcad\n?]+\?)/g) || []
+          
+          // すべての💭マークを抽出（簡単なパターン）
+          const allThinkingMarks = trimmedLine.match(/💭[^💭]*(?=💭|$)/g) || []
+          console.log('この行で見つかった💭パターン:', allThinkingMarks)
+          
+          for (const match of allThinkingMarks) {
+            let question = match.replace(/💭\s*/, '').trim()
+            console.log('抽出中のテキスト:', question)
+            
+            // 質問マークで終わるように調整
+            if (!question.endsWith('？') && !question.endsWith('?')) {
+              question += '？'
+            }
+            
+            if (question && question.length > 2 && !questions.includes(question)) {
+              questions.push(question)
+              console.log('質問を追加:', question)
+            }
+          }
+        }
+      }
+      
+      console.log('=== 最終結果 ===')
+      console.log('抽出された質問数:', questions.length)
+      console.log('抽出された質問:', questions)
+      
+      // より厳密な除去処理
+      let cleanResponse = response
+      
+      // 💭マークを含む行全体を除去
+      const cleanLines2 = response.split('\n')
+      const cleanLines = []
+      let inFollowupSection = false
+      
+      for (let i = 0; i < cleanLines2.length; i++) {
+        const line = cleanLines2[i]
+        const trimmedLine = line.trim()
+        
+        // フォローアップセクションの開始を検出
+        if (trimmedLine.includes('続けて相談する') || 
+            trimmedLine.includes('続けて相談したい方へ') || 
+            trimmedLine.includes('【続けて相談したい方へ】') ||
+            trimmedLine.includes('【続けて相談する】')) {
+          inFollowupSection = true
+          continue
+        }
+        
+        // 💭マークを含む行をスキップ
+        if (trimmedLine.includes('💭') || trimmedLine.includes('\ud83d\udcad')) {
+          continue
+        }
+        
+        // フォローアップセクション内の行をスキップ
+        if (inFollowupSection) {
+          continue
+        }
+        
+        // 通常の行は保持
+        cleanLines.push(line)
+      }
+      
+      cleanResponse = cleanLines.join('\n').replace(/\n\s*\n\s*\n/g, '\n\n').trim()
+      
+      
+      return { questions, cleanResponse }
+    } catch (error) {
+      console.warn('フォローアップクエスチョン抽出エラー:', error)
+      return { questions: [], cleanResponse: response }
+    }
+  }
 
   // ツールアイコンマップ（温かみのある表現）
   const getToolIcon = (toolName: string) => {
@@ -79,16 +191,6 @@ export function GenieStyleProgress({
     return <IoSparkles className="h-4 w-4" />
   }
 
-  // 専門家情報の表示
-  const getSpecialistDisplay = (data: any) => {
-    if (data?.specialist_name) {
-      return {
-        name: data.specialist_name,
-        description: data.specialist_description || ""
-      }
-    }
-    return null
-  }
 
   // ツールの日本語名変換
   const getToolDisplayName = (toolName: string) => {
@@ -112,9 +214,40 @@ export function GenieStyleProgress({
     return toolMap[toolName] || toolName.replace('_', ' ')
   }
 
-  // Genieらしいメッセージに変換（よりモダンに）
+  // 専門家ルーティング情報を取得
+  const getSpecialistRouting = (data: any) => {
+    console.log('getSpecialistRouting called with data:', data)
+    if (data?.specialist_name) {
+      const result = {
+        name: data.specialist_name,
+        description: data.specialist_description || "",
+        icon: getSpecialistIcon(data.specialist_name)
+      }
+      console.log('getSpecialistRouting returning:', result)
+      return result
+    }
+    console.log('getSpecialistRouting returning null (no specialist_name)')
+    return null
+  }
+
+  // 専門家アイコンを取得
+  const getSpecialistIcon = (specialistName: string) => {
+    if (specialistName?.includes('栄養') || specialistName?.includes('食事')) return '🍎'
+    if (specialistName?.includes('睡眠')) return '😴'
+    if (specialistName?.includes('発達')) return '🌱'
+    if (specialistName?.includes('健康')) return '❤️'
+    if (specialistName?.includes('行動') || specialistName?.includes('しつけ')) return '🎭'
+    if (specialistName?.includes('遊び') || specialistName?.includes('学習')) return '🎲'
+    if (specialistName?.includes('安全')) return '🛡️'
+    if (specialistName?.includes('心理') || specialistName?.includes('メンタル')) return '💚'
+    if (specialistName?.includes('仕事')) return '💼'
+    if (specialistName?.includes('特別支援')) return '🤝'
+    return '🧞‍♀️'
+  }
+
+  // Genieらしいメッセージに変換（ルーティング情報重視）
   const getGenieMessage = (type: string, originalMessage: string, data: any = {}) => {
-    const specialist = getSpecialistDisplay(data)
+    const specialist = getSpecialistRouting(data)
     
     switch (type) {
       case 'start':
@@ -123,14 +256,18 @@ export function GenieStyleProgress({
         return '🪔 魔法のランプを準備中...'
       case 'agent_selecting':
         return specialist ? 
-          `🎯 ${specialist.name}を選択中...` :
+          `🎯 ${specialist.name}を呼び出し中...` :
           '🌟 最適なサポート方法を考えています'
       case 'agent_executing':
         return specialist ? 
-          `💫 ${specialist.name}が分析中...` :
+          `${specialist.icon} ${specialist.name}が対応中...` :
           '💫 Genieが心を込めて分析中...'
+      case 'specialist_routing':
+        return specialist ?
+          `🔄 ${specialist.icon} ${specialist.name}にバトンタッチ...` :
+          originalMessage
       case 'analysis_complete':
-        return '🎯 分析が完了しました'
+        return '🎯 専門分析が完了しました'
       case 'final_response':
         return originalMessage
       case 'complete':
@@ -142,27 +279,49 @@ export function GenieStyleProgress({
     }
   }
 
-  // ステップタイプからアイコンを取得（Genieテーマ）
-  const getStepIcon = (type: string) => {
-    switch (type) {
-      case 'start':
-        return <GiMagicLamp className="h-4 w-4" />
-      case 'agent_starting':
-        return <IoSparkles className="h-4 w-4" />
-      case 'agent_selecting':
-        return <IoSunny className="h-4 w-4" />
-      case 'agent_executing':
-        return <IoHeart className="h-4 w-4" />
-      case 'analysis_complete':
-        return <IoCheckmarkCircle className="h-4 w-4" />
-      case 'final_response':
-        return <GiMagicLamp className="h-4 w-4" />
-      case 'complete':
-        return <IoCheckmarkCircle className="h-4 w-4" />
-      case 'error':
-        return <IoAlertCircle className="h-4 w-4" />
-      default:
-        return <IoSparkles className="h-4 w-4" />
+  // ローディングアニメーションコンポーネント
+  const LoadingSpinner = ({ size = "h-4 w-4" }: { size?: string }) => (
+    <div className={`${size} animate-spin rounded-full border-2 border-amber-200 border-t-amber-600`}></div>
+  )
+
+  // ステップタイプからアイコンを取得（ローディング重視）
+  const getStepIcon = (type: string, status: string = 'active') => {
+    if (status === 'active') {
+      switch (type) {
+        case 'agent_selecting':
+        case 'agent_executing':
+        case 'specialist_routing':
+          return <LoadingSpinner />
+        case 'start':
+          return <GiMagicLamp className="h-4 w-4" />
+        case 'analysis_complete':
+          return <IoCheckmarkCircle className="h-4 w-4" />
+        case 'complete':
+          return <IoCheckmarkCircle className="h-4 w-4" />
+        case 'error':
+          return <IoAlertCircle className="h-4 w-4" />
+        default:
+          return <LoadingSpinner />
+      }
+    } else {
+      // 完了状態のアイコン
+      switch (type) {
+        case 'start':
+          return <GiMagicLamp className="h-4 w-4" />
+        case 'agent_selecting':
+          return <IoSunny className="h-4 w-4" />
+        case 'agent_executing':
+          return <IoHeart className="h-4 w-4" />
+        case 'specialist_routing':
+          return <IoTrendingUp className="h-4 w-4" />
+        case 'analysis_complete':
+        case 'complete':
+          return <IoCheckmarkCircle className="h-4 w-4" />
+        case 'error':
+          return <IoAlertCircle className="h-4 w-4" />
+        default:
+          return <IoSparkles className="h-4 w-4" />
+      }
     }
   }
 
@@ -189,19 +348,52 @@ export function GenieStyleProgress({
 
   // ストリーミング開始
   const startStreaming = async () => {
-    if (isStreaming) return
+    // グローバル重複防止チェック
+    const requestKey = `${userId}-${sessionId}-${message.substring(0, 50)}`
+    
+    console.log('🎯 startStreaming 呼び出し:', {
+      requestKey,
+      isStreaming,
+      isComplete,
+      globalRequestsSize: globalStreamingRequests.size,
+      hasGlobalRequest: globalStreamingRequests.has(requestKey),
+      message: message.substring(0, 100) + '...',
+      timestamp: new Date().toISOString()
+    })
+    
+    if (globalStreamingRequests.has(requestKey)) {
+      console.log('⚠️ グローバル重複防止: 同じリクエストが実行中のため処理をスキップ')
+      return
+    }
+    
+    if (isStreaming) {
+      console.log('⚠️ 既にストリーミング中のため処理をスキップ')
+      return
+    }
 
+    if (isComplete) {
+      console.log('⚠️ 既に完了済みのため処理をスキップ') 
+      return
+    }
+
+    // グローバル実行フラグを設定
+    globalStreamingRequests.add(requestKey)
+    cleanupGlobalRequests()
+
+    console.log('✅ ストリーミング開始処理実行')
     setIsStreaming(true)
     setProgressUpdates([])
     setIsComplete(false)
     setFinalResponse("")
+    setCleanedFinalResponse("")
     setGenieSteps([])
     setCurrentStepIndex(0)
 
     try {
-      // メッセージから会話履歴を解析
+      // メッセージから会話履歴と家族情報を解析
       let actualMessage = message
       let conversationHistory = null
+      let familyInfo = null
       let actualSessionId = sessionId
       let actualUserId = userId
 
@@ -210,6 +402,7 @@ export function GenieStyleProgress({
         if (parsed.message) {
           actualMessage = parsed.message
           conversationHistory = parsed.conversation_history || null
+          familyInfo = parsed.family_info || null
           actualSessionId = parsed.session_id || sessionId
           actualUserId = parsed.user_id || userId
         }
@@ -228,12 +421,33 @@ export function GenieStyleProgress({
         requestBody.conversation_history = conversationHistory
       }
 
+      // 家族情報があれば追加
+      if (familyInfo) {
+        requestBody.family_info = familyInfo
+      }
+
+      console.log('🌐 API呼び出し実行:', {
+        url: 'http://localhost:8000/api/v1/streaming/streaming-chat',
+        method: 'POST',
+        requestBody: {
+          ...requestBody,
+          message: requestBody.message.substring(0, 50) + '...'
+        },
+        timestamp: new Date().toISOString()
+      })
+
       const response = await fetch('http://localhost:8000/api/v1/streaming/streaming-chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody)
+      })
+
+      console.log('📡 API レスポンス受信:', {
+        ok: response.ok,
+        status: response.status,
+        timestamp: new Date().toISOString()
       })
 
       if (!response.ok) {
@@ -265,29 +479,49 @@ export function GenieStyleProgress({
                 data: data.data || {}
               }
 
-              setProgressUpdates(prev => [...prev, update])
-
-              // Genieタイムラインステップを追加
-              const genieMessage = getGenieMessage(data.type, data.message, data.data)
-              const newStep: GenieStep = {
-                id: Date.now().toString() + Math.random(),
-                message: genieMessage,
-                type: data.type,
-                timestamp: Date.now(),
-                status: 'active',
-                icon: getStepIcon(data.type),
-                tools: data.data?.tools || undefined,
-                specialist: getSpecialistDisplay(data.data)
+              // 専門家情報のデバッグログ
+              if (data.type === 'specialist_calling' || data.type === 'specialist_ready' || data.type === 'final_response') {
+                console.log(`=== ${data.type.toUpperCase()} デバッグ ===`)
+                console.log('data.data:', data.data)
+                console.log('specialist_name:', data.data?.specialist_name)
+                console.log('specialist_description:', data.data?.specialist_description)
+                console.log('agent_type:', data.data?.agent_type)
+                console.log('============================')
               }
 
-              setGenieSteps(prev => {
-                // 前のステップを完了状態に（ゆったりと）
-                const updated = prev.map(step => ({
-                  ...step,
-                  status: 'completed' as const
-                }))
-                return [...updated, newStep]
-              })
+              setProgressUpdates(prev => [...prev, update])
+
+              // 重要なイベントのみGenieタイムラインステップを追加
+              const importantSteps = [
+                'start',
+                'agent_selecting', 
+                'agent_executing',
+                'specialist_routing',
+                'analysis_complete'
+              ]
+              
+              if (importantSteps.includes(data.type)) {
+                const genieMessage = getGenieMessage(data.type, data.message, data.data)
+                const newStep: GenieStep = {
+                  id: Date.now().toString() + Math.random(),
+                  message: genieMessage,
+                  type: data.type,
+                  timestamp: Date.now(),
+                  status: 'active',
+                  icon: getStepIcon(data.type, 'active'),
+                  tools: data.data?.tools || undefined,
+                  specialist: getSpecialistRouting(data.data)
+                }
+
+                setGenieSteps(prev => {
+                  // 前のステップを完了状態に（ゆったりと）
+                  const updated = prev.map(step => ({
+                    ...step,
+                    status: 'completed' as const
+                  }))
+                  return [...updated, newStep]
+                })
+              }
 
               setCurrentStepIndex(prev => prev + 1)
               
@@ -300,11 +534,50 @@ export function GenieStyleProgress({
 
               // 最終レスポンスの場合
               if (data.type === 'final_response') {
-                setFinalResponse(data.message)
+                console.log('📝 GenieStyleProgress: final_response イベント受信:', {
+                  messageLength: data.message?.length || 0,
+                  messagePreview: data.message?.substring(0, 100) + '...'
+                })
+                
+                // フォローアップクエスチョンを抽出し、本文をクリーンアップ
+                const { questions, cleanResponse } = extractFollowupQuestions(data.message)
+                
+                console.log('🧹 GenieStyleProgress: レスポンスクリーンアップ完了:', {
+                  originalLength: data.message?.length || 0,
+                  cleanedLength: cleanResponse.length,
+                  extractedQuestions: questions.length,
+                  cleanResponsePreview: cleanResponse.substring(0, 100) + '...'
+                })
+                
+                // クリーンな回答を設定（💭マーク部分を除去）
+                setFinalResponse(cleanResponse)
+                setCleanedFinalResponse(cleanResponse)
+                
+                // 親コンポーネントにフォローアップクエスチョンを通知
+                if (onFollowupQuestions && questions.length > 0) {
+                  onFollowupQuestions(questions)
+                }
               }
 
               // 完了の場合
               if (data.type === 'complete') {
+                console.log('🎯 GenieStyleProgress: complete イベント受信:', {
+                  cleanedFinalResponse,
+                  finalResponse,
+                  dataResponse: data.data?.response,
+                  onCompleteExists: !!onComplete,
+                  isAlreadyComplete: isComplete
+                })
+                
+                // 既に完了済みの場合は重複処理を防ぐ
+                if (isComplete) {
+                  console.log('⚠️ GenieStyleProgress: 既に完了済み - 重複処理をスキップ')
+                  return
+                }
+                
+                // 2秒待機してUIを見やすくする
+                await new Promise(resolve => setTimeout(resolve, 2000))
+                
                 setIsComplete(true)
                 setIsStreaming(false)
                 
@@ -316,8 +589,15 @@ export function GenieStyleProgress({
                   }))
                 )
                 
+                const responseToSend = cleanedFinalResponse || finalResponse || data.data?.response || ""
+                
+                console.log('📤 GenieStyleProgress: onComplete 実行:', {
+                  responseToSend: responseToSend.substring(0, 100) + '...',
+                  responseLength: responseToSend.length
+                })
+                
                 if (onComplete) {
-                  onComplete(finalResponse || data.data?.response || "")
+                  onComplete(responseToSend)
                 }
               }
 
@@ -338,22 +618,45 @@ export function GenieStyleProgress({
     } catch (error) {
       console.error('Streaming error:', error)
       setIsStreaming(false)
+      
+      // エラー時もグローバルフラグをクリア
+      const requestKey = `${userId}-${sessionId}-${message.substring(0, 50)}`
+      globalStreamingRequests.delete(requestKey)
+      
       if (onError) {
         onError(error instanceof Error ? error.message : 'ストリーミングエラー')
       }
     }
   }
 
-  // コンポーネントマウント時に自動開始
+  // コンポーネントマウント時に自動開始（React Strict Mode対応）
   useEffect(() => {
-    startStreaming()
-
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close()
+    console.log('🚀 GenieStyleProgress: useEffect実行 - コンポーネントマウント', {
+      instanceId: Math.random().toString(36).substr(2, 9),
+      isStreaming,
+      isComplete
+    })
+    
+    // React Strict Modeで重複実行される場合の対策
+    let shouldExecute = true
+    
+    const executeStreaming = async () => {
+      if (shouldExecute && !isStreaming && !isComplete) {
+        await startStreaming()
       }
     }
-  }, [message])
+    
+    executeStreaming()
+
+    return () => {
+      console.log('🧹 GenieStyleProgress: クリーンアップ実行')
+      shouldExecute = false // 実行をキャンセル
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+        eventSourceRef.current = null
+      }
+    }
+  }, []) // 依存配列を空にして、マウント時のみ実行
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -397,7 +700,7 @@ export function GenieStyleProgress({
                       getStepColor(step.type, step.status)
                     }`}>
                       <div className="transition-all duration-300">
-                        {step.icon}
+                        {step.status === 'active' ? getStepIcon(step.type, 'active') : getStepIcon(step.type, 'completed')}
                       </div>
                     </div>
                     {index < genieSteps.length - 1 && (
@@ -420,13 +723,14 @@ export function GenieStyleProgress({
                     
                     {/* フラット専門家情報表示 */}
                     {step.specialist && (
-                      <div className="mt-1 p-2 bg-amber-100 rounded border border-amber-200">
+                      <div className="mt-2 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
                         <div className="flex items-center gap-2 mb-1">
-                          <div className="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
-                          <span className="text-xs font-semibold text-amber-800">{step.specialist.name}</span>
+                          <span className="text-base">{getSpecialistIcon(step.specialist.name)}</span>
+                          <span className="text-sm font-semibold text-blue-800">{step.specialist.name}</span>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">登場</span>
                         </div>
                         {step.specialist.description && (
-                          <p className="text-xs text-amber-600 leading-relaxed">
+                          <p className="text-xs text-blue-600 leading-relaxed mt-1">
                             {step.specialist.description}
                           </p>
                         )}
@@ -482,25 +786,6 @@ export function GenieStyleProgress({
         </CardContent>
       </Card>
 
-      {/* 最終レスポンス表示（温かみのあるデザイン） */}
-      {finalResponse && isComplete && (
-        <Card className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 border border-green-200 shadow-lg">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-sm">
-                <GiMagicLamp className="h-4 w-4 text-white" />
-              </div>
-              <div>
-                <span className="text-base font-semibold text-green-800">Genieからのメッセージ</span>
-                <p className="text-sm text-green-600">心を込めてお答えしました</p>
-              </div>
-            </div>
-            <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-line leading-relaxed">
-              {finalResponse}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

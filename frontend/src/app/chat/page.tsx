@@ -1,54 +1,37 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, memo, lazy, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { AppLayout } from '@/components/layout/app-layout'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { useChatHistory } from '@/hooks/use-chat-history'
-import { MultiAgentOrchestration } from '@/components/features/chat/multi-agent-orchestration'
-import { InlineProgressDisplay } from '@/components/features/chat/inline-progress-display'
-import { PerplexityStyleProgress } from '@/components/features/chat/perplexity-style-progress'
-import { TimelineStyleProgress } from '@/components/features/chat/timeline-style-progress'
-import { GenieStyleProgress } from '@/components/features/chat/genie-style-progress'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
+
+// 重いコンポーネントをレイジーローディング
+const ReactMarkdown = lazy(() => import('react-markdown'))
+const GenieStyleProgress = lazy(() => 
+  import('@/components/features/chat/genie-style-progress').then(m => ({ 
+    default: m.GenieStyleProgress 
+  }))
+)
+const FollowupQuestions = lazy(() => 
+  import('@/components/features/chat/followup-questions').then(m => ({ 
+    default: m.FollowupQuestions 
+  }))
+)
+const MultiAgentOrchestration = lazy(() => 
+  import('@/components/features/chat/multi-agent-orchestration').then(m => ({ 
+    default: m.MultiAgentOrchestration 
+  }))
+)
 import { getFamilyInfo, formatFamilyInfoForChat } from '@/lib/api/family'
-import { 
-  IoSend,
-  IoMic,
-  IoCamera,
-  IoStop,
-  IoImage,
-  IoVolumeHigh,
-  IoBulbOutline,
-  IoSparkles,
-  IoTime
-} from 'react-icons/io5'
-import {
-  AiOutlineMessage,
-  AiOutlineHistory,
-  AiOutlinePlus,
-  AiOutlineSave,
-  AiOutlineUser
-} from 'react-icons/ai'
-import {
-  Sparkles,
-  MessageCircle,
-  Plus,
-  History,
-  Save,
-  Camera,
-  Mic,
-  Send,
-  User,
-  Heart,
-  Star
-} from 'lucide-react'
-import Link from 'next/link'
-import {
-  FaUserTie
-} from 'react-icons/fa'
+import remarkGfm from 'remark-gfm'
+// アイコンをバランス良く設定 - 必要なアイコンは保持
+import { Send, Mic, Camera, Plus, History, Save, User, Sparkles, Star, MessageCircle } from 'lucide-react'
 import { GiMagicLamp } from 'react-icons/gi'
+import { IoSend, IoMic, IoCamera, IoStop, IoImage, IoVolumeHigh, IoBulbOutline, IoSparkles, IoTime } from 'react-icons/io5'
+import { AiOutlineMessage, AiOutlineHistory, AiOutlinePlus, AiOutlineSave, AiOutlineUser } from 'react-icons/ai'
+import { FaUserTie } from 'react-icons/fa'
+import Link from 'next/link'
 
 interface Message {
   id: string
@@ -78,9 +61,9 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'こんにちは！私はGenieです ✨ 子育ての記録・分析・相談をお手伝いします！\n\n**できること:**\n• 音声で話すだけで授乳・睡眠・食事を記録\n• 写真を送るだけで食事量・表情を分析\n• 夜泣き・離乳食・発達の相談に24時間対応\n\n何でもお気軽にお話しください！',
+      content: 'こんにちは！**GenieUs**です ✨\n\n話すだけで **家族管理・成長記録・努力見える化** すべてがつながる子育てアシスタント！\n\n**🤖 18人の専門GenieUs Agents**が連携してサポートします\n\n**💬 こんなことができます：**\n• **「家族情報を登録」** → パパ・ママ・お子さんの情報をまとめて管理\n• **「今日どうだった？」** → 複数の専門エージェントがあなたの話を理解・記録\n• **「初めて歩いた！」** → 写真付きで大切な瞬間をメモリーズに保存\n• **「頑張ったことを教えて」** → あなたの愛情と努力をGenieが理解・認める\n• **「夜泣きがひどくて困っています」** → 専門エージェントが具体的にアドバイス\n• **「近くの病院を検索して」** → 最新情報を検索してお届け\n• **「子供向けイベントを探して」** → お出かけ先やイベントをご提案\n\n**🌟 専門分野：** 睡眠・栄養・夜泣き・離乳食・発達・遊び・しつけ・健康・行動・安全・心理・仕事両立・特別支援・検索・窓口申請・おでかけイベントなど\n\n何でもお気軽にお話しください！あなたに最適な専門エージェントが自動的にサポートします 💫',
       sender: 'genie',
-      timestamp: new Date(),
+      timestamp: new Date('2025-01-01T00:00:00.000Z'),
       type: 'text'
     }
   ])
@@ -98,6 +81,7 @@ export default function ChatPage() {
   const [progressStyle] = useState<'genie' | 'timeline' | 'modern' | 'simple'>('genie')
   const [currentStreamingId, setCurrentStreamingId] = useState<string | null>(null)
   const [familyInfo, setFamilyInfo] = useState<any>(null)
+  const [currentFollowupQuestions, setCurrentFollowupQuestions] = useState<string[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -144,8 +128,10 @@ export default function ChatPage() {
     const conversationHistory = messages
       .filter(msg => {
         // 初期の挨拶メッセージを除外（内容で判定）
-        const isInitialMessage = msg.content.includes('こんにちは！私はGenieです') || 
-                                msg.content.includes('こんにちは！私はジーニーです')
+        const isInitialMessage = msg.content.includes('こんにちは！**GenieUs**です') || 
+                                msg.content.includes('こんにちは！私はGenieです') ||
+                                msg.content.includes('こんにちは！私はジーニーです') ||
+                                msg.content.includes('話すだけで **家族管理・成長記録・努力見える化**')
         return !isInitialMessage
       })
       .map(msg => ({
@@ -163,6 +149,14 @@ export default function ChatPage() {
     if (useStreamingProgress) {
       // ストリーミング用のプレースホルダーメッセージを追加
       const streamingMessageId = (Date.now() + 1).toString()
+      
+      console.log('🚀 ストリーミング開始:', {
+        streamingMessageId,
+        query,
+        sessionId,
+        conversationHistoryLength: conversationHistory.length
+      })
+      
       setCurrentStreamingId(streamingMessageId)
       
       const streamingMessage: Message = {
@@ -179,7 +173,21 @@ export default function ChatPage() {
         type: 'streaming'
       }
 
-      setMessages(prev => [...prev, streamingMessage])
+      console.log('📋 プレースホルダーメッセージ追加:', {
+        messageId: streamingMessage.id,
+        messageType: streamingMessage.type
+      })
+
+      setMessages(prev => {
+        const newMessages = [...prev, streamingMessage]
+        console.log('📊 メッセージ配列状態:', {
+          beforeCount: prev.length,
+          afterCount: newMessages.length,
+          lastMessage: newMessages[newMessages.length - 1]
+        })
+        return newMessages
+      })
+      
       setTimeout(scrollToBottom, 100)
       return // 従来のAPI呼び出しはスキップ
     }
@@ -195,8 +203,10 @@ export default function ChatPage() {
       const conversationHistory = messages
         .filter(msg => {
           // 初期の挨拶メッセージを除外（内容で判定）
-          const isInitialMessage = msg.content.includes('こんにちは！私はGenieです') || 
-                                  msg.content.includes('こんにちは！私はジーニーです')
+          const isInitialMessage = msg.content.includes('こんにちは！**GenieUs**です') || 
+                                  msg.content.includes('こんにちは！私はGenieです') ||
+                                  msg.content.includes('こんにちは！私はジーニーです') ||
+                                  msg.content.includes('話すだけで **家族管理・成長記録・努力見える化**')
           return !isInitialMessage
         })
         .map(msg => ({
@@ -314,21 +324,103 @@ export default function ChatPage() {
     setIsTyping(true)
   }
 
+  // フォローアップクエスチョンを除去するヘルパー関数
+  const cleanResponseContent = (response: string): string => {
+    try {
+      // 💭マークを含む行を除去
+      const lines = response.split('\n')
+      const cleanLines = []
+      let inFollowupSection = false
+      
+      for (const line of lines) {
+        const trimmedLine = line.trim()
+        
+        // フォローアップセクションの開始を検出
+        if (trimmedLine.includes('続けて相談する') || 
+            trimmedLine.includes('続けて相談したい方へ') || 
+            trimmedLine.includes('【続けて相談したい方へ】') ||
+            trimmedLine.includes('【続けて相談する】')) {
+          inFollowupSection = true
+          continue
+        }
+        
+        // 💭マークを含む行をスキップ
+        if (trimmedLine.includes('💭') || trimmedLine.includes('\ud83d\udcad')) {
+          continue
+        }
+        
+        // フォローアップセクション内の行をスキップ
+        if (inFollowupSection) {
+          continue
+        }
+        
+        // 通常の行は保持
+        cleanLines.push(line)
+      }
+      
+      return cleanLines.join('\n').replace(/\n\s*\n\s*\n/g, '\n\n').trim()
+    } catch (error) {
+      console.warn('レスポンスクリーンアップエラー:', error)
+      return response
+    }
+  }
+
   // ストリーミング完了時の処理
   const handleStreamingComplete = (response: string) => {
-    setMessages(prev => 
-      prev.map(msg => 
+    console.log('🔄 handleStreamingComplete 開始:', {
+      currentStreamingId,
+      responseLength: response.length,
+      responsePreview: response.substring(0, 100) + '...'
+    })
+    
+    // 既にストリーミングが完了している場合は重複処理を防ぐ
+    if (!currentStreamingId) {
+      console.log('⚠️ handleStreamingComplete: 既に完了済み - 重複処理をスキップ')
+      return
+    }
+    
+    const cleanedResponse = cleanResponseContent(response)
+    
+    console.log('✨ メッセージ置換実行:', {
+      targetId: currentStreamingId,
+      cleanedResponseLength: cleanedResponse.length,
+      cleanedResponsePreview: cleanedResponse.substring(0, 100) + '...'
+    })
+    
+    setMessages(prev => {
+      const updatedMessages = prev.map(msg => 
         msg.id === currentStreamingId 
-          ? { ...msg, content: response, type: 'text' as const }
+          ? { ...msg, content: cleanedResponse, type: 'text' as const }
           : msg
       )
-    )
+      
+      console.log('📝 メッセージ配列更新:', {
+        beforeCount: prev.length,
+        afterCount: updatedMessages.length,
+        replacedMessage: updatedMessages.find(m => m.id === currentStreamingId)
+      })
+      
+      return updatedMessages
+    })
+    
+    console.log('🎯 ストリーミング状態リセット:', {
+      oldStreamingId: currentStreamingId,
+      newStreamingId: null
+    })
+    
     setCurrentStreamingId(null)
     setIsTyping(false)
+    
+    console.log('✅ handleStreamingComplete 完了')
   }
 
   // ストリーミングエラー時の処理
   const handleStreamingError = (error: string) => {
+    console.log('❌ handleStreamingError 開始:', {
+      currentStreamingId,
+      error
+    })
+    
     setMessages(prev => 
       prev.map(msg => 
         msg.id === currentStreamingId 
@@ -338,6 +430,8 @@ export default function ChatPage() {
     )
     setCurrentStreamingId(null)
     setIsTyping(false)
+    
+    console.log('❌ handleStreamingError 完了')
   }
 
   // チャットを保存
@@ -378,9 +472,9 @@ export default function ChatPage() {
     setMessages([
       {
         id: '1',
-        content: 'こんにちは！私はGenieです ✨ 子育ての記録・分析・相談をお手伝いします！\n\n**できること:**\n• 音声で話すだけで授乳・睡眠・食事を記録\n• 写真を送るだけで食事量・表情を分析\n• 夜泣き・離乳食・発達の相談に24時間対応\n\n何でもお気軽にお話しください！',
+        content: 'こんにちは！**GenieUs**です ✨\n\n話すだけで **家族管理・成長記録・努力見える化** すべてがつながる子育てアシスタント！\n\n**🤖 18人の専門GenieUs Agents**が連携してサポートします\n\n**💬 こんなことができます：**\n• **「家族情報を登録」** → パパ・ママ・お子さんの情報をまとめて管理\n• **「今日どうだった？」** → 複数の専門エージェントがあなたの話を理解・記録\n• **「初めて歩いた！」** → 写真付きで大切な瞬間をメモリーズに保存\n• **「頑張ったことを教えて」** → あなたの愛情と努力をGenieが理解・認める\n• **「夜泣きがひどくて困っています」** → 専門エージェントが具体的にアドバイス\n• **「近くの病院を検索して」** → 最新情報を検索してお届け\n• **「子供向けイベントを探して」** → お出かけ先やイベントをご提案\n\n**🌟 専門分野：** 睡眠・栄養・夜泣き・離乳食・発達・遊び・しつけ・健康・行動・安全・心理・仕事両立・特別支援・検索・窓口申請・おでかけイベントなど\n\n何でもお気軽にお話しください！あなたに最適な専門エージェントが自動的にサポートします 💫',
         sender: 'genie',
-        timestamp: new Date(),
+        timestamp: new Date('2025-01-01T00:00:00.000Z'),
         type: 'text'
       }
     ])
@@ -505,6 +599,66 @@ export default function ChatPage() {
   // フォローアップ質問をクリックしたときの処理
   const handleFollowUpClick = (question: string) => {
     setInputValue(question)
+    // 直接送信（質問を引数として渡す）
+    sendMessageWithText(question)
+    // フォローアップクエスチョンをクリア
+    setCurrentFollowupQuestions([])
+  }
+
+  // フォローアップクエスチョンを受け取る処理
+  const handleFollowupQuestions = (questions: string[]) => {
+    setCurrentFollowupQuestions(questions)
+  }
+
+  // テキスト指定でメッセージ送信
+  const sendMessageWithText = async (text: string) => {
+    if (!text.trim()) return
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: text,
+      sender: 'user',
+      timestamp: new Date(),
+      type: 'text'
+    }
+
+    setMessages(prev => [...prev, userMessage])
+    setInputValue('')
+    
+    // ストリーミング用のプレースホルダーメッセージを追加
+    const streamingMessageId = (Date.now() + 1).toString()
+    setCurrentStreamingId(streamingMessageId)
+    
+    const streamingMessage: Message = {
+      id: streamingMessageId,
+      content: JSON.stringify({
+        message: text,
+        conversation_history: messages
+          .filter(msg => {
+            const isInitialMessage = msg.content.includes('こんにちは！**GenieUs**です') || 
+                                   msg.content.includes('こんにちは！私はGenieです') ||
+                                   msg.content.includes('こんにちは！私はジーニーです') ||
+                                   msg.content.includes('話すだけで **家族管理・成長記録・努力見える化**')
+            return !isInitialMessage
+          })
+          .map(msg => ({
+            id: msg.id,
+            content: msg.content,
+            sender: msg.sender,
+            timestamp: typeof msg.timestamp === 'string' ? msg.timestamp : msg.timestamp.toISOString(),
+            type: msg.type
+          })),
+        session_id: currentSession ? currentSession.id : 'default-session',
+        user_id: 'frontend_user',
+        family_info: familyInfo
+      }),
+      sender: 'genie',
+      timestamp: new Date(),
+      type: 'streaming'
+    }
+
+    setMessages(prev => [...prev, streamingMessage])
+    setTimeout(scrollToBottom, 100)
   }
 
   // 家族情報を読み込み
@@ -551,9 +705,9 @@ export default function ChatPage() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
-        {/* ページヘッダー（固定） */}
-        <div className="flex-shrink-0 bg-white/80 backdrop-blur-sm border-b border-amber-100">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+        {/* ページヘッダー */}
+        <div className="bg-white/80 backdrop-blur-sm border-b border-amber-100">
           <div className="max-w-6xl mx-auto px-4 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -603,8 +757,8 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Chat Messages（スクロール可能エリア） */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Chat Messages */}
+        <div className="overflow-y-auto">
           <div className="max-w-6xl mx-auto p-6 space-y-6 pb-4">
         {messages.map((message) => (
           <div
@@ -628,6 +782,7 @@ export default function ChatPage() {
                   sessionId={currentSession ? currentSession.id : 'default-session'}
                   onComplete={handleStreamingComplete}
                   onError={handleStreamingError}
+                  onFollowupQuestions={handleFollowupQuestions}
                 />
               ) : (
                 // 通常のメッセージ表示
@@ -647,24 +802,6 @@ export default function ChatPage() {
                       <p className="text-white whitespace-pre-line">{message.content}</p>
                     )}
                   
-                  {/* フォローアップ質問ボタン */}
-                  {message.sender === 'genie' && message.followUpQuestions && message.followUpQuestions.length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      <p className="text-xs text-gray-600 font-medium">💡 こんなことも気になりませんか？</p>
-                      <div className="space-y-2">
-                        {message.followUpQuestions.map((question, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleFollowUpClick(question)}
-                            className="block w-full text-left text-sm px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-800 rounded-lg border border-amber-200 hover:border-amber-300 transition-all duration-200 hover:shadow-md"
-                          >
-                            <Heart className="h-3 w-3 inline mr-2 text-amber-600" />
-                            {question}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                   
                   {/* デバッグ情報表示（開発時のみ） */}
                   {message.sender === 'genie' && message.debugInfo?.workflow_used && (
@@ -729,14 +866,25 @@ export default function ChatPage() {
             </Card>
           </div>
         )}
+
+        {/* フォローアップクエスチョン */}
+        {currentFollowupQuestions.length > 0 && (
+          <div className="px-6 pb-4">
+            <FollowupQuestions
+              questions={currentFollowupQuestions}
+              onQuestionClick={handleFollowUpClick}
+            />
+          </div>
+        )}
+        
             
-            {/* スクロール用の参照点 */}
-            <div ref={messagesEndRef} />
+        {/* スクロール用の参照点 */}
+        <div ref={messagesEndRef} />
           </div>
         </div>
 
-        {/* 固定インプットエリア */}
-        <div className="flex-shrink-0">
+        {/* インプットエリア */}
+        <div className="sticky bottom-0 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 pt-4">
           {/* よくある相談 */}
           {messages.length === 1 && (
             <div className="max-w-4xl mx-auto px-6 py-3">

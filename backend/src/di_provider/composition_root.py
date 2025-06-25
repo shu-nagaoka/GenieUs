@@ -11,8 +11,12 @@ from google.adk.tools import FunctionTool
 
 from src.application.usecases.family_management_usecase import FamilyManagementUseCase
 from src.application.usecases.file_management_usecase import FileManagementUseCase
+from src.application.usecases.growth_record_usecase import GrowthRecordUseCase
 from src.application.usecases.image_analysis_usecase import ImageAnalysisUseCase
+from src.application.usecases.memory_record_usecase import MemoryRecordUseCase
 from src.application.usecases.record_management_usecase import RecordManagementUseCase
+from src.application.usecases.schedule_event_usecase import ScheduleEventUseCase
+from src.application.usecases.effort_report_usecase import EffortReportUseCase
 from src.application.usecases.voice_analysis_usecase import VoiceAnalysisUseCase
 from src.config.settings import AppSettings, get_settings
 from src.infrastructure.adapters.file_operator import GcsFileOperator
@@ -20,6 +24,10 @@ from src.infrastructure.adapters.gemini_image_analyzer import GeminiImageAnalyze
 from src.infrastructure.adapters.gemini_voice_analyzer import GeminiVoiceAnalyzer
 from src.infrastructure.adapters.memory_repositories import MemoryRepositoryFactory
 from src.infrastructure.adapters.persistence.family_repository import FamilyRepository
+from src.infrastructure.adapters.persistence.growth_record_repository import GrowthRecordRepository
+from src.infrastructure.adapters.persistence.memory_record_repository import MemoryRecordRepository
+from src.infrastructure.adapters.persistence.schedule_event_repository import ScheduleEventRepository
+from src.infrastructure.adapters.persistence.effort_report_repository import EffortReportRepository
 from src.share.logger import setup_logger
 
 T = TypeVar("T")
@@ -113,6 +121,22 @@ class CompositionRoot:
         family_repository = FamilyRepository(logger=self.logger)
         self._infrastructure.register("family_repository", family_repository)
 
+        # Growth Record Repository
+        growth_record_repository = GrowthRecordRepository(logger=self.logger)
+        self._infrastructure.register("growth_record_repository", growth_record_repository)
+
+        # Memory Record Repository
+        memory_record_repository = MemoryRecordRepository(logger=self.logger)
+        self._infrastructure.register("memory_record_repository", memory_record_repository)
+
+        # Schedule Event Repository
+        schedule_event_repository = ScheduleEventRepository(logger=self.logger)
+        self._infrastructure.register("schedule_event_repository", schedule_event_repository)
+
+        # Effort Report Repository
+        effort_report_repository = EffortReportRepository(logger=self.logger)
+        self._infrastructure.register("effort_report_repository", effort_report_repository)
+
         self.logger.info("Infrastructure層組み立て完了")
 
     def _build_application_layer(self) -> None:
@@ -125,6 +149,10 @@ class CompositionRoot:
         file_operator = self._infrastructure.get_required("file_operator")
         repository_factory = self._infrastructure.get_required("repository_factory")
         family_repository = self._infrastructure.get_required("family_repository")
+        growth_record_repository = self._infrastructure.get_required("growth_record_repository")
+        memory_record_repository = self._infrastructure.get_required("memory_record_repository")
+        schedule_event_repository = self._infrastructure.get_required("schedule_event_repository")
+        effort_report_repository = self._infrastructure.get_required("effort_report_repository")
 
         # UseCases組み立て
         image_analysis_usecase = ImageAnalysisUseCase(image_analyzer=image_analyzer, logger=self.logger)
@@ -143,12 +171,37 @@ class CompositionRoot:
             logger=self.logger,
         )
 
+        growth_record_usecase = GrowthRecordUseCase(
+            growth_record_repository=growth_record_repository,
+            family_repository=family_repository,
+            logger=self.logger,
+        )
+
+        memory_record_usecase = MemoryRecordUseCase(
+            memory_record_repository=memory_record_repository,
+            logger=self.logger,
+        )
+
+        schedule_event_usecase = ScheduleEventUseCase(
+            schedule_event_repository=schedule_event_repository,
+            logger=self.logger,
+        )
+
+        effort_report_usecase = EffortReportUseCase(
+            effort_report_repository=effort_report_repository,
+            logger=self.logger,
+        )
+
         # UseCase登録
         self._usecases.register("image_analysis", image_analysis_usecase)
         self._usecases.register("voice_analysis", voice_analysis_usecase)
         self._usecases.register("file_management", file_management_usecase)
         self._usecases.register("record_management", record_management_usecase)
         self._usecases.register("family_management", family_management_usecase)
+        self._usecases.register("growth_record_management", growth_record_usecase)
+        self._usecases.register("memory_record_management", memory_record_usecase)
+        self._usecases.register("schedule_event_management", schedule_event_usecase)
+        self._usecases.register("effort_report_management", effort_report_usecase)
 
         self.logger.info("Application層組み立て完了")
 

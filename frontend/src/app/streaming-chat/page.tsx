@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { StreamingProgressDisplay } from '@/components/features/chat/streaming-progress-display'
+import { GenieStyleProgress } from '@/components/features/chat/genie-style-progress'
 import { 
   IoSend,
   IoSparkles,
@@ -92,6 +92,49 @@ export default function StreamingChatPage() {
     setIsProcessing(false)
   }
 
+  // フォローアップクエスチョンクリック時の処理
+  const handleFollowupClick = (question: string) => {
+    console.log('handleFollowupClick 呼び出し:', { question, isProcessing })
+    if (isProcessing) return
+    
+    // インプットエリアに質問を設定して、すぐに送信
+    setInputValue(question)
+    console.log('質問をインプットに設定:', question)
+    // 直接送信実行
+    sendMessageWithText(question)
+  }
+
+  // テキスト指定でメッセージ送信
+  const sendMessageWithText = async (text: string) => {
+    if (!text.trim() || isProcessing) return
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: text,
+      sender: 'user',
+      timestamp: new Date(),
+      type: 'text'
+    }
+
+    setMessages(prev => [...prev, userMessage])
+    setInputValue('')
+    setIsProcessing(true)
+
+    // ストリーミング用のプレースホルダーメッセージを追加
+    const streamingMessageId = (Date.now() + 1).toString()
+    setCurrentStreamingId(streamingMessageId)
+    
+    const streamingMessage: Message = {
+      id: streamingMessageId,
+      content: text, // ストリーミングコンポーネントに送信するクエリ
+      sender: 'genie',
+      timestamp: new Date(),
+      type: 'streaming'
+    }
+
+    setMessages(prev => [...prev, streamingMessage])
+  }
+
   // チャットリセット
   const resetChat = () => {
     setMessages([
@@ -160,12 +203,16 @@ export default function StreamingChatPage() {
               <div className={`max-w-[85%] ${message.sender === 'user' ? 'order-first' : ''}`}>
                 {message.type === 'streaming' ? (
                   // ストリーミング進捗表示
-                  <StreamingProgressDisplay
+                  <GenieStyleProgress
                     message={message.content}
                     userId="frontend_user"
                     sessionId="streaming-session"
                     onComplete={handleStreamingComplete}
                     onError={handleStreamingError}
+                    onFollowupQuestions={(questions) => {
+                      // フォローアップクエスチョンは表示されるが、クリック処理は別途必要
+                      console.log('フォローアップクエスチョン受信:', questions)
+                    }}
                   />
                 ) : (
                   // 通常のメッセージ表示
