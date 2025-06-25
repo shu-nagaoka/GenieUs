@@ -23,7 +23,7 @@ const MultiAgentOrchestration = lazy(() =>
     default: m.MultiAgentOrchestration 
   }))
 )
-import { getFamilyInfo, formatFamilyInfoForChat } from '@/lib/api/family'
+import { getFamilyInfo, formatFamilyInfoForChat } from '@/libs/api/family'
 import remarkGfm from 'remark-gfm'
 // アイコンをバランス良く設定 - 必要なアイコンは保持
 import { Send, Mic, Camera, Plus, History, Save, User, Sparkles, Star, MessageCircle } from 'lucide-react'

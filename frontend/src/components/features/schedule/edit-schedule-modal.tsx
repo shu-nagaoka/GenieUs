@@ -18,7 +18,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
-import { updateScheduleEvent, deleteScheduleEvent, ScheduleEvent, ScheduleEventUpdateRequest } from '@/lib/api/schedules'
+import { updateScheduleEvent, deleteScheduleEvent, ScheduleEvent, ScheduleEventUpdateRequest } from '@/libs/api/schedules'
 
 interface EditScheduleModalProps {
   open: boolean

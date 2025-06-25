@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { CreateMemoryModal } from '@/components/features/memories/create-memory-modal'
 import { EditMemoryModal } from '@/components/features/memories/edit-memory-modal'
-import { getMemories, toggleMemoryFavorite, MemoryRecord as ApiMemoryRecord } from '@/lib/api/memories'
+import { getMemories, toggleMemoryFavorite, MemoryRecord as ApiMemoryRecord } from '@/libs/api/memories'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -39,7 +39,7 @@ import { MdPhotoLibrary, MdVideoLibrary, MdFamilyRestroom } from 'react-icons/md
 import { FaCamera, FaVideo, FaHeart } from 'react-icons/fa'
 import { GiMagicLamp } from 'react-icons/gi'
 import Link from 'next/link'
-import { getImageUrl } from '@/lib/api/file-upload'
+import { getImageUrl } from '@/libs/api/file-upload'
 
 // バックエンドAPIから取得したデータを表示用に変換するインターフェース
 interface MemoryRecord extends Omit<ApiMemoryRecord, 'user_id' | 'created_at' | 'updated_at'> {

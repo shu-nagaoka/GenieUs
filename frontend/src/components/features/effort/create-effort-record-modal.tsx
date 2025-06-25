@@ -18,7 +18,7 @@ import {
   Star
 } from 'lucide-react'
 import { FaTrophy } from 'react-icons/fa'
-import { createEffortRecord, EffortRecordCreateRequest } from '@/lib/api/effort-records'
+import { createEffortRecord, EffortRecordCreateRequest } from '@/libs/api/effort-records'
 
 interface CreateEffortRecordModalProps {
   open: boolean

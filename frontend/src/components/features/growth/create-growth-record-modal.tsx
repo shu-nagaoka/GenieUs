@@ -25,7 +25,7 @@ import {
   Save,
   Loader2
 } from 'lucide-react'
-import { createGrowthRecord, GrowthRecordCreateRequest, getChildrenForGrowthRecords, ChildInfo } from '@/lib/api/growth-records'
+import { createGrowthRecord, GrowthRecordCreateRequest, getChildrenForGrowthRecords, ChildInfo } from '@/libs/api/growth-records'
 import { ImageUpload } from '@/components/features/memories/image-upload'
 
 interface CreateGrowthRecordModalProps {

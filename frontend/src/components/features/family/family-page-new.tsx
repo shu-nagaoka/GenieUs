@@ -21,7 +21,7 @@ import {
 import { FaPaw, FaAllergies } from 'react-icons/fa'
 import { MdFamilyRestroom, MdChildCare } from 'react-icons/md'
 import { FamilyCompositionModal } from './family-composition-modal'
-import { getFamilyInfo, registerFamilyInfo, updateFamilyInfo } from '@/lib/api/family'
+import { getFamilyInfo, registerFamilyInfo, updateFamilyInfo } from '@/libs/api/family'
 
 interface Child {
   name: string

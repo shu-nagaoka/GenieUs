@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Upload, X, Image as ImageIcon, AlertCircle, Loader2 } from 'lucide-react'
-import { uploadImage, getImageUrl } from '@/lib/api/file-upload'
+import { uploadImage, getImageUrl } from '@/libs/api/file-upload'
 
 interface ImageUploadProps {
   onImageUploaded: (fileUrl: string) => void
