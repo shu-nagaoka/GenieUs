@@ -54,6 +54,7 @@ interface FamilyComposition {
   pets: Pet[]
   children: Child[]
   living_situation: string
+  living_area: string
 }
 
 // APIデータとの変換用
@@ -63,6 +64,7 @@ interface ApiFamilyInfo {
   parent_name: string
   family_structure: string
   concerns: string
+  living_area?: string
   children: Child[]
   created_at?: string
   updated_at?: string
@@ -98,7 +100,8 @@ export default function FamilyPageNew() {
           },
           pets: [], // 既存データではペット情報がないため
           children: apiData.children.map(child => ({...child, concerns: []})),
-          living_situation: ''
+          living_situation: '',
+          living_area: apiData.living_area || ''
         }
         setFamilyData(convertedData)
         setHasData(true)
@@ -120,6 +123,7 @@ export default function FamilyPageNew() {
         parent_name: data.parent_name,
         family_structure: generateFamilyStructureString(data.family_members),
         concerns: '', // 子どもごとの悩みから統合
+        living_area: data.living_area,
         children: data.children.map(child => ({
           ...child,
           concerns: undefined // APIには送信しない
@@ -229,10 +233,10 @@ export default function FamilyPageNew() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-stone-50 flex items-center justify-center">
+        <div className="min-h-screen bg-slate-100 flex items-center justify-center">
           <div className="inline-flex items-center gap-2">
-            <div className="w-6 h-6 border-2 border-slate-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-gray-600">家族情報を読み込み中...</span>
+            <div className="w-6 h-6 border-2 border-slate-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-gray-700">家族情報を読み込み中...</span>
           </div>
         </div>
       </AppLayout>
@@ -241,13 +245,13 @@ export default function FamilyPageNew() {
 
   return (
     <AppLayout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-stone-50">
+      <div className="min-h-screen bg-slate-100">
         {/* ページヘッダー */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200">
+        <div className="bg-white border-b border-slate-300">
           <div className="max-w-6xl mx-auto px-4 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center shadow-lg">
+                <div className="h-12 w-12 rounded-full bg-slate-700 flex items-center justify-center">
                   <MdFamilyRestroom className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -259,7 +263,7 @@ export default function FamilyPageNew() {
               <div className="flex items-center space-x-3">
                 <Button 
                   onClick={() => setShowModal(true)}
-                  className="bg-gradient-to-r from-gray-400 to-gray-500 hover:from-slate-700 hover:to-slate-800 text-white shadow-lg"
+                  className="bg-slate-700 hover:bg-slate-800 text-white"
                 >
                   {hasData ? (
                     <>
@@ -281,10 +285,10 @@ export default function FamilyPageNew() {
         <div className="max-w-6xl mx-auto p-6 space-y-8">
           {!hasData ? (
             // 未登録時の案内
-            <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+            <Card className="shadow-lg border-0 bg-white">
               <CardContent className="p-12 text-center">
                 <div className="mb-6">
-                  <MdFamilyRestroom className="h-24 w-24 mx-auto text-slate-300" />
+                  <MdFamilyRestroom className="h-24 w-24 mx-auto text-slate-400" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-800 mb-4">
                   家族情報をご登録ください
@@ -296,7 +300,7 @@ export default function FamilyPageNew() {
                 <Button 
                   onClick={() => setShowModal(true)}
                   size="lg"
-                  className="bg-gradient-to-r from-gray-400 to-gray-500 hover:from-slate-700 hover:to-slate-800 text-white shadow-lg"
+                  className="bg-slate-700 hover:bg-slate-800 text-white"
                 >
                   <Plus className="h-5 w-5 mr-2" />
                   家族情報を登録する
@@ -307,13 +311,13 @@ export default function FamilyPageNew() {
             // 登録済み時の表示
             <>
               {/* 家族構成サマリー */}
-              <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-t-lg">
+              <Card className="shadow-lg border-0 bg-white">
+                <CardHeader className="bg-slate-700 text-white rounded-t-lg">
                   <CardTitle className="flex items-center gap-3">
                     <Users className="h-6 w-6" />
                     家族構成
                   </CardTitle>
-                  <CardDescription className="text-gray-100">
+                  <CardDescription className="text-slate-200">
                     {familyData?.parent_name}さんのご家族
                   </CardDescription>
                 </CardHeader>
@@ -327,45 +331,95 @@ export default function FamilyPageNew() {
                     </Badge>
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                    <div className="text-center p-4 bg-slate-50 rounded-lg">
-                      <Users className="h-8 w-8 mx-auto text-slate-600 mb-2" />
-                      <div className="text-sm text-gray-600">保護者</div>
-                      <div className="font-medium">
-                        {(familyData?.family_members.has_father && familyData?.family_members.has_mother) ? '2人' :
-                         (familyData?.family_members.has_father || familyData?.family_members.has_mother) ? '1人' : '0人'}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
+                    <div className="group relative bg-white rounded-xl p-6 border border-gray-100 hover:border-gray-200 transition-all duration-300 hover:scale-105 cursor-pointer">
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-blue-500 rounded-t-xl"></div>
+                      <div className="text-center">
+                        <div className="w-12 h-12 mx-auto mb-3 bg-blue-50 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                          <Users className="h-6 w-6 text-blue-600" />
+                        </div>
+                        <div className="text-sm text-gray-600 mb-1">保護者</div>
+                        <div className="text-lg font-bold text-gray-900">
+                          {(familyData?.family_members.has_father && familyData?.family_members.has_mother) ? '2人' :
+                           (familyData?.family_members.has_father || familyData?.family_members.has_mother) ? '1人' : '0人'}
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <Baby className="h-8 w-8 mx-auto text-blue-600 mb-2" />
-                      <div className="text-sm text-gray-600">お子さん</div>
-                      <div className="font-medium">{familyData?.family_members.children_count}人</div>
-                    </div>
-                    
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <Heart className="h-8 w-8 mx-auto text-purple-600 mb-2" />
-                      <div className="text-sm text-gray-600">祖父母</div>
-                      <div className="font-medium">
-                        {(familyData?.family_members.has_grandfather || familyData?.family_members.has_grandmother) ? '同居' : '別居'}
+                    <div className="group relative bg-white rounded-xl p-6 border border-gray-100 hover:border-gray-200 transition-all duration-300 hover:scale-105 cursor-pointer">
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-green-500 rounded-t-xl"></div>
+                      <div className="text-center">
+                        <div className="w-12 h-12 mx-auto mb-3 bg-green-50 rounded-full flex items-center justify-center group-hover:bg-green-100 transition-colors">
+                          <Baby className="h-6 w-6 text-green-600" />
+                        </div>
+                        <div className="text-sm text-gray-600 mb-1">お子さん</div>
+                        <div className="text-lg font-bold text-gray-900">{familyData?.family_members.children_count}人</div>
                       </div>
                     </div>
                     
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
-                      <FaPaw className="h-8 w-8 mx-auto text-gray-600 mb-2" />
-                      <div className="text-sm text-gray-600">ペット</div>
-                      <div className="font-medium">
-                        {familyData?.pets.length || 0}匹
+                    <div className="group relative bg-white rounded-xl p-6 border border-gray-100 hover:border-gray-200 transition-all duration-300 hover:scale-105 cursor-pointer">
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-400 to-purple-500 rounded-t-xl"></div>
+                      <div className="text-center">
+                        <div className="w-12 h-12 mx-auto mb-3 bg-purple-50 rounded-full flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+                          <Heart className="h-6 w-6 text-purple-600" />
+                        </div>
+                        <div className="text-sm text-gray-600 mb-1">祖父母</div>
+                        <div className="text-lg font-bold text-gray-900">
+                          {(familyData?.family_members.has_grandfather || familyData?.family_members.has_grandmother) ? '同居' : '別居'}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="group relative bg-white rounded-xl p-6 border border-gray-100 hover:border-gray-200 transition-all duration-300 hover:scale-105 cursor-pointer">
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-orange-500 rounded-t-xl"></div>
+                      <div className="text-center">
+                        <div className="w-12 h-12 mx-auto mb-3 bg-orange-50 rounded-full flex items-center justify-center group-hover:bg-orange-100 transition-colors">
+                          <FaPaw className="h-6 w-6 text-orange-600" />
+                        </div>
+                        <div className="text-sm text-gray-600 mb-1">ペット</div>
+                        <div className="text-lg font-bold text-gray-900">
+                          {familyData?.pets.length || 0}匹
+                        </div>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
+              {/* 居住エリア情報 */}
+              {familyData?.living_area && (
+                <Card className="shadow-lg border-0 bg-white">
+                  <CardHeader className="bg-slate-700 text-white rounded-t-lg">
+                    <CardTitle className="flex items-center gap-3">
+                      <MapPin className="h-6 w-6" />
+                      お住まいのエリア
+                    </CardTitle>
+                    <CardDescription className="text-slate-200">
+                      地域情報に基づくサポート
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-slate-100 rounded-lg">
+                        <Home className="h-6 w-6 text-slate-600" />
+                      </div>
+                      <div>
+                        <div className="text-lg font-medium text-gray-800">
+                          {familyData.living_area.replace(/-/g, ' ')}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          この地域の子育て情報をお届けします
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* 子どもの詳細情報 */}
               {familyData?.children && familyData.children.length > 0 && (
-                <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                  <CardHeader className="bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-t-lg">
+                <Card className="shadow-lg border-0 bg-white">
+                  <CardHeader className="bg-slate-700 text-white rounded-t-lg">
                     <CardTitle className="flex items-center gap-3">
                       <MdChildCare className="h-6 w-6" />
                       お子さんの情報
@@ -433,8 +487,8 @@ export default function FamilyPageNew() {
 
               {/* ペット情報 */}
               {familyData?.pets && familyData.pets.length > 0 && (
-                <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                  <CardHeader className="bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-t-lg">
+                <Card className="shadow-lg border-0 bg-white">
+                  <CardHeader className="bg-slate-700 text-white rounded-t-lg">
                     <CardTitle className="flex items-center gap-3">
                       <FaPaw className="h-6 w-6" />
                       ペット情報

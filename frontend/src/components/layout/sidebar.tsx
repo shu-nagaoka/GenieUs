@@ -14,9 +14,6 @@ import {
   AiOutlineMessage,
   AiOutlineCalendar,
   AiOutlineBarChart,
-  AiOutlineSetting,
-  AiOutlineBell,
-  AiOutlinePlus,
   AiOutlineLeft,
   AiOutlineRight,
   AiOutlineMenu,
@@ -35,6 +32,8 @@ import {
   HiOutlineCog6Tooth,
   HiOutlineUsers
 } from 'react-icons/hi2'
+import { UserProfile } from '@/components/features/auth/auth-check'
+import { signOut } from 'next-auth/react'
 
 const mainNavigation = [
   { name: 'ホーム', href: '/dashboard', icon: AiOutlineHome },
@@ -54,16 +53,12 @@ const familyNavigation = [
   { name: '家族情報', href: '/family', icon: HiOutlineUsers },
 ]
 
-const systemNavigation = [
-  { name: '通知', href: '/notifications', icon: AiOutlineBell, badge: '3' },
-  { name: '設定', href: '/settings', icon: HiOutlineCog6Tooth },
-]
 
 function SidebarContent({ isCollapsed = false }: { isCollapsed?: boolean }) {
   const pathname = usePathname()
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200">
+    <div className="flex flex-col h-screen bg-white border-r border-gray-200">
       {/* ヘッダー */}
       <div className={cn(
         "flex items-center transition-all duration-300",
@@ -211,73 +206,19 @@ function SidebarContent({ isCollapsed = false }: { isCollapsed?: boolean }) {
           })}
         </div>
 
-        <Separator className="my-4" />
 
-        {/* システム機能セクション */}
-        <div className="space-y-1">
-          {!isCollapsed && (
-            <h3 className="mb-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-              システム
-            </h3>
-          )}
-          {systemNavigation.map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <Button
-                key={item.name}
-                variant={isActive ? "secondary" : "ghost"}
-                className={cn(
-                  "w-full h-10 transition-all duration-300",
-                  isCollapsed ? "justify-center px-2" : "justify-start gap-3",
-                  isActive && "bg-amber-100 text-amber-900 hover:bg-amber-100"
-                )}
-                asChild
-                title={isCollapsed ? item.name : undefined}
-              >
-                <Link href={item.href}>
-                  <item.icon className="h-4 w-4" />
-                  {!isCollapsed && (
-                    <>
-                      <span>{item.name}</span>
-                      {item.badge && (
-                        <Badge variant="secondary" className="ml-auto text-xs">
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </>
-                  )}
-                </Link>
-              </Button>
-            )
-          })}
-        </div>
+      </div>
 
-        {/* クイックアクション */}
-        {!isCollapsed && (
-          <div className="mt-6">
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="text-sm font-medium mb-3">クイックアクション</h3>
-                <div className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full justify-start gap-2" asChild>
-                    <Link href="/chat">
-                      <AiOutlineMessage className="h-4 w-4" />
-                      Genieと話す
-                    </Link>
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start gap-2" asChild>
-                    <Link href="/chat">
-                      <FaMicrophone className="h-4 w-4" />
-                      音声で記録
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+      {/* ユーザープロフィール - 固定表示 */}
+      <div className="border-t border-gray-200 p-4 mt-auto">
+        {!isCollapsed ? (
+          <UserProfile />
+        ) : (
+          <div className="flex justify-center">
+            <UserProfile />
           </div>
         )}
       </div>
-
     </div>
   )
 }

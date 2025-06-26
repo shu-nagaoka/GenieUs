@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
+import { AuthCheck } from '@/components/features/auth/auth-check'
 import { EffortReportCard } from '@/components/v2/effort-affirmation/EffortReportCard'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -52,6 +53,14 @@ interface HistoricalReport {
 type ViewMode = 'card' | 'table'
 
 export default function EffortReportPage() {
+  return (
+    <AuthCheck>
+      <EffortReportPageContent />
+    </AuthCheck>
+  )
+}
+
+function EffortReportPageContent() {
   const [selectedPeriod, setSelectedPeriod] = useState<number>(7)
   const [reportKey, setReportKey] = useState<number>(0)
   const [selectedReport, setSelectedReport] = useState<HistoricalReport | null>(null)

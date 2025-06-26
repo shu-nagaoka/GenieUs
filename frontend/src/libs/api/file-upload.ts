@@ -20,7 +20,7 @@ export async function uploadImage(file: File, userId: string = 'frontend_user'):
     formData.append('file', file)
     formData.append('user_id', userId)
 
-    const response = await fetch(`${API_BASE_URL}/api/v1/files/upload/image`, {
+    const response = await fetch(`${API_BASE_URL}/api/files/upload/image`, {
       method: 'POST',
       body: formData,
     })
@@ -44,7 +44,7 @@ export async function uploadImage(file: File, userId: string = 'frontend_user'):
  * 画像のURLを取得（表示用）
  */
 export function getImageUrl(filename: string): string {
-  return `${API_BASE_URL}/api/v1/files/images/${filename}`
+  return `${API_BASE_URL}/api/files/images/${filename}`
 }
 
 /**
@@ -52,7 +52,7 @@ export function getImageUrl(filename: string): string {
  */
 export async function deleteImage(filename: string, userId: string = 'frontend_user'): Promise<{ success: boolean; message?: string }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/files/images/${filename}?user_id=${userId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/files/images/${filename}?user_id=${userId}`, {
       method: 'DELETE',
     })
 

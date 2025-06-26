@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
+import { AuthCheck } from '@/components/features/auth/auth-check'
 import { CreateMemoryModal } from '@/components/features/memories/create-memory-modal'
 import { EditMemoryModal } from '@/components/features/memories/edit-memory-modal'
 import { getMemories, toggleMemoryFavorite, MemoryRecord as ApiMemoryRecord } from '@/libs/api/memories'
@@ -71,6 +72,14 @@ interface EditableMemoryRecord {
 }
 
 export default function CapturedMemoriesPage() {
+  return (
+    <AuthCheck>
+      <CapturedMemoriesPageContent />
+    </AuthCheck>
+  )
+}
+
+function CapturedMemoriesPageContent() {
   const [memories, setMemories] = useState<MemoryRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -143,20 +152,20 @@ export default function CapturedMemoriesPage() {
 
   const getCategoryColor = (category: MemoryRecord['category']) => {
     switch (category) {
-      case 'milestone': return 'from-purple-500 to-purple-600'
-      case 'daily': return 'from-blue-500 to-blue-600'
-      case 'family': return 'from-green-500 to-green-600'
-      case 'special': return 'from-pink-500 to-pink-600'
-      default: return 'from-gray-500 to-gray-600'
+      case 'milestone': return 'bg-purple-700'
+      case 'daily': return 'bg-blue-700'
+      case 'family': return 'bg-green-700'
+      case 'special': return 'bg-pink-700'
+      default: return 'bg-gray-700'
     }
   }
 
   const getTypeColor = (type: MemoryRecord['type']) => {
     switch (type) {
-      case 'photo': return 'bg-cyan-500'
-      case 'video': return 'bg-indigo-500'
-      case 'album': return 'bg-emerald-500'
-      default: return 'bg-gray-500'
+      case 'photo': return 'bg-cyan-700'
+      case 'video': return 'bg-indigo-700'
+      case 'album': return 'bg-emerald-700'
+      default: return 'bg-gray-700'
     }
   }
 
@@ -261,13 +270,13 @@ export default function CapturedMemoriesPage() {
 
   return (
     <AppLayout>
-      <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50">
+      <div className="min-h-screen bg-slate-50">
         {/* ページヘッダー */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-cyan-100">
+        <div className="bg-white border-b border-gray-200">
           <div className="max-w-6xl mx-auto px-4 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
+                <div className="h-12 w-12 rounded-lg bg-cyan-600 flex items-center justify-center">
                   <MdPhotoLibrary className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -279,18 +288,18 @@ export default function CapturedMemoriesPage() {
               <div className="flex items-center space-x-3">
                 <Button 
                   onClick={() => setShowCreateModal(true)}
-                  className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg"
+                  className="bg-cyan-600 hover:bg-cyan-700 text-white"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   メモリーを追加
                 </Button>
                 <Link href="/chat">
-                  <Button variant="outline" className="border-cyan-300 text-cyan-700 hover:bg-cyan-50">
+                  <Button variant="outline" className="border-cyan-600 text-cyan-700 hover:bg-cyan-50">
                     <Camera className="h-4 w-4 mr-2" />
                     Genieで撮影
                   </Button>
                 </Link>
-                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-lg border border-cyan-200">
+                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white rounded-lg border border-gray-200">
                   <GiMagicLamp className="h-4 w-4 text-cyan-600" />
                   <span className="text-sm text-cyan-700 font-medium">AI自動整理</span>
                 </div>
@@ -302,7 +311,7 @@ export default function CapturedMemoriesPage() {
         <div className="max-w-6xl mx-auto p-6 space-y-8">
           {/* メモリーサマリーカード */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-            <Card className="bg-gradient-to-br from-cyan-500 to-cyan-600 text-white border-0 shadow-xl">
+            <Card className="bg-cyan-600 text-white border-0">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -315,7 +324,7 @@ export default function CapturedMemoriesPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl">
+            <Card className="bg-blue-600 text-white border-0">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -328,7 +337,7 @@ export default function CapturedMemoriesPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white border-0 shadow-xl">
+            <Card className="bg-indigo-600 text-white border-0">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -341,7 +350,7 @@ export default function CapturedMemoriesPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl">
+            <Card className="bg-purple-600 text-white border-0">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -354,7 +363,7 @@ export default function CapturedMemoriesPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl">
+            <Card className="bg-emerald-600 text-white border-0">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -369,8 +378,8 @@ export default function CapturedMemoriesPage() {
           </div>
 
           {/* フィルターとビューモード */}
-          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-t-lg">
+          <Card className="border-0 bg-white">
+            <CardHeader className="bg-cyan-600 text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-3">
                 <Filter className="h-6 w-6" />
                 メモリーフィルター
@@ -457,8 +466,8 @@ export default function CapturedMemoriesPage() {
           </Card>
 
           {/* メモリーギャラリー */}
-          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
+          <Card className="border-0 bg-white">
+            <CardHeader className="bg-blue-600 text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-3">
                 <MdPhotoLibrary className="h-6 w-6" />
                 メモリーギャラリー
@@ -472,12 +481,12 @@ export default function CapturedMemoriesPage() {
               {viewMode === 'grid' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {getFilteredMemories().map((memory) => {
-                    const IconComponent = typeIcons[memory.type]
+                    const IconComponent = typeIcons[memory.type] || Camera
                     return (
-                      <Card key={memory.id} className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50 hover:shadow-xl transition-all duration-300">
+                      <Card key={memory.id} className="border bg-white">
                         <CardContent className="p-0">
                           {/* メディアプレビュー */}
-                          <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-lg overflow-hidden">
+                          <div className="relative aspect-video bg-gray-100 rounded-t-lg overflow-hidden">
                             {memory.mediaUrl ? (
                               <img 
                                 src={memory.mediaUrl.startsWith('/api/') ? `http://localhost:8000${memory.mediaUrl}` : memory.mediaUrl}
@@ -485,7 +494,7 @@ export default function CapturedMemoriesPage() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                                 <IconComponent className="h-12 w-12 text-gray-400" />
                               </div>
                             )}
@@ -517,7 +526,7 @@ export default function CapturedMemoriesPage() {
                           <div className="p-4">
                             <div className="flex items-start justify-between mb-2">
                               <h4 className="font-bold text-lg text-gray-800 line-clamp-1">{memory.title}</h4>
-                              <Badge className={`bg-gradient-to-r ${getCategoryColor(memory.category)} text-white ml-2`}>
+                              <Badge className={`${getCategoryColor(memory.category)} text-white ml-2`}>
                                 {categoryLabels[memory.category]}
                               </Badge>
                             </div>
@@ -600,7 +609,7 @@ export default function CapturedMemoriesPage() {
               {viewMode === 'list' && (
                 <div className="space-y-4">
                   {getFilteredMemories().map((memory) => {
-                    const IconComponent = typeIcons[memory.type]
+                    const IconComponent = typeIcons[memory.type] || Camera
                     return (
                       <Card key={memory.id} className="border-0 shadow-lg bg-gradient-to-br from-white to-gray-50">
                         <CardContent className="p-6">
@@ -617,7 +626,7 @@ export default function CapturedMemoriesPage() {
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex items-center gap-3">
                                   <h4 className="font-bold text-lg text-gray-800">{memory.title}</h4>
-                                  <Badge className={`bg-gradient-to-r ${getCategoryColor(memory.category)} text-white`}>
+                                  <Badge className={`${getCategoryColor(memory.category)} text-white`}>
                                     {categoryLabels[memory.category]}
                                   </Badge>
                                   {memory.genieAnalysis && (
@@ -749,13 +758,13 @@ export default function CapturedMemoriesPage() {
                   <div className="flex gap-3 justify-center">
                     <Button 
                       onClick={() => setShowCreateModal(true)}
-                      className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
+                      className="bg-cyan-700 hover:bg-cyan-800 text-white"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       メモリーを作成
                     </Button>
                     <Link href="/chat">
-                      <Button variant="outline" className="border-cyan-300 text-cyan-700 hover:bg-cyan-50">
+                      <Button variant="outline" className="border-cyan-600 text-cyan-800 hover:bg-cyan-50">
                         <Camera className="h-4 w-4 mr-2" />
                         Genieで撮影
                       </Button>
@@ -767,8 +776,8 @@ export default function CapturedMemoriesPage() {
           </Card>
 
           {/* AIチャット連携カード */}
-          <Card className="shadow-xl border-0 bg-gradient-to-br from-cyan-50 to-blue-50">
-            <CardHeader className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-t-lg">
+          <Card className="shadow-xl border-0 bg-cyan-50">
+            <CardHeader className="bg-cyan-700 text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-3">
                 <Sparkles className="h-6 w-6" />
                 Genieとのメモリー作成連携
@@ -780,7 +789,7 @@ export default function CapturedMemoriesPage() {
             <CardContent className="p-6">
               <div className="bg-white/60 p-4 rounded-lg border border-cyan-200">
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
+                  <div className="h-10 w-10 rounded-full bg-cyan-700 flex items-center justify-center shadow-lg">
                     <GiMagicLamp className="h-5 w-5 text-white" />
                   </div>
                   <div className="flex-1">
@@ -798,14 +807,14 @@ export default function CapturedMemoriesPage() {
                 </div>
                 <div className="flex gap-3">
                   <Link href="/chat" className="flex-1">
-                    <Button className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-lg">
+                    <Button className="w-full bg-cyan-700 hover:bg-cyan-800 text-white shadow-lg">
                       <Camera className="h-4 w-4 mr-2" />
                       Genieに写真を送る
                     </Button>
                   </Link>
                   <Button 
                     variant="outline"
-                    className="border-cyan-300 text-cyan-700 hover:bg-cyan-50"
+                    className="border-cyan-600 text-cyan-800 hover:bg-cyan-50"
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     直接アップロード

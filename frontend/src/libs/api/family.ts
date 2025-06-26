@@ -18,6 +18,7 @@ export interface FamilyInfo {
   parent_name: string;
   family_structure: string;
   concerns: string;
+  living_area?: string;  // 居住エリア情報
   children: Child[];
   created_at?: string;
   updated_at?: string;
@@ -30,14 +31,14 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 /**
  * 家族情報を取得
  */
 export async function getFamilyInfo(userId: string = 'frontend_user'): Promise<ApiResponse<FamilyInfo>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/family/info?user_id=${userId}`);
+    const response = await fetch(`${API_BASE_URL}/api/family/info?user_id=${userId}`);
     return await response.json();
   } catch (error) {
     console.error('家族情報取得エラー:', error);
@@ -53,7 +54,7 @@ export async function registerFamilyInfo(
   userId: string = 'frontend_user'
 ): Promise<ApiResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/family/register`, {
+    const response = await fetch(`${API_BASE_URL}/api/family/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -83,7 +84,7 @@ export async function updateFamilyInfo(
   userId: string = 'frontend_user'
 ): Promise<ApiResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/family/update`, {
+    const response = await fetch(`${API_BASE_URL}/api/family/update`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -110,7 +111,7 @@ export async function updateFamilyInfo(
  */
 export async function deleteFamilyInfo(userId: string = 'frontend_user'): Promise<ApiResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/family/delete?user_id=${userId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/family/delete?user_id=${userId}`, {
       method: 'DELETE',
     });
     return await response.json();
@@ -128,6 +129,7 @@ export function formatFamilyInfoForChat(familyInfo: FamilyInfo): Record<string, 
     parent_name: familyInfo.parent_name,
     family_structure: familyInfo.family_structure,
     concerns: familyInfo.concerns,
+    living_area: familyInfo.living_area,
     children: familyInfo.children.map(child => ({
       name: child.name,
       age: child.age,
