@@ -31,6 +31,8 @@ const nextConfig: NextConfig = {
     ],
   },
   
+  // API プロキシ設定は削除（直接バックエンド呼び出し）
+  
   // Cloud Run環境変数対応
   env: {
     BACKEND_API_URL: process.env.BACKEND_API_URL || 'http://localhost:8000',

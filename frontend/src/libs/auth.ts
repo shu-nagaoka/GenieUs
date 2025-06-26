@@ -14,6 +14,116 @@ export const signOut = () => {
   return import('next-auth/react').then(({ signOut }) => signOut())
 }
 
+// ========== バックエンド認証統合 ==========
+
+/**
+ * バックエンドログインレスポンス型
+ */
+export interface BackendLoginResponse {
+  success: boolean
+  access_token: string
+  token_type: string
+  user: {
+    google_id: string
+    email: string
+    name: string
+    picture_url?: string
+    created_at: string
+    last_login: string
+  }
+}
+
+/**
+ * Google OAuth情報でバックエンドにログイン
+ */
+export async function loginToBackend(sessionUser: any): Promise<BackendLoginResponse> {
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    console.log('Auth API URL:', `${apiUrl}/api/auth/login/google`); // デバッグ用
+    const response = await fetch(`${apiUrl}/api/auth/login/google`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        google_user_info: {
+          sub: sessionUser.id || sessionUser.sub,
+          email: sessionUser.email,
+          name: sessionUser.name,
+          picture: sessionUser.image,
+          email_verified: true
+        }
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Backend login failed: ${response.status}`)
+    }
+
+    const result = await response.json()
+    
+    if (!result.success) {
+      throw new Error('Backend login unsuccessful')
+    }
+
+    return result
+  } catch (error) {
+    console.error('Backend login error:', error)
+    throw new Error('バックエンド認証に失敗しました')
+  }
+}
+
+/**
+ * JWTトークンを検証
+ */
+export async function verifyBackendToken(token: string): Promise<{ valid: boolean; user?: any }> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/verify`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    })
+
+    if (response.ok) {
+      const userData = await response.json()
+      return { valid: true, user: userData }
+    } else {
+      return { valid: false }
+    }
+  } catch (error) {
+    console.error('Token verification error:', error)
+    return { valid: false }
+  }
+}
+
+/**
+ * バックエンドからユーザープロフィールを取得
+ */
+export async function getBackendUserProfile(token: string): Promise<any> {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/profile`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`Profile fetch failed: ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Profile fetch error:', error)
+    throw new Error('プロフィール取得に失敗しました')
+  }
+}
+
+// ========== レガシー関数（互換性維持） ==========
+
 // Token validation utility for API calls
 export async function validateGoogleToken(token: string): Promise<any> {
   try {

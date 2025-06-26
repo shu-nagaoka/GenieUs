@@ -139,7 +139,8 @@ export function PerplexityStyleProgress({
     setAnimatedSteps([])
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/streaming/streaming-chat', {
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${apiBaseUrl}/api/streaming/streaming-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

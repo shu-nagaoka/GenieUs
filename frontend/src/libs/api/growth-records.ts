@@ -141,7 +141,7 @@ export async function getGrowthRecords(params?: {
     if (params?.type) searchParams.append('type', params.type)
     if (params?.category) searchParams.append('category', params.category)
 
-    const url = `${API_BASE_URL}/api/v1/growth-records/list${searchParams.toString() ? '?' + searchParams.toString() : ''}`
+    const url = `${API_BASE_URL}/api/growth-records/list${searchParams.toString() ? '?' + searchParams.toString() : ''}`
     
     const response = await fetch(url, {
       method: 'GET',
@@ -170,7 +170,7 @@ export async function getGrowthRecords(params?: {
 export async function getGrowthRecord(recordId: string, userId: string = 'frontend_user'): Promise<ApiResponse<GrowthRecord>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/growth-records/detail/${recordId}?user_id=${userId}`,
+      `${API_BASE_URL}/api/growth-records/detail/${recordId}?user_id=${userId}`,
       {
         method: 'GET',
         headers: {
@@ -198,7 +198,7 @@ export async function getGrowthRecord(recordId: string, userId: string = 'fronte
  */
 export async function createGrowthRecord(recordData: GrowthRecordCreateRequest): Promise<ApiResponse<GrowthRecord>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/growth-records/create`, {
+    const response = await fetch(`${API_BASE_URL}/api/growth-records/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -228,7 +228,7 @@ export async function createGrowthRecord(recordData: GrowthRecordCreateRequest):
  */
 export async function updateGrowthRecord(recordId: string, recordData: GrowthRecordUpdateRequest): Promise<ApiResponse<GrowthRecord>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/growth-records/update/${recordId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/growth-records/update/${recordId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -259,7 +259,7 @@ export async function updateGrowthRecord(recordId: string, recordData: GrowthRec
 export async function deleteGrowthRecord(recordId: string, userId: string = 'frontend_user'): Promise<ApiResponse<GrowthRecord>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/growth-records/delete/${recordId}?user_id=${userId}`,
+      `${API_BASE_URL}/api/growth-records/delete/${recordId}?user_id=${userId}`,
       {
         method: 'DELETE',
         headers: {
@@ -288,7 +288,7 @@ export async function deleteGrowthRecord(recordId: string, userId: string = 'fro
 export async function getGrowthRecordsByChild(childName: string, userId: string = 'frontend_user'): Promise<ApiResponse<GrowthRecord[]>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/growth-records/child/${encodeURIComponent(childName)}?user_id=${userId}`,
+      `${API_BASE_URL}/api/growth-records/child/${encodeURIComponent(childName)}?user_id=${userId}`,
       {
         method: 'GET',
         headers: {
@@ -316,7 +316,7 @@ export async function getGrowthRecordsByChild(childName: string, userId: string 
  */
 export async function getGrowthCategories(): Promise<ApiResponse<GrowthCategoriesResponse>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/growth-records/categories`, {
+    const response = await fetch(`${API_BASE_URL}/api/growth-records/categories`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -342,7 +342,7 @@ export async function getGrowthCategories(): Promise<ApiResponse<GrowthCategorie
  */
 export async function getChildrenForGrowthRecords(userId: string = 'frontend_user'): Promise<ApiResponse<ChildInfo[]>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/growth-records/children?user_id=${userId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/growth-records/children?user_id=${userId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

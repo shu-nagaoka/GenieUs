@@ -74,7 +74,7 @@ export async function getMemories(params?: {
     if (params?.favorited !== undefined) searchParams.append('favorited', String(params.favorited))
     if (params?.tags) searchParams.append('tags', params.tags)
 
-    const url = `${API_BASE_URL}/api/v1/memories/list${searchParams.toString() ? '?' + searchParams.toString() : ''}`
+    const url = `${API_BASE_URL}/api/memories/list${searchParams.toString() ? '?' + searchParams.toString() : ''}`
     
     const response = await fetch(url, {
       method: 'GET',
@@ -103,7 +103,7 @@ export async function getMemories(params?: {
 export async function getMemory(memoryId: string, userId: string = 'frontend_user'): Promise<ApiResponse<MemoryRecord>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/memories/detail/${memoryId}?user_id=${userId}`,
+      `${API_BASE_URL}/api/memories/detail/${memoryId}?user_id=${userId}`,
       {
         method: 'GET',
         headers: {
@@ -131,7 +131,7 @@ export async function getMemory(memoryId: string, userId: string = 'frontend_use
  */
 export async function createMemory(memoryData: MemoryRecordCreateRequest): Promise<ApiResponse<MemoryRecord>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/memories/create`, {
+    const response = await fetch(`${API_BASE_URL}/api/memories/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -161,7 +161,7 @@ export async function createMemory(memoryData: MemoryRecordCreateRequest): Promi
  */
 export async function updateMemory(memoryId: string, memoryData: MemoryRecordUpdateRequest): Promise<ApiResponse<MemoryRecord>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/memories/update/${memoryId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/memories/update/${memoryId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -192,7 +192,7 @@ export async function updateMemory(memoryId: string, memoryData: MemoryRecordUpd
 export async function deleteMemory(memoryId: string, userId: string = 'frontend_user'): Promise<ApiResponse<MemoryRecord>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/memories/delete/${memoryId}?user_id=${userId}`,
+      `${API_BASE_URL}/api/memories/delete/${memoryId}?user_id=${userId}`,
       {
         method: 'DELETE',
         headers: {
@@ -221,7 +221,7 @@ export async function deleteMemory(memoryId: string, userId: string = 'frontend_
 export async function toggleMemoryFavorite(memoryId: string, favorited: boolean, userId: string = 'frontend_user'): Promise<ApiResponse<MemoryRecord>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/memories/favorite/${memoryId}?favorited=${favorited}&user_id=${userId}`,
+      `${API_BASE_URL}/api/memories/favorite/${memoryId}?favorited=${favorited}&user_id=${userId}`,
       {
         method: 'PATCH',
         headers: {
@@ -250,7 +250,7 @@ export async function toggleMemoryFavorite(memoryId: string, favorited: boolean,
 export async function getFavoriteMemories(userId: string = 'frontend_user'): Promise<ApiResponse<MemoryRecord[]>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/memories/favorites?user_id=${userId}`,
+      `${API_BASE_URL}/api/memories/favorites?user_id=${userId}`,
       {
         method: 'GET',
         headers: {
@@ -279,7 +279,7 @@ export async function getFavoriteMemories(userId: string = 'frontend_user'): Pro
 export async function getAlbums(userId: string = 'frontend_user'): Promise<ApiResponse<MemoryRecord[]>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/memories/albums?user_id=${userId}`,
+      `${API_BASE_URL}/api/memories/albums?user_id=${userId}`,
       {
         method: 'GET',
         headers: {
@@ -308,7 +308,7 @@ export async function getAlbums(userId: string = 'frontend_user'): Promise<ApiRe
 export async function getMemoryTags(userId: string = 'frontend_user'): Promise<ApiResponse<string[]>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/memories/tags?user_id=${userId}`,
+      `${API_BASE_URL}/api/memories/tags?user_id=${userId}`,
       {
         method: 'GET',
         headers: {

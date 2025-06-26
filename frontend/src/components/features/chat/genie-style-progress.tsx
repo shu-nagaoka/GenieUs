@@ -426,8 +426,11 @@ export function GenieStyleProgress({
         requestBody.family_info = familyInfo
       }
 
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const streamingUrl = `${apiBaseUrl}/api/streaming/streaming-chat`
+      
       console.log('🌐 API呼び出し実行:', {
-        url: 'http://localhost:8000/api/v1/streaming/streaming-chat',
+        url: streamingUrl,
         method: 'POST',
         requestBody: {
           ...requestBody,
@@ -436,7 +439,7 @@ export function GenieStyleProgress({
         timestamp: new Date().toISOString()
       })
 
-      const response = await fetch('http://localhost:8000/api/v1/streaming/streaming-chat', {
+      const response = await fetch(streamingUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

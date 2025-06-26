@@ -158,7 +158,7 @@ export async function getEffortRecords(params?: {
 export async function getEffortRecord(recordId: string, userId: string = 'frontend_user'): Promise<ApiResponse<EffortRecord>> {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/effort-records/detail/${recordId}?user_id=${userId}`,
+      `${API_BASE_URL}/api/effort-records/detail/${recordId}?user_id=${userId}`,
       {
         method: 'GET',
         headers: {

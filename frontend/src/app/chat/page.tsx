@@ -1,10 +1,11 @@
 'use client'
-import { useState, useEffect, useRef, useCallback, useMemo, memo, lazy, Suspense } from 'react'
+import { useState, useEffect, useRef, lazy } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { AppLayout } from '@/components/layout/app-layout'
 import { useChatHistory } from '@/hooks/use-chat-history'
 import LoadingSpinner from '@/components/common/LoadingSpinner'
+import { AuthCheck } from '@/components/features/auth/auth-check'
 
 // 重いコンポーネントをレイジーローディング
 const ReactMarkdown = lazy(() => import('react-markdown'))
@@ -18,20 +19,12 @@ const FollowupQuestions = lazy(() =>
     default: m.FollowupQuestions 
   }))
 )
-const MultiAgentOrchestration = lazy(() => 
-  import('@/components/features/chat/multi-agent-orchestration').then(m => ({ 
-    default: m.MultiAgentOrchestration 
-  }))
-)
 import { getFamilyInfo, formatFamilyInfoForChat } from '@/libs/api/family'
 import remarkGfm from 'remark-gfm'
 // アイコンをバランス良く設定 - 必要なアイコンは保持
-import { Send, Mic, Camera, Plus, History, Save, User, Sparkles, Star, MessageCircle } from 'lucide-react'
+import { Send, Mic, Camera, History, Save, User, Sparkles, Star, MessageCircle } from 'lucide-react'
 import { GiMagicLamp } from 'react-icons/gi'
-import { IoSend, IoMic, IoCamera, IoStop, IoImage, IoVolumeHigh, IoBulbOutline, IoSparkles, IoTime } from 'react-icons/io5'
-import { AiOutlineMessage, AiOutlineHistory, AiOutlinePlus, AiOutlineSave, AiOutlineUser } from 'react-icons/ai'
-import { FaUserTie } from 'react-icons/fa'
-import Link from 'next/link'
+import { IoStop } from 'react-icons/io5'
 
 interface Message {
   id: string
@@ -48,6 +41,14 @@ interface Message {
 }
 
 export default function ChatPage() {
+  return (
+    <AuthCheck>
+      <ChatPageContent />
+    </AuthCheck>
+  )
+}
+
+function ChatPageContent() {
   const {
     sessions,
     currentSession,
@@ -61,26 +62,21 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'こんにちは！**GenieUs**です ✨\n\n話すだけで **家族管理・成長記録・努力見える化** すべてがつながる子育てアシスタント！\n\n**🤖 18人の専門GenieUs Agents**が連携してサポートします\n\n**💬 こんなことができます：**\n• **「家族情報を登録」** → パパ・ママ・お子さんの情報をまとめて管理\n• **「今日どうだった？」** → 複数の専門エージェントがあなたの話を理解・記録\n• **「初めて歩いた！」** → 写真付きで大切な瞬間をメモリーズに保存\n• **「頑張ったことを教えて」** → あなたの愛情と努力をGenieが理解・認める\n• **「夜泣きがひどくて困っています」** → 専門エージェントが具体的にアドバイス\n• **「近くの病院を検索して」** → 最新情報を検索してお届け\n• **「子供向けイベントを探して」** → お出かけ先やイベントをご提案\n\n**🌟 専門分野：** 睡眠・栄養・夜泣き・離乳食・発達・遊び・しつけ・健康・行動・安全・心理・仕事両立・特別支援・検索・窓口申請・おでかけイベントなど\n\n何でもお気軽にお話しください！あなたに最適な専門エージェントが自動的にサポートします 💫',
+      content: 'こんにちは！**GenieUs**です\n\n話すだけで **家族管理・成長記録・努力見える化** すべてがつながる子育てアシスタント！\n\n**18人の専門GenieUs Agents**が連携してサポートします\n\n**こんなことができます：**\n• **「家族情報を登録」** → パパ・ママ・お子さんの情報をまとめて管理\n• **「今日どうだった？」** → 複数の専門エージェントがあなたの話を理解・記録\n• **「初めて歩いた！」** → 写真付きで大切な瞬間をメモリーズに保存\n• **「頑張ったことを教えて」** → あなたの愛情と努力をGenieが理解・認める\n• **「夜泣きがひどくて困っています」** → 専門エージェントが具体的にアドバイス\n• **「近くの病院を検索して」** → 最新情報を検索してお届け\n• **「子供向けイベントを探して」** → お出かけ先やイベントをご提案\n\n**専門分野：** 睡眠・栄養・夜泣き・離乳食・発達・遊び・しつけ・健康・行動・安全・心理・仕事両立・特別支援・検索・窓口申請・おでかけイベントなど\n\n何でもお気軽にお話しください！あなたに最適な専門エージェントが自動的にサポートします',
       sender: 'genie',
       timestamp: new Date('2025-01-01T00:00:00.000Z'),
       type: 'text'
     }
   ])
   const [inputValue, setInputValue] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [unsavedChanges, setUnsavedChanges] = useState(false)
-  const [isOrchestrating, setIsOrchestrating] = useState(false)
-  const [currentQuery, setCurrentQuery] = useState('')
-  const [currentAgentInfo, setCurrentAgentInfo] = useState<any>(null)
   const [isRecording, setIsRecording] = useState(false)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [useStreamingProgress] = useState(true)
-  const [progressStyle] = useState<'genie' | 'timeline' | 'modern' | 'simple'>('genie')
   const [currentStreamingId, setCurrentStreamingId] = useState<string | null>(null)
-  const [familyInfo, setFamilyInfo] = useState<any>(null)
+  const [familyInfo, setFamilyInfo] = useState<Record<string, unknown> | null>(null)
   const [currentFollowupQuestions, setCurrentFollowupQuestions] = useState<string[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -117,7 +113,6 @@ export default function ChatPage() {
 
     setMessages(prev => [...prev, userMessage])
     const query = inputValue
-    setCurrentQuery(query)
     setInputValue('')
     
     // 画像や音声状態をリセット
@@ -192,8 +187,8 @@ export default function ChatPage() {
       return // 従来のAPI呼び出しはスキップ
     }
 
-    // 従来のマルチエージェント演出を開始
-    setIsOrchestrating(true)
+    // 従来のマルチエージェント演出を開始 - 削除
+    // setIsOrchestrating(true)
     
     // ユーザーメッセージ追加後にスクロール
     setTimeout(scrollToBottom, 100)
@@ -233,7 +228,8 @@ export default function ChatPage() {
       })
 
       // 実際のAPIを呼び出し（バックエンドAPIエンドポイントに合わせて修正）
-      const response = await fetch('http://localhost:8000/api/v1/multiagent/chat', {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${API_BASE_URL}/api/streaming/streaming-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -314,15 +310,15 @@ export default function ChatPage() {
       // エラーメッセージ追加後にもスクロール
       setTimeout(scrollToBottom, 100)
     } finally {
-      setIsTyping(false)
+      // setIsTyping(false)
     }
   }
 
-  // マルチエージェント演出完了後の処理
-  const handleOrchestrationComplete = () => {
-    setIsOrchestrating(false)
-    setIsTyping(true)
-  }
+  // マルチエージェント演出完了後の処理 - 現在未使用
+  // const handleOrchestrationComplete = () => {
+  //   setIsOrchestrating(false)
+  //   setIsTyping(true)
+  // }
 
   // フォローアップクエスチョンを除去するヘルパー関数
   const cleanResponseContent = (response: string): string => {
@@ -409,7 +405,7 @@ export default function ChatPage() {
     })
     
     setCurrentStreamingId(null)
-    setIsTyping(false)
+    // setIsTyping(false)
     
     console.log('✅ handleStreamingComplete 完了')
   }
@@ -429,7 +425,7 @@ export default function ChatPage() {
       )
     )
     setCurrentStreamingId(null)
-    setIsTyping(false)
+    // setIsTyping(false)
     
     console.log('❌ handleStreamingError 完了')
   }
@@ -472,7 +468,7 @@ export default function ChatPage() {
     setMessages([
       {
         id: '1',
-        content: 'こんにちは！**GenieUs**です ✨\n\n話すだけで **家族管理・成長記録・努力見える化** すべてがつながる子育てアシスタント！\n\n**🤖 18人の専門GenieUs Agents**が連携してサポートします\n\n**💬 こんなことができます：**\n• **「家族情報を登録」** → パパ・ママ・お子さんの情報をまとめて管理\n• **「今日どうだった？」** → 複数の専門エージェントがあなたの話を理解・記録\n• **「初めて歩いた！」** → 写真付きで大切な瞬間をメモリーズに保存\n• **「頑張ったことを教えて」** → あなたの愛情と努力をGenieが理解・認める\n• **「夜泣きがひどくて困っています」** → 専門エージェントが具体的にアドバイス\n• **「近くの病院を検索して」** → 最新情報を検索してお届け\n• **「子供向けイベントを探して」** → お出かけ先やイベントをご提案\n\n**🌟 専門分野：** 睡眠・栄養・夜泣き・離乳食・発達・遊び・しつけ・健康・行動・安全・心理・仕事両立・特別支援・検索・窓口申請・おでかけイベントなど\n\n何でもお気軽にお話しください！あなたに最適な専門エージェントが自動的にサポートします 💫',
+        content: 'こんにちは！**GenieUs**です\n\n話すだけで **家族管理・成長記録・努力見える化** すべてがつながる子育てアシスタント！\n\n**18人の専門GenieUs Agents**が連携してサポートします\n\n**こんなことができます：**\n• **「家族情報を登録」** → パパ・ママ・お子さんの情報をまとめて管理\n• **「今日どうだった？」** → 複数の専門エージェントがあなたの話を理解・記録\n• **「初めて歩いた！」** → 写真付きで大切な瞬間をメモリーズに保存\n• **「頑張ったことを教えて」** → あなたの愛情と努力をGenieが理解・認める\n• **「夜泣きがひどくて困っています」** → 専門エージェントが具体的にアドバイス\n• **「近くの病院を検索して」** → 最新情報を検索してお届け\n• **「子供向けイベントを探して」** → お出かけ先やイベントをご提案\n\n**専門分野：** 睡眠・栄養・夜泣き・離乳食・発達・遊び・しつけ・健康・行動・安全・心理・仕事両立・特別支援・検索・窓口申請・おでかけイベントなど\n\n何でもお気軽にお話しください！あなたに最適な専門エージェントが自動的にサポートします',
         sender: 'genie',
         timestamp: new Date('2025-01-01T00:00:00.000Z'),
         type: 'text'
@@ -689,18 +685,22 @@ export default function ChatPage() {
     scrollToBottom()
   }, [messages])
 
-  // オーケストレーション開始/終了時もスクロール
-  useEffect(() => {
-    if (isOrchestrating) {
-      setTimeout(scrollToBottom, 200)
-    }
-  }, [isOrchestrating])
+  // オーケストレーション開始/終了時もスクロール - 削除
+  // useEffect(() => {
+  //   if (isOrchestrating) {
+  //     setTimeout(scrollToBottom, 200)
+  //   }
+  // }, [isOrchestrating])
 
   const quickQuestions = [
     '夜泣きがひどくて困っています',
-    '離乳食を食べてくれません',
+    '離乳食を食べてくれません', 
     '発達が気になります',
-    '授乳のタイミングがわかりません'
+    '授乳のタイミングがわかりません',
+    'イヤイヤ期の対応方法を教えて',
+    '保育園選びで悩んでいます',
+    'ママ友との付き合い方について',
+    '仕事復帰の準備をしたい'
   ]
 
   return (
@@ -838,34 +838,9 @@ export default function ChatPage() {
           </div>
         ))}
 
-        {/* マルチエージェント協調演出 - 回答生成中に表示 */}
-        {isOrchestrating && (
-          <div className="px-6">
-            <MultiAgentOrchestration 
-              isActive={isOrchestrating}
-              userQuery={currentQuery}
-              agentInfo={currentAgentInfo}
-              onComplete={handleOrchestrationComplete}
-            />
-          </div>
-        )}
+        {/* マルチエージェント協調演出 - 削除 */}
 
-        {isTyping && !isOrchestrating && (
-          <div className="flex gap-4 justify-start">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg">
-              <GiMagicLamp className="h-5 w-5 text-white" />
-            </div>
-            <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-lg">
-              <CardContent className="p-4">
-                <div className="flex gap-1">
-                  <div className="w-3 h-3 bg-amber-400 rounded-full animate-bounce"></div>
-                  <div className="w-3 h-3 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-3 h-3 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* タイピングアニメーション - 削除 */}
 
         {/* フォローアップクエスチョン */}
         {currentFollowupQuestions.length > 0 && (
@@ -887,17 +862,17 @@ export default function ChatPage() {
         <div className="sticky bottom-0 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 pt-4">
           {/* よくある相談 */}
           {messages.length === 1 && (
-            <div className="max-w-4xl mx-auto px-6 py-3">
-              <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-amber-200 p-4">
-                <div className="flex items-center gap-2 mb-3">
+            <div className="max-w-5xl mx-auto px-6 py-2">
+              <div className="bg-white/60 backdrop-blur-sm rounded-lg border border-amber-200 p-3">
+                <div className="flex items-center gap-2 mb-2">
                   <Star className="h-4 w-4 text-amber-600" />
                   <h3 className="text-sm font-medium text-gray-700">よくある相談</h3>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
                   {quickQuestions.map((question, index) => (
                     <button
                       key={index}
-                      className="text-left p-3 bg-white hover:bg-amber-50 border border-amber-100 hover:border-amber-300 rounded-md text-sm text-gray-700 hover:text-amber-800 transition-all duration-200"
+                      className="text-left p-2 bg-white hover:bg-amber-50 border border-amber-100 hover:border-amber-300 rounded-md text-xs text-gray-700 hover:text-amber-800 transition-all duration-200"
                       onClick={() => setInputValue(question)}
                     >
                       {question}

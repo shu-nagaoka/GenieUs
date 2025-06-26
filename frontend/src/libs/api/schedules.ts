@@ -3,7 +3,7 @@
  */
 
 // APIベースURL
-const API_BASE_URL = 'http://localhost:8000/api/v1'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 // レスポンス型定義
 interface ApiResponse<T = any> {
@@ -66,7 +66,7 @@ export async function getScheduleEvents(params?: {
     if (params?.user_id) searchParams.append('user_id', params.user_id)
     if (params?.status) searchParams.append('status', params.status)
     
-    const url = `${API_BASE_URL}/schedules/list${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
+    const url = `${API_BASE_URL}/api/schedules/list${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
     
     const response = await fetch(url, {
       method: 'GET',
@@ -98,7 +98,7 @@ export async function getScheduleEvent(
   userId: string = 'frontend_user'
 ): Promise<ApiResponse<ScheduleEvent>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/schedules/detail/${eventId}?user_id=${userId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/schedules/detail/${eventId}?user_id=${userId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -127,7 +127,7 @@ export async function createScheduleEvent(
   eventData: ScheduleEventCreateRequest
 ): Promise<ApiResponse<ScheduleEvent>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/schedules/create`, {
+    const response = await fetch(`${API_BASE_URL}/api/schedules/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -161,7 +161,7 @@ export async function updateScheduleEvent(
   eventData: ScheduleEventUpdateRequest
 ): Promise<ApiResponse<ScheduleEvent>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/schedules/update/${eventId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/schedules/update/${eventId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -195,7 +195,7 @@ export async function deleteScheduleEvent(
   userId: string = 'frontend_user'
 ): Promise<ApiResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/schedules/delete/${eventId}?user_id=${userId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/schedules/delete/${eventId}?user_id=${userId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -226,7 +226,7 @@ export async function updateScheduleEventStatus(
   userId: string = 'frontend_user'
 ): Promise<ApiResponse<ScheduleEvent>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/schedules/status/${eventId}?user_id=${userId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/schedules/status/${eventId}?user_id=${userId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',

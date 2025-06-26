@@ -2,6 +2,8 @@
  * エージェント情報を取得するAPIクライアント
  */
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export interface Agent {
   id: string
   name: string
@@ -177,7 +179,7 @@ const mockAgents: Agent[] = [
     description: 'インターネット検索で最新の子育て情報や地域の施設・サービス情報をお調べします',
     specialties: ['情報検索', '地域情報', '施設案内', '最新情報'],
     icon: '🔍',
-    color: 'from-blue-500 to-indigo-500',
+    color: 'from-blue-500 to-cyan-500',
     capabilities: ['リアルタイム検索', '地域密着情報', '信頼性確認'],
     status: 'active'
   },
@@ -187,7 +189,7 @@ const mockAgents: Agent[] = [
     description: '自治体の手続きや各種手当申請、公的サービスの利用方法をサポートします',
     specialties: ['行政手続き', '各種申請', '手当・助成', '窓口案内'],
     icon: '🏢',
-    color: 'from-gray-500 to-slate-600',
+    color: 'from-slate-500 to-gray-600',
     capabilities: ['申請書類案内', '期限管理', '窓口情報', '制度説明'],
     status: 'active'
   },
@@ -197,7 +199,7 @@ const mockAgents: Agent[] = [
     description: '季節のイベントや親子でのお出かけ先を検索・提案します',
     specialties: ['お出かけスポット', '季節イベント', '親子活動', '地域情報'],
     icon: '🎪',
-    color: 'from-pink-500 to-red-500',
+    color: 'from-pink-500 to-rose-500',
     capabilities: ['リアルタイム検索', '年齢別提案', 'アクセス情報', '安全性確認'],
     status: 'active'
   }
@@ -208,23 +210,21 @@ const mockAgents: Agent[] = [
  */
 export async function getAgents(): Promise<ApiResponse<Agent[]>> {
   try {
-    // TODO: 実際のAPIエンドポイントが実装されたら切り替え
-    // const response = await fetch('http://localhost:8000/api/v1/agents')
-    // const data = await response.json()
+    const response = await fetch(`${API_BASE_URL}/agents`)
+    const data = await response.json()
     
-    // モックデータを返す（実装時のデモ用）
-    await new Promise(resolve => setTimeout(resolve, 800)) // API呼び出しをシミュレート
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status} ${response.statusText}`)
+    }
     
+    return data
+  } catch (error) {
+    console.error('エージェント取得エラー:', error)
+    // フォールバック: モックデータを返す
     return {
       success: true,
       data: mockAgents,
-      message: 'エージェント一覧を取得しました'
-    }
-  } catch (error) {
-    console.error('エージェント取得エラー:', error)
-    return {
-      success: false,
-      message: 'エージェント一覧の取得に失敗しました'
+      message: 'エージェント一覧を取得しました（フォールバック）'
     }
   }
 }
@@ -234,24 +234,26 @@ export async function getAgents(): Promise<ApiResponse<Agent[]>> {
  */
 export async function getAgent(agentId: string): Promise<ApiResponse<Agent>> {
   try {
-    const result = await getAgents()
-    if (result.success && result.data) {
-      const agent = result.data.find(a => a.id === agentId)
-      if (agent) {
-        return {
-          success: true,
-          data: agent,
-          message: 'エージェント情報を取得しました'
-        }
+    const response = await fetch(`${API_BASE_URL}/agents/${agentId}`)
+    const data = await response.json()
+    
+    if (!response.ok) {
+      throw new Error(`HTTP Error: ${response.status} ${response.statusText}`)
+    }
+    
+    return data
+  } catch (error) {
+    console.error('エージェント取得エラー:', error)
+    // フォールバック: モックデータから検索
+    const agent = mockAgents.find(a => a.id === agentId)
+    if (agent) {
+      return {
+        success: true,
+        data: agent,
+        message: 'エージェント情報を取得しました（フォールバック）'
       }
     }
     
-    return {
-      success: false,
-      message: 'エージェントが見つかりません'
-    }
-  } catch (error) {
-    console.error('エージェント取得エラー:', error)
     return {
       success: false,
       message: 'エージェント情報の取得に失敗しました'

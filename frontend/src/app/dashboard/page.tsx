@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { AppLayout } from '@/components/layout/app-layout'
 import { FloatingVoiceButton } from '@/components/v2/voice-recording/FloatingVoiceButton'
+import { AuthCheck } from '@/components/features/auth/auth-check'
 import { 
   FiMessageCircle, 
   FiMic,
@@ -36,7 +37,8 @@ import {
 
 export default function DashboardPage() {
   return (
-    <AppLayout>
+    <AuthCheck>
+      <AppLayout>
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
         {/* シンプルで分かりやすいヘッダー */}
         <div className="px-4 py-8">
@@ -304,5 +306,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </AppLayout>
+    </AuthCheck>
   )
 }
