@@ -19,12 +19,32 @@ const FollowupQuestions = lazy(() =>
     default: m.FollowupQuestions 
   }))
 )
+const SearchResultsDisplay = lazy(() =>
+  import('@/components/features/chat/search-results-display').then(m => ({
+    default: m.SearchResultsDisplay
+  }))
+)
 import { getFamilyInfo, formatFamilyInfoForChat } from '@/libs/api/family'
 import remarkGfm from 'remark-gfm'
 // アイコンをバランス良く設定 - 必要なアイコンは保持
 import { Send, Mic, Camera, History, Save, User, Sparkles, Star, MessageCircle } from 'lucide-react'
 import { GiMagicLamp } from 'react-icons/gi'
 import { IoStop } from 'react-icons/io5'
+
+interface SearchResult {
+  title: string
+  url: string
+  snippet?: string
+  domain?: string
+}
+
+interface SearchData {
+  search_query?: string
+  search_results?: SearchResult[]
+  results_count?: number
+  timestamp?: string
+  function_call_id?: string
+}
 
 interface Message {
   id: string
@@ -33,6 +53,7 @@ interface Message {
   timestamp: Date
   type?: 'text' | 'audio' | 'image' | 'streaming'
   followUpQuestions?: string[]
+  searchData?: SearchData
   debugInfo?: {
     workflow_used?: string
     agents_involved?: string[]
@@ -362,7 +383,7 @@ function ChatPageContent() {
   }
 
   // ストリーミング完了時の処理
-  const handleStreamingComplete = (response: string) => {
+  const handleStreamingComplete = (response: string, searchData?: SearchData) => {
     console.log('🔄 handleStreamingComplete 開始:', {
       currentStreamingId,
       responseLength: response.length,
@@ -386,14 +407,15 @@ function ChatPageContent() {
     setMessages(prev => {
       const updatedMessages = prev.map(msg => 
         msg.id === currentStreamingId 
-          ? { ...msg, content: cleanedResponse, type: 'text' as const }
+          ? { ...msg, content: cleanedResponse, type: 'text' as const, searchData }
           : msg
       )
       
       console.log('📝 メッセージ配列更新:', {
         beforeCount: prev.length,
         afterCount: updatedMessages.length,
-        replacedMessage: updatedMessages.find(m => m.id === currentStreamingId)
+        replacedMessage: updatedMessages.find(m => m.id === currentStreamingId),
+        hasSearchData: !!searchData
       })
       
       return updatedMessages
@@ -595,8 +617,10 @@ function ChatPageContent() {
   // フォローアップ質問をクリックしたときの処理
   const handleFollowUpClick = (question: string) => {
     setInputValue(question)
-    // 直接送信（質問を引数として渡す）
-    sendMessageWithText(question)
+    // 状態更新を待ってから送信（重複を防ぐため）
+    setTimeout(() => {
+      sendMessage()
+    }, 0)
     // フォローアップクエスチョンをクリア
     setCurrentFollowupQuestions([])
   }
@@ -793,10 +817,29 @@ function ChatPageContent() {
                 }`}>
                   <CardContent className="p-4">
                     {message.sender === 'genie' ? (
-                      <div className="prose prose-sm max-w-none text-gray-800 prose-headings:font-bold prose-headings:text-gray-800 prose-p:text-gray-700 prose-strong:text-gray-800 prose-li:text-gray-700 prose-ul:text-gray-700 prose-ol:text-gray-700 prose-blockquote:text-gray-600 prose-blockquote:border-amber-300">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {message.content}
-                        </ReactMarkdown>
+                      <div className="space-y-4">
+                        <div className="prose prose-sm max-w-none text-gray-800 prose-headings:font-bold prose-headings:text-gray-800 prose-p:text-gray-700 prose-strong:text-gray-800 prose-li:text-gray-700 prose-ul:text-gray-700 prose-ol:text-gray-700 prose-blockquote:text-gray-600 prose-blockquote:border-amber-300">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
+                        
+                        {/* 検索結果表示 */}
+                        {message.searchData && (
+                          <SearchResultsDisplay
+                            searchQuery={{
+                              query: message.searchData.search_query || '',
+                              timestamp: message.searchData.timestamp ? new Date(message.searchData.timestamp).getTime() : Date.now(),
+                              results_count: message.searchData.results_count
+                            }}
+                            searchResults={message.searchData.search_results?.map(result => ({
+                              title: result.title,
+                              url: result.url,
+                              snippet: result.snippet,
+                              displayLink: result.domain
+                            }))}
+                          />
+                        )}
                       </div>
                     ) : (
                       <p className="text-white whitespace-pre-line">{message.content}</p>

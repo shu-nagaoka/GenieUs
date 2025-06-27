@@ -1,37 +1,39 @@
-# DI統合マイグレーションガイド
+# DI 統合マイグレーションガイド
 
-GenieUsプロジェクトの既存コードをロガーDI化 + FastAPI Depends統合に移行するための実践ガイド
+GenieUs プロジェクトの既存コードをロガー DI 化 + FastAPI Depends 統合に移行するための実践ガイド
 
 ## 🎯 マイグレーション概要
 
 ### 移行前の問題
+
 - **混在するロガー初期化**: 各ファイルで`setup_logger(__name__)`を個別呼び出し
-- **グローバル変数依存**: `_container`、`_childcare_agent`によるAPI設計
+- **グローバル変数依存**: `_container`、`_childcare_agent`による API 設計
 - **テスト困難**: グローバル状態とハードコーディングされた依存関係
 
 ### 移行後の改善
-- **統一ロガー管理**: DIコンテナからの一元的な注入
-- **FastAPI Depends統合**: `@inject` + `Depends(Provide[])`による宣言的DI
+
+- **統一ロガー管理**: DI コンテナからの一元的な注入
+- **FastAPI Depends 統合**: `@inject` + `Depends(Provide[])`による宣言的 DI
 - **テスタビリティ向上**: `container.override()`による簡単なモック注入
 
 ## 📋 マイグレーション手順
 
-### Phase 1: DIコンテナ準備
+### Phase 1: DI コンテナ準備
 
-#### 1.1 container.pyの更新
+#### 1.1 container.py の更新
 
 ```python
 # src/di_provider/container.py
 class DIContainer(containers.DeclarativeContainer):
     # 既存の設定...
-    
+
     # ⭐ 追加: ロガー統一管理
     logger: providers.Provider[logging.Logger] = providers.Singleton(
         setup_logger,
         name=config.provided.APP_NAME,
         env=config.provided.ENVIRONMENT,
     )
-    
+
     # ⭐ 更新: ツールにロガー注入
     childcare_consultation_tool: providers.Provider[FunctionTool] = providers.Factory(
         create_childcare_consultation_tool,
@@ -54,7 +56,7 @@ def create_childcare_consultation_tool(
     logger: logging.Logger  # 追加
 ) -> FunctionTool:
     """子育て相談FunctionToolを作成（ロガー注入版）"""
-    
+
     def childcare_consultation_function(...) -> dict[str, Any]:
         try:
             logger.info("相談処理開始", extra={"session_id": session_id})
@@ -64,7 +66,7 @@ def create_childcare_consultation_tool(
         except Exception as e:
             # ❌ 削除: 局所ロガー生成
             # logger = logging.getLogger(__name__)
-            
+
             # ✅ 使用: 注入されたロガー
             logger.error(
                 "子育て相談ツールでエラー",
@@ -75,7 +77,7 @@ def create_childcare_consultation_tool(
                 }
             )
             return fallback_response
-    
+
     return FunctionTool(func=childcare_consultation_function)
 ```
 
@@ -94,7 +96,7 @@ def create_childcare_agent(
 ) -> Agent:
     """注入されたツールとロガーを使用する子育て相談エージェント"""
     logger.info("子育て相談エージェント作成開始")
-    
+
     try:
         agent = Agent(
             model="gemini-2.5-flash-preview-05-20",
@@ -109,7 +111,7 @@ def create_childcare_agent(
 
 # 他のヘルパー関数も同様に更新
 def get_childcare_agent(
-    agent_type: str, 
+    agent_type: str,
     childcare_tool: FunctionTool,
     logger: logging.Logger  # 追加
 ) -> Agent:
@@ -122,9 +124,9 @@ def get_childcare_agent(
         return create_simple_childcare_agent(childcare_tool, logger)
 ```
 
-### Phase 2: main.pyアプリケーションファクトリー化
+### Phase 2: main.py アプリケーションファクトリー化
 
-#### 2.1 現在のmain.pyパターン
+#### 2.1 現在の main.py パターン
 
 ```python
 # ❌ 現在の実装（削除対象）
@@ -151,28 +153,28 @@ from dependency_injector.wiring import inject, Provide
 def create_app() -> FastAPI:
     """FastAPIアプリケーションファクトリー"""
     container = DIContainer()
-    
+
     app = FastAPI(
         title="GenieUs API v2.0",
         description="Google ADK powered 次世代子育て支援 API",
         version="2.0.0",
         lifespan=lifespan,
     )
-    
+
     # アプリケーションにコンテナを関連付け
     app.container = container
-    
+
     # ⭐ 重要: wiringでFastAPI Dependsと統合
     container.wire(modules=[
         "src.presentation.api.routes.chat",
         "src.presentation.api.routes.health",
     ])
-    
+
     # 設定...
     app.add_middleware(CORSMiddleware, ...)
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(chat_router, prefix="/api/v1")
-    
+
     return app
 
 @asynccontextmanager
@@ -190,9 +192,9 @@ app = create_app()
 # logger = setup_logger(__name__)
 ```
 
-### Phase 3: API層のDepends化
+### Phase 3: API 層の Depends 化
 
-#### 3.1 現在のchat.pyパターン
+#### 3.1 現在の chat.py パターン
 
 ```python
 # ❌ 現在の実装（削除対象）
@@ -216,7 +218,7 @@ async def chat_endpoint(request: ChatRequest):
     # 処理...
 ```
 
-#### 3.2 新しいDependsパターン
+#### 3.2 新しい Depends パターン
 
 ```python
 # ✅ 新しい実装
@@ -250,7 +252,7 @@ async def chat_endpoint(
             "message_length": len(request.message)
         }
     )
-    
+
     try:
         # ツール使用（DIから注入済み）
         tool_result = tool.func(
@@ -258,11 +260,11 @@ async def chat_endpoint(
             user_id=request.user_id,
             session_id=request.session_id
         )
-        
+
         if tool_result.get("success"):
             response_text = remove_follow_up_section(tool_result["response"])
             logger.info("チャット処理完了", extra={"session_id": request.session_id})
-            
+
             return ChatResponse(
                 response=response_text,
                 status="success",
@@ -271,7 +273,7 @@ async def chat_endpoint(
             )
         else:
             raise HTTPException(status_code=500, detail="ツール実行エラー")
-            
+
     except Exception as e:
         logger.error(
             "チャット処理エラー",
@@ -301,7 +303,7 @@ from src.main import create_app
 def app_with_mock():
     """DIコンテナをモックで上書きしたアプリケーション"""
     app = create_app()
-    
+
     # モックツール作成
     mock_tool = Mock()
     mock_tool.func.return_value = {
@@ -309,10 +311,10 @@ def app_with_mock():
         "response": "テスト応答",
         "metadata": {"test": True}
     }
-    
+
     # モックロガー作成
     mock_logger = Mock()
-    
+
     # ⭐ DIコンテナをオーバーライド
     with app.container.childcare_consultation_tool.override(mock_tool):
         with app.container.logger.override(mock_logger):
@@ -321,19 +323,19 @@ def app_with_mock():
 def test_chat_endpoint_success(app_with_mock):
     """チャットエンドポイント正常系テスト"""
     app, mock_tool, mock_logger = app_with_mock
-    
+
     with TestClient(app) as client:
         response = client.post("/api/v1/chat", json={
             "message": "テストメッセージ",
             "user_id": "test_user",
             "session_id": "test_session"
         })
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["response"] == "テスト応答"
         assert data["status"] == "success"
-        
+
         # モック呼び出し確認
         mock_tool.func.assert_called_once()
         mock_logger.info.assert_called()
@@ -341,13 +343,15 @@ def test_chat_endpoint_success(app_with_mock):
 
 ## 🔧 マイグレーション実行
 
-### ステップ1: バックアップ
+### ステップ 1: バックアップ
+
 ```bash
 # 現在の実装をバックアップ
 cp -r backend/src backend/src.backup.$(date +%Y%m%d)
 ```
 
-### ステップ2: Phase順実行
+### ステップ 2: Phase 順実行
+
 ```bash
 # Phase 1: DIコンテナ準備
 # 1. container.pyの更新
@@ -365,7 +369,8 @@ cp -r backend/src backend/src.backup.$(date +%Y%m%d)
 # 7. container.override()を使ったテストケース作成
 ```
 
-### ステップ3: 動作確認
+### ステップ 3: 動作確認
+
 ```bash
 # サーバー起動確認
 ./scripts/start-dev.sh
@@ -381,30 +386,35 @@ cd backend && uv run pytest
 
 ## 📋 完了チェックリスト
 
-### Phase 1: DIコンテナ準備
-- [ ] container.pyにlogger providers追加
-- [ ] ツール作成関数にlogger引数追加
-- [ ] エージェント作成関数にlogger引数追加
-- [ ] 個別setup_logger呼び出し削除
+### Phase 1: DI コンテナ準備
 
-### Phase 2: main.pyファクトリー化
+- [ ] container.py に logger providers 追加
+- [ ] ツール作成関数に logger 引数追加
+- [ ] エージェント作成関数に logger 引数追加
+- [ ] 個別 setup_logger 呼び出し削除
+
+### Phase 2: main.py ファクトリー化
+
 - [ ] create_app()関数実装
 - [ ] container.wire()設定
 - [ ] 個別ロガー初期化削除
-- [ ] lifespan関数適応
+- [ ] lifespan 関数適応
 
-### Phase 3: API層Depends化
-- [ ] @injectデコレータ追加
+### Phase 3: API 層 Depends 化
+
+- [ ] @inject デコレータ追加
 - [ ] Depends(Provide[])パターン実装
 - [ ] グローバル変数削除
-- [ ] setup_routes関数削除
+- [ ] setup_routes 関数削除
 
 ### Phase 4: テスト更新
+
 - [ ] container.override()を使ったテストケース作成
 - [ ] モックロガー・ツールの動作確認
 - [ ] 既存テストの更新
 
 ### 動作確認
+
 - [ ] 開発サーバー正常起動
 - [ ] チャットエンドポイント正常動作
 - [ ] ログ出力が統一フォーマット
@@ -415,22 +425,28 @@ cd backend && uv run pytest
 
 ### よくある問題
 
-#### 1. wiringエラー
+#### 1. wiring エラー
+
 ```
 ERROR: Module 'src.presentation.api.routes.chat' not found
 ```
-**解決**: モジュールパスの確認、import可能性の検証
 
-#### 2. Provideエラー
+**解決**: モジュールパスの確認、import 可能性の検証
+
+#### 2. Provide エラー
+
 ```
 ERROR: Provider 'DIContainer.logger' not found
 ```
-**解決**: container.py のproviders設定確認
 
-#### 3. 循環import
+**解決**: container.py の providers 設定確認
+
+#### 3. 循環 import
+
 ```
 ERROR: Circular import detected
 ```
-**解決**: import順序の調整、遅延importの活用
 
-この段階的なマイグレーションにより、GenieUsプロジェクトは現代的なDI統合パターンに移行し、保守性・テスタビリティが大幅に向上します。
+**解決**: import 順序の調整、遅延 import の活用
+
+この段階的なマイグレーションにより、GenieUs プロジェクトは現代的な DI 統合パターンに移行し、保守性・テスタビリティが大幅に向上します。

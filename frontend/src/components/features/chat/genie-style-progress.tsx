@@ -248,23 +248,56 @@ export function GenieStyleProgress({
   // Genieらしいメッセージに変換（ルーティング情報重視）
   const getGenieMessage = (type: string, originalMessage: string, data: any = {}) => {
     const specialist = getSpecialistRouting(data)
+    const hasWebSearch = data?.tools?.includes('google_search')
     
     switch (type) {
       case 'start':
         return '✨ Genieがお手伝いを始めます'
       case 'agent_starting':
         return '🪔 魔法のランプを準備中...'
+      case 'analyzing_request':
+        return '🤔 ご相談内容を分析しています...'
+      case 'searching_specialist':
+        return '🔍 最適な専門ジーニーを検索中...'
+      case 'specialist_found':
+        if (specialist) {
+          return `✨ ${specialist.name}を発見しました！`
+        }
+        return '✨ 専門ジーニーを発見しました！'
+      case 'specialist_connecting':
+        if (specialist) {
+          return `🔄 ${specialist.name}に接続中...`
+        }
+        return '🔄 専門ジーニーに接続中...'
+      case 'specialist_calling':
+        if (specialist) {
+          return `🧞‍♀️ ${specialist.name}を呼び出し中...`
+        }
+        return '🧞‍♀️ 専門ジーニーを呼び出し中...'
+      case 'specialist_ready':
+        if (specialist) {
+          return `✨ ${specialist.name}が回答準備完了`
+        }
+        return '✨ 専門ジーニーが回答準備完了'
       case 'agent_selecting':
-        return specialist ? 
-          `🎯 ${specialist.name}を呼び出し中...` :
+        if (specialist) {
+          return `🎯 専門家選択: ${specialist.name}`
+        }
+        return hasWebSearch ? 
+          '🔍 Web検索で最新情報を調査中...' :
           '🌟 最適なサポート方法を考えています'
       case 'agent_executing':
-        return specialist ? 
-          `${specialist.icon} ${specialist.name}が対応中...` :
+        if (specialist) {
+          return hasWebSearch ? 
+            `🔍 ${specialist.icon} ${specialist.name}がWeb検索中...` :
+            `${specialist.icon} ${specialist.name}が対応中...`
+        }
+        return hasWebSearch ?
+          '🔍 Webで最新情報を検索中...' :
           '💫 Genieが心を込めて分析中...'
       case 'specialist_routing':
         return specialist ?
-          `🔄 ${specialist.icon} ${specialist.name}にバトンタッチ...` :
+          `🔄 ${specialist.icon} ${specialist.name}にバトンタッチ` :
           originalMessage
       case 'analysis_complete':
         return '🎯 専門分析が完了しました'
@@ -284,10 +317,27 @@ export function GenieStyleProgress({
     <div className={`${size} animate-spin rounded-full border-2 border-amber-200 border-t-amber-600`}></div>
   )
 
+  // Web検索専用ローディング
+  const WebSearchSpinner = ({ size = "h-4 w-4" }: { size?: string }) => (
+    <div className={`${size} animate-pulse text-blue-500`}>🔍</div>
+  )
+
   // ステップタイプからアイコンを取得（ローディング重視）
-  const getStepIcon = (type: string, status: string = 'active') => {
+  const getStepIcon = (type: string, status: string = 'active', tools?: string[]) => {
     if (status === 'active') {
+      // Web検索が含まれている場合は専用アイコン
+      if (tools?.includes('google_search') || type.includes('search')) {
+        return <WebSearchSpinner />
+      }
+      
       switch (type) {
+        case 'agent_starting':
+        case 'analyzing_request':
+        case 'searching_specialist':
+        case 'specialist_found':
+        case 'specialist_connecting':
+        case 'specialist_calling':
+        case 'specialist_ready':
         case 'agent_selecting':
         case 'agent_executing':
         case 'specialist_routing':
@@ -305,9 +355,27 @@ export function GenieStyleProgress({
       }
     } else {
       // 完了状態のアイコン
+      if (tools?.includes('google_search') || type.includes('search')) {
+        return <span className="text-blue-500">🔍</span>
+      }
+      
       switch (type) {
         case 'start':
           return <GiMagicLamp className="h-4 w-4" />
+        case 'agent_starting':
+          return <IoSparkles className="h-4 w-4" />
+        case 'analyzing_request':
+          return <IoSparkles className="h-4 w-4" />
+        case 'searching_specialist':
+          return <IoSparkles className="h-4 w-4" />
+        case 'specialist_found':
+          return <IoHeart className="h-4 w-4" />
+        case 'specialist_connecting':
+          return <IoTrendingUp className="h-4 w-4" />
+        case 'specialist_calling':
+          return <IoHeart className="h-4 w-4" />
+        case 'specialist_ready':
+          return <IoSunny className="h-4 w-4" />
         case 'agent_selecting':
           return <IoSunny className="h-4 w-4" />
         case 'agent_executing':
@@ -326,13 +394,30 @@ export function GenieStyleProgress({
   }
 
   // フラットで温かみのある色設定
-  const getStepColor = (type: string, status: string) => {
+  const getStepColor = (type: string, status: string, tools?: string[]) => {
     if (status === 'completed') return 'text-green-600 bg-green-100 border-green-300'
     if (status === 'active') {
+      // Web検索の場合は青系
+      if (tools?.includes('google_search') || type.includes('search')) {
+        return 'text-blue-600 bg-blue-100 border-blue-300'
+      }
+      
       switch (type) {
         case 'start':
         case 'agent_starting':
           return 'text-amber-600 bg-amber-100 border-amber-300'
+        case 'analyzing_request':
+          return 'text-purple-600 bg-purple-100 border-purple-300'
+        case 'searching_specialist':
+          return 'text-indigo-600 bg-indigo-100 border-indigo-300'
+        case 'specialist_found':
+          return 'text-pink-600 bg-pink-100 border-pink-300'
+        case 'specialist_connecting':
+          return 'text-cyan-600 bg-cyan-100 border-cyan-300'
+        case 'specialist_calling':
+          return 'text-violet-600 bg-violet-100 border-violet-300'
+        case 'specialist_ready':
+          return 'text-green-600 bg-green-100 border-green-300'
         case 'agent_selecting':
           return 'text-orange-600 bg-orange-100 border-orange-300'
         case 'agent_executing':
@@ -497,8 +582,15 @@ export function GenieStyleProgress({
               // 重要なイベントのみGenieタイムラインステップを追加
               const importantSteps = [
                 'start',
+                'agent_starting',
+                'analyzing_request',
+                'searching_specialist',
+                'specialist_found',
+                'specialist_connecting',
                 'agent_selecting', 
                 'agent_executing',
+                'specialist_calling',
+                'specialist_ready',
                 'specialist_routing',
                 'analysis_complete'
               ]
@@ -511,7 +603,7 @@ export function GenieStyleProgress({
                   type: data.type,
                   timestamp: Date.now(),
                   status: 'active',
-                  icon: getStepIcon(data.type, 'active'),
+                  icon: getStepIcon(data.type, 'active', data.data?.tools),
                   tools: data.data?.tools || undefined,
                   specialist: getSpecialistRouting(data.data)
                 }
@@ -700,10 +792,10 @@ export function GenieStyleProgress({
                   {/* フラットタイムラインライン */}
                   <div className="flex flex-col items-center">
                     <div className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-all duration-300 ${
-                      getStepColor(step.type, step.status)
+                      getStepColor(step.type, step.status, step.tools)
                     }`}>
                       <div className="transition-all duration-300">
-                        {step.status === 'active' ? getStepIcon(step.type, 'active') : getStepIcon(step.type, 'completed')}
+                        {step.status === 'active' ? getStepIcon(step.type, 'active', step.tools) : getStepIcon(step.type, 'completed', step.tools)}
                       </div>
                     </div>
                     {index < genieSteps.length - 1 && (

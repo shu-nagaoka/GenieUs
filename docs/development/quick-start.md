@@ -107,12 +107,14 @@ cd frontend && npm install
 ```
 
 #### 環境変数未設定
+詳細な環境変数設定については **[環境変数設定ガイド](environment-setup.md)** を参照してください。
+
 ```bash
 # .env.dev ファイルが存在するか確認
 ls backend/.env.dev
 
-# サンプルファイルからコピー（存在しない場合）
-cp backend/.env.example backend/.env.dev
+# 設定確認
+python -c "from src.config.settings import get_settings; print(f'設定確認: {get_settings().APP_NAME}')"
 ```
 
 ## 📋 開発環境要件

@@ -1,8 +1,8 @@
 """予定管理API - UseCase Pattern"""
 
-from typing import Dict, Any, List, Optional
+from typing import Any
 
-from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from src.application.usecases.schedule_event_usecase import ScheduleEventUseCase
@@ -18,8 +18,8 @@ class ScheduleEventCreateRequest(BaseModel):
     date: str
     time: str
     type: str  # vaccination, outing, checkup, other
-    location: Optional[str] = None
-    description: Optional[str] = None
+    location: str | None = None
+    description: str | None = None
     status: str = "upcoming"  # upcoming, completed, cancelled
     created_by: str = "genie"
     user_id: str = "frontend_user"
@@ -28,14 +28,14 @@ class ScheduleEventCreateRequest(BaseModel):
 class ScheduleEventUpdateRequest(BaseModel):
     """予定更新リクエスト"""
 
-    title: Optional[str] = None
-    date: Optional[str] = None
-    time: Optional[str] = None
-    type: Optional[str] = None
-    location: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[str] = None
-    created_by: Optional[str] = None
+    title: str | None = None
+    date: str | None = None
+    time: str | None = None
+    type: str | None = None
+    location: str | None = None
+    description: str | None = None
+    status: str | None = None
+    created_by: str | None = None
     user_id: str = "frontend_user"
 
 
@@ -43,7 +43,7 @@ class ScheduleEventUpdateRequest(BaseModel):
 async def create_schedule_event(
     request: ScheduleEventCreateRequest,
     schedule_event_usecase: ScheduleEventUseCase = Depends(get_schedule_event_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """予定を作成"""
     try:
         request_data = request.model_dump()
@@ -58,9 +58,9 @@ async def create_schedule_event(
 @router.get("/list")
 async def get_schedule_events(
     user_id: str = "frontend_user",
-    status: Optional[str] = None,
+    status: str | None = None,
     schedule_event_usecase: ScheduleEventUseCase = Depends(get_schedule_event_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """予定一覧を取得"""
     try:
         filters = {}
@@ -78,7 +78,7 @@ async def get_schedule_event(
     event_id: str,
     user_id: str = "frontend_user",
     schedule_event_usecase: ScheduleEventUseCase = Depends(get_schedule_event_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """特定の予定を取得"""
     try:
         result = await schedule_event_usecase.get_schedule_event(user_id, event_id)
@@ -92,14 +92,14 @@ async def update_schedule_event(
     event_id: str,
     request: ScheduleEventUpdateRequest,
     schedule_event_usecase: ScheduleEventUseCase = Depends(get_schedule_event_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """予定を更新"""
     try:
         request_data = request.model_dump(exclude_unset=True)
         user_id = request_data.get("user_id", "frontend_user")
 
         result = await schedule_event_usecase.update_schedule_event(
-            user_id=user_id, event_id=event_id, update_data=request_data
+            user_id=user_id, event_id=event_id, update_data=request_data,
         )
         return result
     except Exception as e:
@@ -111,7 +111,7 @@ async def delete_schedule_event(
     event_id: str,
     user_id: str = "frontend_user",
     schedule_event_usecase: ScheduleEventUseCase = Depends(get_schedule_event_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """予定を削除"""
     try:
         result = await schedule_event_usecase.delete_schedule_event(user_id, event_id)
@@ -126,7 +126,7 @@ async def update_schedule_status(
     status: str,
     user_id: str = "frontend_user",
     schedule_event_usecase: ScheduleEventUseCase = Depends(get_schedule_event_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """予定のステータスを更新"""
     try:
         result = await schedule_event_usecase.update_schedule_status(user_id=user_id, event_id=event_id, status=status)

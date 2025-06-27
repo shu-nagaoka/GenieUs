@@ -24,11 +24,26 @@ interface ProgressUpdate {
   data: any
 }
 
+interface SearchResult {
+  title: string
+  url: string
+  snippet?: string
+  domain?: string
+}
+
+interface SearchData {
+  search_query?: string
+  search_results?: SearchResult[]
+  results_count?: number
+  timestamp?: string
+  function_call_id?: string
+}
+
 interface PerplexityStyleProgressProps {
   message: string
   userId?: string
   sessionId?: string
-  onComplete?: (response: string) => void
+  onComplete?: (response: string, searchData?: SearchData) => void
   onError?: (error: string) => void
   className?: string
 }
@@ -49,6 +64,7 @@ export function PerplexityStyleProgress({
   const [toolsUsed, setToolsUsed] = useState<string[]>([])
   const [progress, setProgress] = useState<number>(0)
   const [animatedSteps, setAnimatedSteps] = useState<Array<{id: string, text: string, type: string, timestamp: number}>>([])
+  const [searchData, setSearchData] = useState<SearchData | null>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
 
   // ツールアイコンマップ
@@ -137,6 +153,7 @@ export function PerplexityStyleProgress({
     setToolsUsed([])
     setProgress(0)
     setAnimatedSteps([])
+    setSearchData(null)
 
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -198,6 +215,18 @@ export function PerplexityStyleProgress({
                 setToolsUsed(data.data.tools)
               }
 
+              // 検索結果の場合
+              if (data.type === 'search_results') {
+                const searchInfo: SearchData = {
+                  search_query: data.data?.search_query,
+                  search_results: data.data?.search_results || [],
+                  results_count: data.data?.results_count || 0,
+                  timestamp: data.data?.timestamp,
+                  function_call_id: data.data?.function_call_id
+                }
+                setSearchData(searchInfo)
+              }
+
               // 最終レスポンスの場合
               if (data.type === 'final_response') {
                 setFinalResponse(data.message)
@@ -209,7 +238,7 @@ export function PerplexityStyleProgress({
                 setIsStreaming(false)
                 setProgress(100)
                 if (onComplete) {
-                  onComplete(finalResponse || data.data?.response || "")
+                  onComplete(finalResponse || data.data?.response || "", searchData)
                 }
               }
 

@@ -9,25 +9,51 @@ from typing import Any, Generic, TypeVar
 
 from google.adk.tools import FunctionTool
 
+from src.agents.constants import AGENT_KEYWORDS, AGENT_PRIORITY, FORCE_ROUTING_KEYWORDS
+from src.agents.routing_strategy import KeywordRoutingStrategy, RoutingStrategy
+from src.application.usecases.agent_info_usecase import AgentInfoUseCase
+from src.application.usecases.chat_support_usecase import ChatSupportUseCase
+from src.application.usecases.effort_report_usecase import EffortReportUseCase
 from src.application.usecases.family_management_usecase import FamilyManagementUseCase
 from src.application.usecases.file_management_usecase import FileManagementUseCase
 from src.application.usecases.growth_record_usecase import GrowthRecordUseCase
 from src.application.usecases.image_analysis_usecase import ImageAnalysisUseCase
+from src.application.usecases.meal_plan_management_usecase import (
+    MealPlanManagementUseCase,
+)
 from src.application.usecases.memory_record_usecase import MemoryRecordUseCase
 from src.application.usecases.record_management_usecase import RecordManagementUseCase
 from src.application.usecases.schedule_event_usecase import ScheduleEventUseCase
-from src.application.usecases.effort_report_usecase import EffortReportUseCase
+from src.application.usecases.streaming_chat_usecase import StreamingChatUseCase
+from src.application.usecases.user_management_usecase import UserManagementUseCase
 from src.application.usecases.voice_analysis_usecase import VoiceAnalysisUseCase
 from src.config.settings import AppSettings, get_settings
 from src.infrastructure.adapters.file_operator import GcsFileOperator
 from src.infrastructure.adapters.gemini_image_analyzer import GeminiImageAnalyzer
 from src.infrastructure.adapters.gemini_voice_analyzer import GeminiVoiceAnalyzer
+from src.infrastructure.adapters.meal_plan_manager import InMemoryMealPlanManager
 from src.infrastructure.adapters.memory_repositories import MemoryRepositoryFactory
+from src.infrastructure.adapters.persistence.effort_report_repository import (
+    EffortReportRepository,
+)
 from src.infrastructure.adapters.persistence.family_repository import FamilyRepository
-from src.infrastructure.adapters.persistence.growth_record_repository import GrowthRecordRepository
-from src.infrastructure.adapters.persistence.memory_record_repository import MemoryRecordRepository
-from src.infrastructure.adapters.persistence.schedule_event_repository import ScheduleEventRepository
-from src.infrastructure.adapters.persistence.effort_report_repository import EffortReportRepository
+from src.infrastructure.adapters.persistence.growth_record_repository import (
+    GrowthRecordRepository,
+)
+from src.infrastructure.adapters.persistence.memory_record_repository import (
+    MemoryRecordRepository,
+)
+from src.infrastructure.adapters.persistence.schedule_event_repository import (
+    ScheduleEventRepository,
+)
+from src.infrastructure.adapters.persistence.user_repository import UserRepository
+from src.infrastructure.database.data_migrator import DataMigrator
+from src.infrastructure.database.sqlite_manager import DatabaseMigrator, SQLiteManager
+from src.presentation.api.middleware.auth_middleware import (
+    AuthMiddleware,
+    GoogleTokenVerifier,
+    JWTAuthenticator,
+)
 from src.share.logger import setup_logger
 
 T = TypeVar("T")
@@ -90,11 +116,13 @@ class CompositionRoot:
         self._usecases = ServiceRegistry[Any]()
         self._tools = ServiceRegistry[FunctionTool]()
         self._infrastructure = ServiceRegistry[Any]()
+        self._routing_strategy: RoutingStrategy | None = None
 
         # Build dependency tree
         self._build_infrastructure_layer()
         self._build_application_layer()
         self._build_tool_layer()
+        self._build_routing_strategy()
 
         self.logger.info("✅ CompositionRoot初期化完了: 全依存関係組み立て成功")
 
@@ -137,6 +165,47 @@ class CompositionRoot:
         effort_report_repository = EffortReportRepository(logger=self.logger)
         self._infrastructure.register("effort_report_repository", effort_report_repository)
 
+        # Meal Plan Manager
+        meal_plan_manager = InMemoryMealPlanManager(logger=self.logger)
+        self._infrastructure.register("meal_plan_manager", meal_plan_manager)
+
+        # Authentication components
+        google_verifier = GoogleTokenVerifier(logger=self.logger)
+        jwt_authenticator = JWTAuthenticator(settings=self.settings, logger=self.logger)
+        auth_middleware = AuthMiddleware(
+            settings=self.settings,
+            logger=self.logger,
+            google_verifier=google_verifier,
+            jwt_authenticator=jwt_authenticator,
+        )
+
+        self._infrastructure.register("google_verifier", google_verifier)
+        self._infrastructure.register("jwt_authenticator", jwt_authenticator)
+        self._infrastructure.register("auth_middleware", auth_middleware)
+
+        # Database components
+        if self.settings.DATABASE_TYPE == "sqlite":
+            sqlite_manager = SQLiteManager(settings=self.settings, logger=self.logger)
+            database_migrator = DatabaseMigrator(sqlite_manager=sqlite_manager, logger=self.logger)
+
+            self._infrastructure.register("sqlite_manager", sqlite_manager)
+            self._infrastructure.register("database_migrator", database_migrator)
+
+            # データベース初期化（必要に応じて）
+            if not database_migrator.is_database_initialized():
+                self.logger.info("データベース未初期化のため、初期化を実行")
+                database_migrator.initialize_database()
+
+            # User Repository (SQLite版)
+            user_repository = UserRepository(sqlite_manager=sqlite_manager, logger=self.logger)
+            self._infrastructure.register("user_repository", user_repository)
+
+            # Data Migrator (JSON → SQLite)
+            data_migrator = DataMigrator(settings=self.settings, sqlite_manager=sqlite_manager, logger=self.logger)
+            self._infrastructure.register("data_migrator", data_migrator)
+        else:
+            self.logger.warning(f"未サポートのデータベースタイプ: {self.settings.DATABASE_TYPE}")
+
         self.logger.info("Infrastructure層組み立て完了")
 
     def _build_application_layer(self) -> None:
@@ -153,6 +222,7 @@ class CompositionRoot:
         memory_record_repository = self._infrastructure.get_required("memory_record_repository")
         schedule_event_repository = self._infrastructure.get_required("schedule_event_repository")
         effort_report_repository = self._infrastructure.get_required("effort_report_repository")
+        meal_plan_manager = self._infrastructure.get_required("meal_plan_manager")
 
         # UseCases組み立て
         image_analysis_usecase = ImageAnalysisUseCase(image_analyzer=image_analyzer, logger=self.logger)
@@ -192,6 +262,25 @@ class CompositionRoot:
             logger=self.logger,
         )
 
+        meal_plan_management_usecase = MealPlanManagementUseCase(
+            meal_plan_manager=meal_plan_manager,
+            logger=self.logger,
+        )
+
+        chat_support_usecase = ChatSupportUseCase(
+            logger=self.logger,
+        )
+
+        agent_info_usecase = AgentInfoUseCase(
+            logger=self.logger,
+        )
+
+        streaming_chat_usecase = StreamingChatUseCase(
+            chat_support_usecase=chat_support_usecase,
+            agent_info_usecase=agent_info_usecase,
+            logger=self.logger,
+        )
+
         # UseCase登録
         self._usecases.register("image_analysis", image_analysis_usecase)
         self._usecases.register("voice_analysis", voice_analysis_usecase)
@@ -202,6 +291,21 @@ class CompositionRoot:
         self._usecases.register("memory_record_management", memory_record_usecase)
         self._usecases.register("schedule_event_management", schedule_event_usecase)
         self._usecases.register("effort_report_management", effort_report_usecase)
+        self._usecases.register("meal_plan_management", meal_plan_management_usecase)
+        self._usecases.register("chat_support", chat_support_usecase)
+        self._usecases.register("agent_info", agent_info_usecase)
+        self._usecases.register("streaming_chat", streaming_chat_usecase)
+
+        # User Management UseCase (認証統合)
+        if self.settings.DATABASE_TYPE == "sqlite":
+            user_repository = self._infrastructure.get("user_repository")
+            jwt_authenticator = self._infrastructure.get("jwt_authenticator")
+            user_management_usecase = UserManagementUseCase(
+                user_repository=user_repository,
+                jwt_authenticator=jwt_authenticator,
+                logger=self.logger,
+            )
+            self._usecases.register("user_management", user_management_usecase)
 
         self.logger.info("Application層組み立て完了")
 
@@ -229,6 +333,11 @@ class CompositionRoot:
         record_tool = self._create_record_management_tool(record_usecase)
         self._tools.register("record_management", record_tool)
 
+
+        # Google Search ツール
+        google_search_tool = self._create_google_search_tool()
+        self._tools.register("google_search", google_search_tool)
+
         self.logger.info("Tool層組み立て完了")
 
     def _create_image_analysis_tool(self, usecase: ImageAnalysisUseCase) -> FunctionTool:
@@ -255,8 +364,80 @@ class CompositionRoot:
 
         return create_record_management_tool(record_management_usecase=usecase, logger=self.logger)
 
+
+    def _create_google_search_tool(self):
+        """Google Search ツール作成"""
+        from google.adk.tools import google_search
+
+        self.logger.info("Google Search ツールが利用可能です")
+        return google_search
+
     # ========== One-time Assembly API (main.py only) ==========
+
+    def _build_routing_strategy(self) -> None:
+        """ルーティング戦略の組み立て"""
+        self.logger.info("ルーティング戦略組み立て開始...")
+
+        # 環境変数でルーティング戦略を切り替え
+        strategy_type = self.settings.ROUTING_STRATEGY.lower()
+
+        if strategy_type == "enhanced":
+            self.logger.info("Enhanced Routing Strategy を使用")
+            from src.agents.enhanced_routing import EnhancedRoutingStrategy
+
+            self._routing_strategy = EnhancedRoutingStrategy(
+                logger=self.logger,
+                agent_keywords=AGENT_KEYWORDS,
+                force_routing_keywords=FORCE_ROUTING_KEYWORDS,
+                agent_priority=AGENT_PRIORITY,
+                keyword_weight=self.settings.HYBRID_KEYWORD_WEIGHT,
+                llm_weight=self.settings.HYBRID_LLM_WEIGHT,
+            )
+        else:  # default: keyword
+            self.logger.info("Keyword Routing Strategy を使用")
+            self._routing_strategy = KeywordRoutingStrategy(
+                logger=self.logger,
+                agent_keywords=AGENT_KEYWORDS,
+                force_routing_keywords=FORCE_ROUTING_KEYWORDS,
+                agent_priority=AGENT_PRIORITY,
+            )
+
+        self.logger.info(f"ルーティング戦略組み立て完了: {self._routing_strategy.get_strategy_name()}")
 
     def get_all_tools(self) -> dict[str, FunctionTool]:
         """全ツール取得（main.pyでの一回限りの組み立て用）"""
         return {name: tool for name, tool in self._tools._services.items() if tool is not None}
+
+    def get_routing_strategy(self) -> RoutingStrategy:
+        """ルーティング戦略取得"""
+        if self._routing_strategy is None:
+            raise ValueError("ルーティング戦略が初期化されていません")
+        return self._routing_strategy
+
+    # ========== Authentication API ==========
+
+    def get_auth_middleware(self) -> AuthMiddleware:
+        """認証ミドルウェア取得"""
+        return self._infrastructure.get("auth_middleware")
+
+    def get_google_verifier(self) -> GoogleTokenVerifier:
+        """Google Token検証器取得"""
+        return self._infrastructure.get("google_verifier")
+
+    def get_jwt_authenticator(self) -> JWTAuthenticator:
+        """JWT認証器取得"""
+        return self._infrastructure.get("jwt_authenticator")
+
+    # ========== Database API ==========
+
+    def get_sqlite_manager(self) -> SQLiteManager:
+        """SQLiteマネージャー取得"""
+        return self._infrastructure.get("sqlite_manager")
+
+    def get_database_migrator(self) -> DatabaseMigrator:
+        """データベースマイグレーター取得"""
+        return self._infrastructure.get("database_migrator")
+
+    def get_data_migrator(self) -> DataMigrator:
+        """データマイグレーター取得"""
+        return self._infrastructure.get("data_migrator")

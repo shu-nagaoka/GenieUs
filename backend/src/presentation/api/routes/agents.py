@@ -1,15 +1,15 @@
-"""
-エージェント情報API
+"""エージェント情報API
 GenieUsの専門エージェント一覧とその詳細情報を提供
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any
+
 from fastapi import APIRouter
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
 
-def get_agent_info() -> Dict[str, Any]:
+def get_agent_info() -> dict[str, Any]:
     """エージェント情報を取得"""
     return {
         "coordinator": {
@@ -162,11 +162,41 @@ def get_agent_info() -> Dict[str, Any]:
             "capabilities": ["コミュニケーション術", "年齢別話し方", "絆深化法"],
             "status": "active",
         },
+        "specialist_support": {
+            "id": "specialist_support",
+            "name": "専門サポートのジーニー",
+            "description": "特別なニーズを持つお子さんとご家族をサポート",
+            "specialties": ["療育支援", "発達障害サポート", "専門機関連携", "個別支援計画"],
+            "icon": "🤝",
+            "color": "from-teal-600 to-cyan-600",
+            "capabilities": ["個別プラン作成", "専門機関紹介", "継続サポート"],
+            "status": "active",
+        },
+        "family_coordinator": {
+            "id": "family_coordinator",
+            "name": "家族調整のジーニー",
+            "description": "家族全体のバランスと調和をサポートします",
+            "specialties": ["家族関係調整", "兄弟姉妹ケア", "祖父母連携", "家族会議"],
+            "icon": "👨‍👩‍👧‍👦",
+            "color": "from-warm-gray-500 to-gray-600",
+            "capabilities": ["家族プラン調整", "役割分担サポート", "関係改善アドバイス"],
+            "status": "active",
+        },
+        "search_specialist": {
+            "id": "search_specialist",
+            "name": "情報検索のジーニー",
+            "description": "最新の育児情報や地域リソースを検索・提供",
+            "specialties": ["情報検索", "地域リソース", "最新研究", "専門情報"],
+            "icon": "🔍",
+            "color": "from-indigo-500 to-purple-500",
+            "capabilities": ["リアルタイム検索", "信頼性チェック", "カスタム情報収集"],
+            "status": "active",
+        },
     }
 
 
 @router.get("")
-async def get_agents() -> Dict[str, Any]:
+async def get_agents() -> dict[str, Any]:
     """全エージェント一覧を取得"""
     try:
         agents_data = get_agent_info()
@@ -174,11 +204,11 @@ async def get_agents() -> Dict[str, Any]:
 
         return {"success": True, "data": agents_list, "message": "エージェント一覧を取得しました"}
     except Exception as e:
-        return {"success": False, "message": f"エージェント一覧の取得に失敗しました: {str(e)}"}
+        return {"success": False, "message": f"エージェント一覧の取得に失敗しました: {e!s}"}
 
 
 @router.get("/{agent_id}")
-async def get_agent(agent_id: str) -> Dict[str, Any]:
+async def get_agent(agent_id: str) -> dict[str, Any]:
     """特定エージェントの詳細情報を取得"""
     try:
         agents_data = get_agent_info()
@@ -188,11 +218,11 @@ async def get_agent(agent_id: str) -> Dict[str, Any]:
 
         return {"success": True, "data": agents_data[agent_id], "message": "エージェント情報を取得しました"}
     except Exception as e:
-        return {"success": False, "message": f"エージェント情報の取得に失敗しました: {str(e)}"}
+        return {"success": False, "message": f"エージェント情報の取得に失敗しました: {e!s}"}
 
 
 @router.get("/stats/summary")
-async def get_agents_stats() -> Dict[str, Any]:
+async def get_agents_stats() -> dict[str, Any]:
     """エージェント統計情報を取得"""
     try:
         agents_data = get_agent_info()
@@ -204,11 +234,11 @@ async def get_agents_stats() -> Dict[str, Any]:
                 "total_agents": len(agents_data),
                 "active_agents": len(active_agents),
                 "agent_types": len(
-                    set(agent["specialties"][0].split("・")[0] for agent in active_agents if agent["specialties"])
+                    set(agent["specialties"][0].split("・")[0] for agent in active_agents if agent["specialties"]),
                 ),
                 "capabilities_count": sum(len(agent["capabilities"]) for agent in active_agents),
             },
             "message": "エージェント統計を取得しました",
         }
     except Exception as e:
-        return {"success": False, "message": f"エージェント統計の取得に失敗しました: {str(e)}"}
+        return {"success": False, "message": f"エージェント統計の取得に失敗しました: {e!s}"}

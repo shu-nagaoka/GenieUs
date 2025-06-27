@@ -8,8 +8,6 @@ from pathlib import Path
 # プロジェクトルートを追加
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
-from src.presentation.api.routes.multiagent_chat import MultiAgentChatMessage, multiagent_chat_endpoint
-from src.di_provider.factory import get_container
 from src.share.logger import setup_logger
 
 logger = setup_logger(__name__)

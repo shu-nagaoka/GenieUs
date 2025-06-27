@@ -103,6 +103,22 @@ npm run format              # Prettier
 npm run test                # Jestテスト
 ```
 
+### API整合性管理
+```bash
+# 🎯 推奨: シンプルコマンド（プロジェクトルートから）
+./check-api.sh                           # API URL整合性チェック
+./update-api.sh                          # APIマッピング自動更新
+
+# 🔍 詳細: Node.js直接実行
+node scripts/check-api-consistency.js    # フロントエンド⇔バックエンド整合性検証
+node scripts/update-api-mapping.js       # エンドポイント変更時の自動同期
+
+# 📊 整合性統計表示
+# - 総エンドポイント数、整合性率、不整合箇所を可視化
+# - カラー出力で問題箇所を即座に特定
+# - 自動バックアップ&復元機能付き
+```
+
 ### ADK管理
 ```bash
 # ADK Web UI単独起動
@@ -137,6 +153,7 @@ agent_manager.initialize_all_components()
 3. **Composition Root**: main.pyでの中央集約組み立て（DIContainer完全置換）
 4. **Import文先頭配置**: 依存関係の明確化（最重要）
 5. **段階的フォールバック**: プライマリ→セカンダリ→フォールバック
+6. **開発ポート分離**: 開発者ローカル用(3000/8000)、テスト用(30001/8001)の併用
 
 ## 📚 ドキュメント構成
 
@@ -209,6 +226,7 @@ agent_manager.initialize_all_components()
 - [ ] **setup_routes関数の使用**（非推奨パターン）
 - [ ] **@injectデコレータなしのDepends使用**
 - [ ] レイヤー責務を無視した実装
+- [ ] **ポート競合**: 開発者ローカル(3000/8000)とテスト(30001/8001)の混在使用
 
 ---
 

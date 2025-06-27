@@ -12,19 +12,5 @@
     "created_by": "genie",
     "created_at": "2025-06-24T13:13:42.468837",
     "updated_at": "2025-06-24T13:13:42.468920"
-  },
-  "352690d1-5a60-4864-a3fa-d8a0b13ced18": {
-    "id": "352690d1-5a60-4864-a3fa-d8a0b13ced18",
-    "user_id": "frontend_user",
-    "title": "TESXT",
-    "date": "2025-06-28",
-    "time": "10:00",
-    "type": "medical",
-    "location": "リビングルーム",
-    "description": "",
-    "status": "upcoming",
-    "created_by": "user",
-    "created_at": "2025-06-24T14:21:58.296078",
-    "updated_at": "2025-06-24T14:21:58.296092"
   }
 }

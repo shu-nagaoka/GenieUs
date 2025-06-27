@@ -1,8 +1,7 @@
 """努力記録管理Tool - EffortRecordUseCaseの薄いラッパー"""
 
-import asyncio
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from google.adk.tools import FunctionTool
 
@@ -29,7 +28,7 @@ def create_effort_record_tool(
         category: str = "",
         score: float = 0.0,
         **kwargs: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """努力記録のCRUD操作
 
         Args:
@@ -102,7 +101,7 @@ def create_effort_record_tool(
             logger.error(f"努力記録ツール実行エラー: {e}")
             return _create_error_response(operation, f"処理中にエラーが発生しました: {e!s}")
 
-    def _format_efforts_list(efforts: List[Dict], period_days: int) -> str:
+    def _format_efforts_list(efforts: list[dict], period_days: int) -> str:
         """努力記録一覧のフォーマット"""
         if not efforts:
             return f"📋 過去{period_days}日間の努力記録はまだありません。今日から素晴らしい育児の記録を始めましょう！"
@@ -122,7 +121,7 @@ def create_effort_record_tool(
 
         return "\n".join(response_parts)
 
-    def _format_effort_stats(stats: Dict, period_days: int) -> str:
+    def _format_effort_stats(stats: dict, period_days: int) -> str:
         """努力統計のフォーマット"""
         return f"""
 📊 過去{period_days}日間の努力統計
@@ -144,7 +143,7 @@ def create_effort_record_tool(
    毎日の小さな努力が、大きな成長の礎となっています。
         """.strip()
 
-    def _generate_mock_efforts(period_days: int) -> List[Dict]:
+    def _generate_mock_efforts(period_days: int) -> list[dict]:
         """モック努力記録生成"""
         efforts = []
         categories = ["feeding", "sleep", "play", "care"]
@@ -155,8 +154,8 @@ def create_effort_record_tool(
             "care": ["おむつ替えを丁寧に", "お風呂でスキンシップ", "体調をしっかり観察"],
         }
 
-        from datetime import datetime, timedelta
         import random
+        from datetime import datetime, timedelta
 
         for i in range(min(period_days * 2, 20)):  # 1日あたり2件程度
             date = (datetime.now() - timedelta(days=random.randint(0, period_days - 1))).strftime("%Y-%m-%d")
@@ -169,12 +168,12 @@ def create_effort_record_tool(
                     "description": description,
                     "category": category,
                     "score": round(random.uniform(7.0, 10.0), 1),
-                }
+                },
             )
 
         return sorted(efforts, key=lambda x: x["date"], reverse=True)
 
-    def _generate_mock_stats(period_days: int) -> Dict:
+    def _generate_mock_stats(period_days: int) -> dict:
         """モック統計データ生成"""
         import random
 
@@ -234,7 +233,7 @@ def create_effort_record_tool(
 
         return datetime.now().strftime("%Y-%m-%d")
 
-    def _create_error_response(operation: str, error_message: str) -> Dict[str, Any]:
+    def _create_error_response(operation: str, error_message: str) -> dict[str, Any]:
         """エラーレスポンス作成"""
         return {
             "success": False,

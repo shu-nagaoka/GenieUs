@@ -1,0 +1,739 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GenieUs API Endpoints Mapping",
+  "description": "フロントエンドとバックエンドのAPI URL整合性管理",
+  "version": "1.0.0",
+  "last_updated": "2025-06-27",
+
+  "configuration": {
+    "backend": {
+      "base_url": "http://localhost:8000",
+      "production_base_url": "${BACKEND_URL}",
+      "api_prefix": "/api",
+      "cors_origins": ["http://localhost:3000", "http://localhost:3001"]
+    },
+    "frontend": {
+      "base_url": "http://localhost:3000",
+      "api_base_url_env": "NEXT_PUBLIC_API_URL",
+      "default_api_base_url": "http://localhost:8000"
+    }
+  },
+
+  "endpoint_mappings": {
+    "streaming_chat": {
+      "category": "ストリーミングチャット",
+      "backend_router_prefix": "/api/streaming",
+      "endpoints": [
+        {
+          "name": "streaming_chat",
+          "backend_path": "/api/streaming/streaming-chat",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/streaming_chat.py",
+          "backend_function": "streaming_chat",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/app/chat/page.tsx",
+              "line": 232,
+              "url_pattern": "{API_BASE_URL}/api/streaming/streaming-chat",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    },
+
+    "family": {
+      "category": "家族情報管理",
+      "backend_router_prefix": "/api/family",
+      "endpoints": [
+        {
+          "name": "family_info",
+          "backend_path": "/api/family/info",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/family.py",
+          "backend_function": "get_family_info",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/family.ts",
+              "line": 41,
+              "url_pattern": "{API_BASE_URL}/api/family/info?user_id={userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "family_register",
+          "backend_path": "/api/family/register",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/family.py",
+          "backend_function": "register_family_info",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/family.ts",
+              "line": 57,
+              "url_pattern": "{API_BASE_URL}/api/family/register",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "family_update",
+          "backend_path": "/api/family/update",
+          "backend_method": "PUT",
+          "backend_file": "backend/src/presentation/api/routes/family.py",
+          "backend_function": "update_family_info",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/family.ts",
+              "line": 87,
+              "url_pattern": "{API_BASE_URL}/api/family/update",
+              "method": "PUT"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "family_delete",
+          "backend_path": "/api/family/delete",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/family.py",
+          "backend_function": "delete_family_info",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/family.ts",
+              "line": 114,
+              "url_pattern": "{API_BASE_URL}/api/family/delete?user_id={userId}",
+              "method": "DELETE"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    },
+
+    "agents": {
+      "category": "エージェント情報",
+      "backend_router_prefix": "/api/agents",
+      "endpoints": [
+        {
+          "name": "agents_list",
+          "backend_path": "/api/agents",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/agents.py",
+          "backend_function": "get_available_agents",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/agents.ts",
+              "line": 213,
+              "url_pattern": "{API_BASE_URL}/agents",
+              "method": "GET"
+            }
+          ],
+          "status": "⚠️ プレフィックス不一致 - フロントエンド: /agents, バックエンド: /api/agents"
+        }
+      ]
+    },
+
+    "growth_records": {
+      "category": "成長記録管理",
+      "backend_router_prefix": "/api/growth-records",
+      "endpoints": [
+        {
+          "name": "growth_records_list",
+          "backend_path": "/api/growth-records/list",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/growth-records.ts",
+              "line": 144,
+              "url_pattern": "{API_BASE_URL}/api/growth-records/list",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "growth_records_detail",
+          "backend_path": "/api/growth-records/detail/{recordId}",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/growth-records.ts",
+              "line": 172,
+              "url_pattern": "{API_BASE_URL}/api/growth-records/detail/{recordId}?user_id={userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "growth_records_create",
+          "backend_path": "/api/growth-records/create",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/growth-records.ts",
+              "line": 201,
+              "url_pattern": "{API_BASE_URL}/api/growth-records/create",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "growth_records_update",
+          "backend_path": "/api/growth-records/update/{recordId}",
+          "backend_method": "PUT",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/growth-records.ts",
+              "line": 231,
+              "url_pattern": "{API_BASE_URL}/api/growth-records/update/{recordId}",
+              "method": "PUT"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "growth_records_delete",
+          "backend_path": "/api/growth-records/delete/{recordId}",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/growth-records.ts",
+              "line": 261,
+              "url_pattern": "{API_BASE_URL}/api/growth-records/delete/{recordId}?user_id={userId}",
+              "method": "DELETE"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "growth_records_by_child",
+          "backend_path": "/api/growth-records/child/{childName}",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/growth-records.ts",
+              "line": 290,
+              "url_pattern": "{API_BASE_URL}/api/growth-records/child/{childName}?user_id={userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "growth_records_categories",
+          "backend_path": "/api/growth-records/categories",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/growth-records.ts",
+              "line": 319,
+              "url_pattern": "{API_BASE_URL}/api/growth-records/categories",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "growth_records_children",
+          "backend_path": "/api/growth-records/children",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/growth-records.ts",
+              "line": 345,
+              "url_pattern": "{API_BASE_URL}/api/growth-records/children?user_id={userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    },
+
+    "memories": {
+      "category": "思い出管理",
+      "backend_router_prefix": "/api/memories",
+      "endpoints": [
+        {
+          "name": "memories_list",
+          "backend_path": "/api/memories/list",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 77,
+              "url_pattern": "{API_BASE_URL}/api/memories/list",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "memories_detail",
+          "backend_path": "/api/memories/detail/{memoryId}",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 105,
+              "url_pattern": "{API_BASE_URL}/api/memories/detail/{memoryId}?user_id={userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "memories_create",
+          "backend_path": "/api/memories/create",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 134,
+              "url_pattern": "{API_BASE_URL}/api/memories/create",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "memories_update",
+          "backend_path": "/api/memories/update/{memoryId}",
+          "backend_method": "PUT",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 164,
+              "url_pattern": "{API_BASE_URL}/api/memories/update/{memoryId}",
+              "method": "PUT"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "memories_delete",
+          "backend_path": "/api/memories/delete/{memoryId}",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 194,
+              "url_pattern": "{API_BASE_URL}/api/memories/delete/{memoryId}?user_id={userId}",
+              "method": "DELETE"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "memories_favorite",
+          "backend_path": "/api/memories/favorite/{memoryId}",
+          "backend_method": "PATCH",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 224,
+              "url_pattern": "{API_BASE_URL}/api/memories/favorite/{memoryId}?favorited={favorited}&user_id={userId}",
+              "method": "PATCH"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "memories_favorites",
+          "backend_path": "/api/memories/favorites",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 252,
+              "url_pattern": "{API_BASE_URL}/api/memories/favorites?user_id={userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "memories_albums",
+          "backend_path": "/api/memories/albums",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 281,
+              "url_pattern": "{API_BASE_URL}/api/memories/albums?user_id={userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "memories_tags",
+          "backend_path": "/api/memories/tags",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 310,
+              "url_pattern": "{API_BASE_URL}/api/memories/tags?user_id={userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    },
+
+    "schedules": {
+      "category": "スケジュール管理",
+      "backend_router_prefix": "/api/schedules",
+      "endpoints": [
+        {
+          "name": "schedules_list",
+          "backend_path": "/api/schedules/list",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/schedules.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/schedules.ts",
+              "line": 69,
+              "url_pattern": "{API_BASE_URL}/api/schedules/list",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "schedules_detail",
+          "backend_path": "/api/schedules/detail/{eventId}",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/schedules.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/schedules.ts",
+              "line": 101,
+              "url_pattern": "{API_BASE_URL}/api/schedules/detail/{eventId}?user_id={userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "schedules_create",
+          "backend_path": "/api/schedules/create",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/schedules.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/schedules.ts",
+              "line": 130,
+              "url_pattern": "{API_BASE_URL}/api/schedules/create",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "schedules_update",
+          "backend_path": "/api/schedules/update/{eventId}",
+          "backend_method": "PUT",
+          "backend_file": "backend/src/presentation/api/routes/schedules.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/schedules.ts",
+              "line": 164,
+              "url_pattern": "{API_BASE_URL}/api/schedules/update/{eventId}",
+              "method": "PUT"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "schedules_delete",
+          "backend_path": "/api/schedules/delete/{eventId}",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/schedules.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/schedules.ts",
+              "line": 198,
+              "url_pattern": "{API_BASE_URL}/api/schedules/delete/{eventId}?user_id={userId}",
+              "method": "DELETE"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "schedules_status",
+          "backend_path": "/api/schedules/status/{eventId}",
+          "backend_method": "PATCH",
+          "backend_file": "backend/src/presentation/api/routes/schedules.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/schedules.ts",
+              "line": 229,
+              "url_pattern": "{API_BASE_URL}/api/schedules/status/{eventId}?user_id={userId}",
+              "method": "PATCH"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    },
+
+    "meal_plans": {
+      "category": "食事プラン管理",
+      "backend_router_prefix": "/api/meal-plans",
+      "endpoints": [
+        {
+          "name": "meal_plans_create",
+          "backend_path": "/api/meal-plans",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 116,
+              "url_pattern": "{API_BASE_URL}/api/meal-plans?user_id={user_id}",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "meal_plans_get",
+          "backend_path": "/api/meal-plans/{plan_id}",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 148,
+              "url_pattern": "{API_BASE_URL}/api/meal-plans/{plan_id}?user_id={user_id}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "meal_plans_update",
+          "backend_path": "/api/meal-plans/{plan_id}",
+          "backend_method": "PUT",
+          "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 175,
+              "url_pattern": "{API_BASE_URL}/api/meal-plans/{plan_id}?user_id={user_id}",
+              "method": "PUT"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "meal_plans_delete",
+          "backend_path": "/api/meal-plans/{plan_id}",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 207,
+              "url_pattern": "{API_BASE_URL}/api/meal-plans/{plan_id}?user_id={user_id}",
+              "method": "DELETE"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "meal_plans_list",
+          "backend_path": "/api/meal-plans",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 233,
+              "url_pattern": "{API_BASE_URL}/api/meal-plans?user_id={user_id}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "meal_plans_search",
+          "backend_path": "/api/meal-plans/search",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 259,
+              "url_pattern": "{API_BASE_URL}/api/meal-plans/search?user_id={user_id}",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    },
+
+    "file_upload": {
+      "category": "ファイルアップロード",
+      "backend_router_prefix": "/api/files",
+      "endpoints": [
+        {
+          "name": "file_upload_image",
+          "backend_path": "/api/files/upload/image",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/file_upload.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/file-upload.ts",
+              "line": 23,
+              "url_pattern": "{API_BASE_URL}/api/files/upload/image",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "file_get_image",
+          "backend_path": "/api/files/images/{filename}",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/file_upload.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/file-upload.ts",
+              "line": 47,
+              "url_pattern": "{API_BASE_URL}/api/files/images/{filename}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "file_delete_image",
+          "backend_path": "/api/files/images/{filename}",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/file_upload.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/file-upload.ts",
+              "line": 55,
+              "url_pattern": "{API_BASE_URL}/api/files/images/{filename}?user_id={userId}",
+              "method": "DELETE"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    },
+
+    "auth": {
+      "category": "認証",
+      "backend_router_prefix": "/api/auth",
+      "endpoints": [
+        {
+          "name": "auth_login_google",
+          "backend_path": "/api/auth/login/google",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/auth.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/auth.ts",
+              "line": 43,
+              "url_pattern": "{apiUrl}/api/auth/login/google",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "auth_verify",
+          "backend_path": "/api/auth/verify",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/auth.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/auth.ts",
+              "line": 81,
+              "url_pattern": "{API_BASE_URL}/api/auth/verify",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "auth_profile",
+          "backend_path": "/api/auth/profile",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/auth.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/auth.ts",
+              "line": 106,
+              "url_pattern": "{API_BASE_URL}/api/auth/profile",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    }
+  },
+
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "agents",
+      "issue": "エージェント一覧APIのプレフィックス不一致",
+      "description": "フロントエンド: /agents, バックエンド: /api/agents",
+      "frontend_file": "frontend/src/libs/api/agents.ts:213",
+      "backend_file": "backend/src/presentation/api/routes/agents.py",
+      "recommendation": "フロントエンドのURLを /api/agents に修正、または バックエンドのプレフィックスを調整"
+    }
+  ],
+
+  "validation_rules": {
+    "prefix_consistency": {
+      "description": "すべての API エンドポイントは /api プレフィックスを使用する",
+      "exceptions": ["ルートエンドポイント (/)", "ヘルスチェック"]
+    },
+    "method_consistency": {
+      "description": "フロントエンドとバックエンドでHTTPメソッドが一致していること"
+    },
+    "path_parameter_consistency": {
+      "description": "パスパラメータの名前と位置が一致していること"
+    }
+  },
+
+  "statistics": {
+    "total_endpoints": 47,
+    "consistent_endpoints": 46,
+    "inconsistent_endpoints": 1,
+    "consistency_rate": "97.9%"
+  }
+}

@@ -2,11 +2,10 @@
 
 import json
 import logging
-import os
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-from uuid import uuid4
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+from uuid import uuid4
 
 from src.domain.entities import EffortReportRecord
 
@@ -15,24 +14,24 @@ class EffortReportRepository:
     """努力レポートJSON永続化リポジトリ"""
 
     def __init__(self, logger: logging.Logger, data_dir: str = "data"):
-        """
-        Args:
-            logger: ロガー（DIコンテナから注入）
-            data_dir: データディレクトリ
+        """Args:
+        logger: ロガー（DIコンテナから注入）
+        data_dir: データディレクトリ
+
         """
         self.logger = logger
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(exist_ok=True)
         self.file_path = self.data_dir / "effort_reports.json"
 
-    def _load_reports(self) -> Dict[str, Any]:
+    def _load_reports(self) -> dict[str, Any]:
         """努力レポートデータを読み込み"""
         if self.file_path.exists():
-            with open(self.file_path, "r", encoding="utf-8") as f:
+            with open(self.file_path, encoding="utf-8") as f:
                 return json.load(f)
         return {}
 
-    def _save_reports(self, reports: Dict[str, Any]) -> None:
+    def _save_reports(self, reports: dict[str, Any]) -> None:
         """努力レポートデータを保存"""
         with open(self.file_path, "w", encoding="utf-8") as f:
             json.dump(reports, f, ensure_ascii=False, indent=2)
@@ -45,6 +44,7 @@ class EffortReportRepository:
 
         Returns:
             dict: 保存結果
+
         """
         try:
             reports = self._load_reports()
@@ -70,8 +70,8 @@ class EffortReportRepository:
             raise
 
     async def get_effort_reports(
-        self, user_id: str, filters: Optional[Dict[str, Any]] = None
-    ) -> List[EffortReportRecord]:
+        self, user_id: str, filters: dict[str, Any] | None = None,
+    ) -> list[EffortReportRecord]:
         """努力レポート一覧を取得
 
         Args:
@@ -80,6 +80,7 @@ class EffortReportRepository:
 
         Returns:
             List[EffortReportRecord]: 努力レポート一覧
+
         """
         try:
             reports = self._load_reports()
@@ -113,7 +114,7 @@ class EffortReportRepository:
             self.logger.error(f"努力レポート一覧取得エラー: {e}")
             return []
 
-    async def get_effort_report(self, user_id: str, report_id: str) -> Optional[EffortReportRecord]:
+    async def get_effort_report(self, user_id: str, report_id: str) -> EffortReportRecord | None:
         """特定の努力レポートを取得
 
         Args:
@@ -122,6 +123,7 @@ class EffortReportRepository:
 
         Returns:
             Optional[EffortReportRecord]: 努力レポート、存在しない場合はNone
+
         """
         try:
             reports = self._load_reports()
@@ -166,6 +168,7 @@ class EffortReportRepository:
 
         Returns:
             dict: 更新結果
+
         """
         try:
             reports = self._load_reports()
@@ -187,7 +190,7 @@ class EffortReportRepository:
             self.logger.error(f"努力レポート更新エラー: {e}")
             raise
 
-    async def delete_effort_report(self, user_id: str, report_id: str) -> Optional[EffortReportRecord]:
+    async def delete_effort_report(self, user_id: str, report_id: str) -> EffortReportRecord | None:
         """努力レポートを削除
 
         Args:
@@ -196,6 +199,7 @@ class EffortReportRepository:
 
         Returns:
             Optional[EffortReportRecord]: 削除されたレポート、存在しない場合はNone
+
         """
         try:
             reports = self._load_reports()

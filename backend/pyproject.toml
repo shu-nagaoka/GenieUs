@@ -24,7 +24,7 @@ dependencies = [
     "google-cloud-storage==2.18.2",
     "google-auth>=2.36.0",
     "google-cloud-aiplatform==1.94.0",
-    "google-adk==1.0.0",
+    "google-generativeai>=0.8.0",
     "python-dotenv==1.0.1",
     "fastapi==0.115.12",
     "uvicorn[standard]>=0.34.0",
@@ -36,6 +36,10 @@ dependencies = [
     "dependency-injector==4.46.0",
     "deprecated>=1.2.18",
     "ipykernel>=6.29.5",
+    "pyjwt[crypto]==2.8.0",
+    "httpx>=0.28.1",
+    "google-adk>=1.1.1",
+    "pillow>=11.2.1",
 ]
 
 [project.urls]

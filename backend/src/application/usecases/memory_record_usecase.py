@@ -1,7 +1,7 @@
 """メモリー記録管理UseCase"""
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 from src.domain.entities import MemoryRecord
 
@@ -10,15 +10,15 @@ class MemoryRecordUseCase:
     """メモリー記録管理のビジネスロジック"""
 
     def __init__(self, memory_record_repository, logger: logging.Logger):
-        """
-        Args:
-            memory_record_repository: メモリー記録リポジトリ
-            logger: ロガー（DIコンテナから注入）
+        """Args:
+        memory_record_repository: メモリー記録リポジトリ
+        logger: ロガー（DIコンテナから注入）
+
         """
         self.memory_record_repository = memory_record_repository
         self.logger = logger
 
-    async def create_memory_record(self, user_id: str, record_data: dict) -> Dict[str, Any]:
+    async def create_memory_record(self, user_id: str, record_data: dict) -> dict[str, Any]:
         """メモリー記録を作成
 
         Args:
@@ -27,6 +27,7 @@ class MemoryRecordUseCase:
 
         Returns:
             Dict[str, Any]: 作成結果
+
         """
         try:
             self.logger.info(f"メモリー記録作成開始: user_id={user_id}")
@@ -42,9 +43,9 @@ class MemoryRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"メモリー記録作成エラー: user_id={user_id}, error={e}")
-            return {"success": False, "message": f"メモリー記録の作成に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"メモリー記録の作成に失敗しました: {e!s}"}
 
-    async def get_memory_records(self, user_id: str, filters: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def get_memory_records(self, user_id: str, filters: dict[str, Any] | None = None) -> dict[str, Any]:
         """メモリー記録一覧を取得
 
         Args:
@@ -53,6 +54,7 @@ class MemoryRecordUseCase:
 
         Returns:
             Dict[str, Any]: 取得結果
+
         """
         try:
             self.logger.info(f"メモリー記録取得開始: user_id={user_id}")
@@ -80,9 +82,9 @@ class MemoryRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"メモリー記録取得エラー: user_id={user_id}, error={e}")
-            return {"success": False, "message": f"メモリー記録の取得に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"メモリー記録の取得に失敗しました: {e!s}"}
 
-    async def get_memory_record(self, user_id: str, memory_id: str) -> Dict[str, Any]:
+    async def get_memory_record(self, user_id: str, memory_id: str) -> dict[str, Any]:
         """特定のメモリー記録を取得
 
         Args:
@@ -91,6 +93,7 @@ class MemoryRecordUseCase:
 
         Returns:
             Dict[str, Any]: 取得結果
+
         """
         try:
             self.logger.info(f"メモリー記録詳細取得開始: user_id={user_id}, memory_id={memory_id}")
@@ -105,9 +108,9 @@ class MemoryRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"メモリー記録詳細取得エラー: user_id={user_id}, memory_id={memory_id}, error={e}")
-            return {"success": False, "message": f"メモリー記録の取得に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"メモリー記録の取得に失敗しました: {e!s}"}
 
-    async def update_memory_record(self, user_id: str, memory_id: str, update_data: dict) -> Dict[str, Any]:
+    async def update_memory_record(self, user_id: str, memory_id: str, update_data: dict) -> dict[str, Any]:
         """メモリー記録を更新
 
         Args:
@@ -117,6 +120,7 @@ class MemoryRecordUseCase:
 
         Returns:
             Dict[str, Any]: 更新結果
+
         """
         try:
             self.logger.info(f"メモリー記録更新開始: user_id={user_id}, memory_id={memory_id}")
@@ -139,9 +143,9 @@ class MemoryRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"メモリー記録更新エラー: user_id={user_id}, memory_id={memory_id}, error={e}")
-            return {"success": False, "message": f"メモリー記録の更新に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"メモリー記録の更新に失敗しました: {e!s}"}
 
-    async def delete_memory_record(self, user_id: str, memory_id: str) -> Dict[str, Any]:
+    async def delete_memory_record(self, user_id: str, memory_id: str) -> dict[str, Any]:
         """メモリー記録を削除
 
         Args:
@@ -150,6 +154,7 @@ class MemoryRecordUseCase:
 
         Returns:
             Dict[str, Any]: 削除結果
+
         """
         try:
             self.logger.info(f"メモリー記録削除開始: user_id={user_id}, memory_id={memory_id}")
@@ -164,9 +169,9 @@ class MemoryRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"メモリー記録削除エラー: user_id={user_id}, memory_id={memory_id}, error={e}")
-            return {"success": False, "message": f"メモリー記録の削除に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"メモリー記録の削除に失敗しました: {e!s}"}
 
-    async def toggle_memory_favorite(self, user_id: str, memory_id: str, favorited: bool) -> Dict[str, Any]:
+    async def toggle_memory_favorite(self, user_id: str, memory_id: str, favorited: bool) -> dict[str, Any]:
         """メモリーのお気に入り状態を切り替え
 
         Args:
@@ -176,6 +181,7 @@ class MemoryRecordUseCase:
 
         Returns:
             Dict[str, Any]: 更新結果
+
         """
         try:
             self.logger.info(f"お気に入り状態更新開始: user_id={user_id}, memory_id={memory_id}, favorited={favorited}")
@@ -194,9 +200,9 @@ class MemoryRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"お気に入り状態更新エラー: user_id={user_id}, memory_id={memory_id}, error={e}")
-            return {"success": False, "message": f"お気に入り状態の更新に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"お気に入り状態の更新に失敗しました: {e!s}"}
 
-    async def get_favorite_memories(self, user_id: str) -> Dict[str, Any]:
+    async def get_favorite_memories(self, user_id: str) -> dict[str, Any]:
         """お気に入りメモリーを取得
 
         Args:
@@ -204,6 +210,7 @@ class MemoryRecordUseCase:
 
         Returns:
             Dict[str, Any]: 取得結果
+
         """
         try:
             self.logger.info(f"お気に入りメモリー取得開始: user_id={user_id}")
@@ -216,9 +223,9 @@ class MemoryRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"お気に入りメモリー取得エラー: user_id={user_id}, error={e}")
-            return {"success": False, "message": f"お気に入りメモリーの取得に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"お気に入りメモリーの取得に失敗しました: {e!s}"}
 
-    async def get_albums(self, user_id: str) -> Dict[str, Any]:
+    async def get_albums(self, user_id: str) -> dict[str, Any]:
         """アルバム一覧を取得
 
         Args:
@@ -226,6 +233,7 @@ class MemoryRecordUseCase:
 
         Returns:
             Dict[str, Any]: 取得結果
+
         """
         try:
             self.logger.info(f"アルバム一覧取得開始: user_id={user_id}")
@@ -238,9 +246,9 @@ class MemoryRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"アルバム一覧取得エラー: user_id={user_id}, error={e}")
-            return {"success": False, "message": f"アルバム一覧の取得に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"アルバム一覧の取得に失敗しました: {e!s}"}
 
-    async def get_memory_tags(self, user_id: str) -> Dict[str, Any]:
+    async def get_memory_tags(self, user_id: str) -> dict[str, Any]:
         """使用中のタグ一覧を取得
 
         Args:
@@ -248,6 +256,7 @@ class MemoryRecordUseCase:
 
         Returns:
             Dict[str, Any]: 取得結果
+
         """
         try:
             self.logger.info(f"タグ一覧取得開始: user_id={user_id}")
@@ -259,4 +268,4 @@ class MemoryRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"タグ一覧取得エラー: user_id={user_id}, error={e}")
-            return {"success": False, "message": f"タグ一覧の取得に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"タグ一覧の取得に失敗しました: {e!s}"}

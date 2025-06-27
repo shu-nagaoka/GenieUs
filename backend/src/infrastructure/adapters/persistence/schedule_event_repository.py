@@ -2,11 +2,10 @@
 
 import json
 import logging
-import os
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-from uuid import uuid4
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+from uuid import uuid4
 
 from src.domain.entities import ScheduleEvent
 
@@ -15,24 +14,24 @@ class ScheduleEventRepository:
     """予定イベントJSON永続化リポジトリ"""
 
     def __init__(self, logger: logging.Logger, data_dir: str = "data"):
-        """
-        Args:
-            logger: ロガー（DIコンテナから注入）
-            data_dir: データディレクトリ
+        """Args:
+        logger: ロガー（DIコンテナから注入）
+        data_dir: データディレクトリ
+
         """
         self.logger = logger
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(exist_ok=True)
         self.file_path = self.data_dir / "schedules.json"
 
-    def _load_events(self) -> Dict[str, Any]:
+    def _load_events(self) -> dict[str, Any]:
         """予定イベントデータを読み込み"""
         if self.file_path.exists():
-            with open(self.file_path, "r", encoding="utf-8") as f:
+            with open(self.file_path, encoding="utf-8") as f:
                 return json.load(f)
         return {}
 
-    def _save_events(self, events: Dict[str, Any]) -> None:
+    def _save_events(self, events: dict[str, Any]) -> None:
         """予定イベントデータを保存"""
         with open(self.file_path, "w", encoding="utf-8") as f:
             json.dump(events, f, ensure_ascii=False, indent=2)
@@ -45,6 +44,7 @@ class ScheduleEventRepository:
 
         Returns:
             dict: 保存結果
+
         """
         try:
             events = self._load_events()
@@ -69,7 +69,7 @@ class ScheduleEventRepository:
             self.logger.error(f"予定イベント保存エラー: {e}")
             raise
 
-    async def get_schedule_events(self, user_id: str, filters: Optional[Dict[str, Any]] = None) -> List[ScheduleEvent]:
+    async def get_schedule_events(self, user_id: str, filters: dict[str, Any] | None = None) -> list[ScheduleEvent]:
         """予定イベント一覧を取得
 
         Args:
@@ -78,6 +78,7 @@ class ScheduleEventRepository:
 
         Returns:
             List[ScheduleEvent]: 予定イベント一覧
+
         """
         try:
             events = self._load_events()
@@ -117,7 +118,7 @@ class ScheduleEventRepository:
             self.logger.error(f"予定イベント一覧取得エラー: {e}")
             return []
 
-    async def get_schedule_event(self, user_id: str, event_id: str) -> Optional[ScheduleEvent]:
+    async def get_schedule_event(self, user_id: str, event_id: str) -> ScheduleEvent | None:
         """特定の予定イベントを取得
 
         Args:
@@ -126,6 +127,7 @@ class ScheduleEventRepository:
 
         Returns:
             Optional[ScheduleEvent]: 予定イベント、存在しない場合はNone
+
         """
         try:
             events = self._load_events()
@@ -171,6 +173,7 @@ class ScheduleEventRepository:
 
         Returns:
             dict: 更新結果
+
         """
         try:
             events = self._load_events()
@@ -192,7 +195,7 @@ class ScheduleEventRepository:
             self.logger.error(f"予定イベント更新エラー: {e}")
             raise
 
-    async def delete_schedule_event(self, user_id: str, event_id: str) -> Optional[ScheduleEvent]:
+    async def delete_schedule_event(self, user_id: str, event_id: str) -> ScheduleEvent | None:
         """予定イベントを削除
 
         Args:
@@ -201,6 +204,7 @@ class ScheduleEventRepository:
 
         Returns:
             Optional[ScheduleEvent]: 削除されたイベント、存在しない場合はNone
+
         """
         try:
             events = self._load_events()

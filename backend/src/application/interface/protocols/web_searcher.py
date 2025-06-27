@@ -1,10 +1,10 @@
-from typing import Protocol, List, Any
+from typing import Any, Protocol
 
 
 class WebSearcherProtocol(Protocol):
     """Web検索機能のインターフェース"""
 
-    async def search_web(self, query: str, num_results: int = 10, search_type: str = "general") -> List[dict[str, Any]]:
+    async def search_web(self, query: str, num_results: int = 10, search_type: str = "general") -> list[dict[str, Any]]:
         """Web検索を実行
 
         Args:

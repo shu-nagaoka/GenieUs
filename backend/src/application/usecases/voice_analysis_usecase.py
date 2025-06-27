@@ -49,7 +49,7 @@ class VoiceAnalysisUseCase:
             validated_result = self._validate_analysis_result(result)
 
             self.logger.info(
-                f"音声分析完了: child_id={child_id}, events_count={len(validated_result.get('events', []))}"
+                f"音声分析完了: child_id={child_id}, events_count={len(validated_result.get('events', []))}",
             )
 
             return validated_result
@@ -59,7 +59,7 @@ class VoiceAnalysisUseCase:
             return self._create_error_response(str(e))
 
     def _build_childcare_voice_analysis_prompt(
-        self, voice_text: str, child_id: str, analysis_context: dict[str, Any] | None = None
+        self, voice_text: str, child_id: str, analysis_context: dict[str, Any] | None = None,
     ) -> str:
         """子育て記録用音声分析プロンプトの構築（ビジネスロジック）"""
         analysis_type = analysis_context.get("analysis_type", "general") if analysis_context else "general"

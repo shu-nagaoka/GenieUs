@@ -1,0 +1,1240 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "GenieUs API Endpoints Mapping",
+  "description": "フロントエンドとバックエンドのAPI URL整合性管理",
+  "version": "1.0.0",
+  "last_updated": "2025-06-27",
+  "configuration": {
+    "backend": {
+      "base_url": "http://localhost:8000",
+      "production_base_url": "${BACKEND_URL}",
+      "api_prefix": "/api",
+      "cors_origins": [
+        "http://localhost:3000",
+        "http://localhost:3001"
+      ]
+    },
+    "frontend": {
+      "base_url": "http://localhost:3000",
+      "api_base_url_env": "NEXT_PUBLIC_API_URL",
+      "default_api_base_url": "http://localhost:8000"
+    }
+  },
+  "endpoint_mappings": {
+    "admin": {
+      "category": "管理者機能",
+      "backend_router_prefix": "",
+      "endpoints": [
+        {
+          "name": "admin_migration_status",
+          "backend_path": "/migration/status",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/admin.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "admin_migration_backup",
+          "backend_path": "/migration/backup",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/admin.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "admin_migration_execute",
+          "backend_path": "/migration/execute",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/admin.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "admin_database_info",
+          "backend_path": "/database/info",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/admin.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "admin_database_initialize",
+          "backend_path": "/database/initialize",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/admin.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "admin_system_health",
+          "backend_path": "/system/health",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/admin.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        }
+      ]
+    },
+    "agents": {
+      "category": "エージェント情報",
+      "backend_router_prefix": "/agents",
+      "endpoints": [
+        {
+          "name": "agents_get",
+          "backend_path": "/agents/{agent_id}",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/agents.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/agents.ts",
+              "line": 249,
+              "url_pattern": "${API_BASE_URL}/agents/${agentId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "agents_stats_summary",
+          "backend_path": "/agents/stats/summary",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/agents.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        }
+      ]
+    },
+    "auth": {
+      "category": "認証",
+      "backend_router_prefix": "",
+      "endpoints": [
+        {
+          "name": "auth_login_google",
+          "backend_path": "/login/google",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/auth.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/auth.ts",
+              "line": 43,
+              "url_pattern": "${apiUrl}/api/auth/login/google",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "auth_profile",
+          "backend_path": "/profile",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/auth.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "auth_profile",
+          "backend_path": "/profile",
+          "backend_method": "PUT",
+          "backend_file": "backend/src/presentation/api/routes/auth.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "auth_account",
+          "backend_path": "/account",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/auth.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "auth_verify",
+          "backend_path": "/verify",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/auth.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "auth_refresh",
+          "backend_path": "/refresh",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/auth.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "auth_me",
+          "backend_path": "/me",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/auth.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 148,
+              "url_pattern": "${API_BASE_URL}/api/meal-plans/${plan_id}?user_id=${user_id}",
+              "method": "GET"
+            },
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 233,
+              "url_pattern": "${API_BASE_URL}/api/meal-plans?user_id=${user_id}",
+              "method": "GET"
+            },
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 105,
+              "url_pattern": "${API_BASE_URL}/api/memories/detail/${memoryId}?user_id=${userId}",
+              "method": "GET"
+            },
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 194,
+              "url_pattern": "${API_BASE_URL}/api/memories/delete/${memoryId}?user_id=${userId}",
+              "method": "GET"
+            },
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 223,
+              "url_pattern": "${API_BASE_URL}/api/memories/favorite/${memoryId}?favorited=${favorited}&user_id=${userId}",
+              "method": "GET"
+            },
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 252,
+              "url_pattern": "${API_BASE_URL}/api/memories/favorites?user_id=${userId}",
+              "method": "GET"
+            },
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 281,
+              "url_pattern": "${API_BASE_URL}/api/memories/albums?user_id=${userId}",
+              "method": "GET"
+            },
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 310,
+              "url_pattern": "${API_BASE_URL}/api/memories/tags?user_id=${userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    },
+    "effort-reports": {
+      "category": "努力レポート",
+      "backend_router_prefix": "/effort-reports",
+      "endpoints": [
+        {
+          "name": "effort-reports_create",
+          "backend_path": "/effort-reports/create",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "effort-reports_list",
+          "backend_path": "/effort-reports/list",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "effort-reports_detail",
+          "backend_path": "/effort-reports/detail/{report_id}",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "effort-reports_update",
+          "backend_path": "/effort-reports/update/{report_id}",
+          "backend_method": "PUT",
+          "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "effort-reports_delete",
+          "backend_path": "/effort-reports/delete/{report_id}",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "effort-reports_generate",
+          "backend_path": "/effort-reports/generate",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "effort-reports_latest",
+          "backend_path": "/effort-reports/latest",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "effort-reports_stats",
+          "backend_path": "/effort-reports/stats",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        }
+      ]
+    },
+    "family": {
+      "category": "家族情報管理",
+      "backend_router_prefix": "/family",
+      "endpoints": [
+        {
+          "name": "family_register",
+          "backend_path": "/family/register",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/family.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/family.ts",
+              "line": 57,
+              "url_pattern": "${API_BASE_URL}/api/family/register",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "family_info",
+          "backend_path": "/family/info",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/family.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/family.ts",
+              "line": 41,
+              "url_pattern": "${API_BASE_URL}/api/family/info?user_id=${userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "family_update",
+          "backend_path": "/family/update",
+          "backend_method": "PUT",
+          "backend_file": "backend/src/presentation/api/routes/family.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/family.ts",
+              "line": 87,
+              "url_pattern": "${API_BASE_URL}/api/family/update",
+              "method": "PUT"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "family_delete",
+          "backend_path": "/family/delete",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/family.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/family.ts",
+              "line": 114,
+              "url_pattern": "${API_BASE_URL}/api/family/delete?user_id=${userId}",
+              "method": "DELETE"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    },
+    "file-upload": {
+      "category": "ファイルアップロード",
+      "backend_router_prefix": "/api/v1/files",
+      "endpoints": [
+        {
+          "name": "file-upload_upload_image",
+          "backend_path": "/api/v1/files/upload/image",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/file_upload.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "file-upload_images",
+          "backend_path": "/api/v1/files/images/{filename}",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/file_upload.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "file-upload_images",
+          "backend_path": "/api/v1/files/images/{filename}",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/file_upload.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        }
+      ]
+    },
+    "growth-records": {
+      "category": "成長記録管理",
+      "backend_router_prefix": "/growth-records",
+      "endpoints": [
+        {
+          "name": "growth-records_create",
+          "backend_path": "/growth-records/create",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/growth-records.ts",
+              "line": 201,
+              "url_pattern": "${API_BASE_URL}/api/growth-records/create",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "growth-records_list",
+          "backend_path": "/growth-records/list",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "growth-records_detail",
+          "backend_path": "/growth-records/detail/{record_id}",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/growth-records.ts",
+              "line": 172,
+              "url_pattern": "${API_BASE_URL}/api/growth-records/detail/${recordId}?user_id=${userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "growth-records_update",
+          "backend_path": "/growth-records/update/{record_id}",
+          "backend_method": "PUT",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/growth-records.ts",
+              "line": 231,
+              "url_pattern": "${API_BASE_URL}/api/growth-records/update/${recordId}",
+              "method": "PUT"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "growth-records_delete",
+          "backend_path": "/growth-records/delete/{record_id}",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "growth-records_milestones",
+          "backend_path": "/growth-records/milestones",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "growth-records_timeline",
+          "backend_path": "/growth-records/timeline",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "growth-records_categories",
+          "backend_path": "/growth-records/categories",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/growth-records.ts",
+              "line": 319,
+              "url_pattern": "${API_BASE_URL}/api/growth-records/categories",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "growth-records_children",
+          "backend_path": "/growth-records/children",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/growth-records.ts",
+              "line": 345,
+              "url_pattern": "${API_BASE_URL}/api/growth-records/children?user_id=${userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    },
+    "meal-plans": {
+      "category": "食事プラン管理",
+      "backend_router_prefix": "",
+      "endpoints": [
+        {
+          "name": "meal-plans_meal-plans",
+          "backend_path": "/meal-plans",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 116,
+              "url_pattern": "${API_BASE_URL}/api/meal-plans?user_id=${user_id}",
+              "method": "POST"
+            },
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 259,
+              "url_pattern": "${API_BASE_URL}/api/meal-plans/search?user_id=${user_id}",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "meal-plans_meal-plans",
+          "backend_path": "/meal-plans/{plan_id}",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 148,
+              "url_pattern": "${API_BASE_URL}/api/meal-plans/${plan_id}?user_id=${user_id}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "meal-plans_meal-plans",
+          "backend_path": "/meal-plans/{plan_id}",
+          "backend_method": "PUT",
+          "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 175,
+              "url_pattern": "${API_BASE_URL}/api/meal-plans/${plan_id}?user_id=${user_id}",
+              "method": "PUT"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "meal-plans_meal-plans",
+          "backend_path": "/meal-plans/{plan_id}",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 207,
+              "url_pattern": "${API_BASE_URL}/api/meal-plans/${plan_id}?user_id=${user_id}",
+              "method": "DELETE"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "meal-plans_meal-plans",
+          "backend_path": "/meal-plans",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 148,
+              "url_pattern": "${API_BASE_URL}/api/meal-plans/${plan_id}?user_id=${user_id}",
+              "method": "GET"
+            },
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 233,
+              "url_pattern": "${API_BASE_URL}/api/meal-plans?user_id=${user_id}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "meal-plans_meal-plans_search",
+          "backend_path": "/meal-plans/search",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/meal-plans.ts",
+              "line": 259,
+              "url_pattern": "${API_BASE_URL}/api/meal-plans/search?user_id=${user_id}",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    },
+    "memories": {
+      "category": "思い出管理",
+      "backend_router_prefix": "/memories",
+      "endpoints": [
+        {
+          "name": "memories_create",
+          "backend_path": "/memories/create",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 134,
+              "url_pattern": "${API_BASE_URL}/api/memories/create",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "memories_list",
+          "backend_path": "/memories/list",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "memories_detail",
+          "backend_path": "/memories/detail/{memory_id}",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 105,
+              "url_pattern": "${API_BASE_URL}/api/memories/detail/${memoryId}?user_id=${userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "memories_update",
+          "backend_path": "/memories/update/{memory_id}",
+          "backend_method": "PUT",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 164,
+              "url_pattern": "${API_BASE_URL}/api/memories/update/${memoryId}",
+              "method": "PUT"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "memories_delete",
+          "backend_path": "/memories/delete/{memory_id}",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "memories_favorite",
+          "backend_path": "/memories/favorite/{memory_id}",
+          "backend_method": "PATCH",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "memories_favorites",
+          "backend_path": "/memories/favorites",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 252,
+              "url_pattern": "${API_BASE_URL}/api/memories/favorites?user_id=${userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "memories_albums",
+          "backend_path": "/memories/albums",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 281,
+              "url_pattern": "${API_BASE_URL}/api/memories/albums?user_id=${userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "memories_tags",
+          "backend_path": "/memories/tags",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/memories.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/memories.ts",
+              "line": 310,
+              "url_pattern": "${API_BASE_URL}/api/memories/tags?user_id=${userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    },
+    "schedules": {
+      "category": "スケジュール管理",
+      "backend_router_prefix": "/schedules",
+      "endpoints": [
+        {
+          "name": "schedules_create",
+          "backend_path": "/schedules/create",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/schedules.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/schedules.ts",
+              "line": 130,
+              "url_pattern": "${API_BASE_URL}/api/schedules/create",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "schedules_list",
+          "backend_path": "/schedules/list",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/schedules.py",
+          "frontend_usage": [],
+          "status": "⚠️ フロントエンドで未使用"
+        },
+        {
+          "name": "schedules_detail",
+          "backend_path": "/schedules/detail/{event_id}",
+          "backend_method": "GET",
+          "backend_file": "backend/src/presentation/api/routes/schedules.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/schedules.ts",
+              "line": 101,
+              "url_pattern": "${API_BASE_URL}/api/schedules/detail/${eventId}?user_id=${userId}",
+              "method": "GET"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "schedules_update",
+          "backend_path": "/schedules/update/{event_id}",
+          "backend_method": "PUT",
+          "backend_file": "backend/src/presentation/api/routes/schedules.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/schedules.ts",
+              "line": 164,
+              "url_pattern": "${API_BASE_URL}/api/schedules/update/${eventId}",
+              "method": "PUT"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "schedules_delete",
+          "backend_path": "/schedules/delete/{event_id}",
+          "backend_method": "DELETE",
+          "backend_file": "backend/src/presentation/api/routes/schedules.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/schedules.ts",
+              "line": 198,
+              "url_pattern": "${API_BASE_URL}/api/schedules/delete/${eventId}?user_id=${userId}",
+              "method": "DELETE"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        },
+        {
+          "name": "schedules_status",
+          "backend_path": "/schedules/status/{event_id}",
+          "backend_method": "PATCH",
+          "backend_file": "backend/src/presentation/api/routes/schedules.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/libs/api/schedules.ts",
+              "line": 229,
+              "url_pattern": "${API_BASE_URL}/api/schedules/status/${eventId}?user_id=${userId}",
+              "method": "PATCH"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    },
+    "streaming-chat": {
+      "category": "ストリーミングチャット",
+      "backend_router_prefix": "/api/streaming",
+      "endpoints": [
+        {
+          "name": "streaming-chat_streaming-chat",
+          "backend_path": "/api/streaming/streaming-chat",
+          "backend_method": "POST",
+          "backend_file": "backend/src/presentation/api/routes/streaming_chat.py",
+          "frontend_usage": [
+            {
+              "file": "frontend/src/app/chat/page.tsx",
+              "line": 232,
+              "url_pattern": "${API_BASE_URL}/api/streaming/streaming-chat",
+              "method": "POST"
+            },
+            {
+              "file": "frontend/src/components/features/chat/inline-progress-display.tsx",
+              "line": 80,
+              "url_pattern": "${apiBaseUrl}/api/streaming/streaming-chat",
+              "method": "POST"
+            },
+            {
+              "file": "frontend/src/components/features/chat/perplexity-style-progress.tsx",
+              "line": 143,
+              "url_pattern": "${apiBaseUrl}/api/streaming/streaming-chat",
+              "method": "POST"
+            },
+            {
+              "file": "frontend/src/components/features/chat/timeline-style-progress.tsx",
+              "line": 170,
+              "url_pattern": "${apiBaseUrl}/api/streaming/streaming-chat",
+              "method": "POST"
+            }
+          ],
+          "status": "✅ 整合性OK"
+        }
+      ]
+    }
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "category": "admin",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/migration/status (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/admin.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "admin",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/migration/backup (POST) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/admin.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "admin",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/migration/execute (POST) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/admin.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "admin",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/database/info (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/admin.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "admin",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/database/initialize (POST) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/admin.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "admin",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/system/health (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/admin.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "error",
+      "category": "agents",
+      "issue": "URL パス不一致",
+      "description": "フロントエンド: $/agents/$, バックエンド: /agents/{agent_id}",
+      "frontend_file": "frontend/src/libs/api/agents.ts",
+      "backend_file": "backend/src/presentation/api/routes/agents.py",
+      "recommendation": "URLパスを統一してください"
+    },
+    {
+      "severity": "warning",
+      "category": "agents",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/agents/stats/summary (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/agents.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "auth",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/profile (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/auth.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "auth",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/profile (PUT) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/auth.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "auth",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/account (DELETE) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/auth.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "auth",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/verify (POST) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/auth.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "auth",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/refresh (POST) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/auth.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "effort-reports",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/effort-reports/create (POST) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "effort-reports",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/effort-reports/list (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "effort-reports",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/effort-reports/detail/{report_id} (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "effort-reports",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/effort-reports/update/{report_id} (PUT) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "effort-reports",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/effort-reports/delete/{report_id} (DELETE) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "effort-reports",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/effort-reports/generate (POST) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "effort-reports",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/effort-reports/latest (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "effort-reports",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/effort-reports/stats (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/effort_reports.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "file-upload",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/api/v1/files/upload/image (POST) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/file_upload.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "file-upload",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/api/v1/files/images/{filename} (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/file_upload.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "file-upload",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/api/v1/files/images/{filename} (DELETE) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/file_upload.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "growth-records",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/growth-records/list (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "error",
+      "category": "growth-records",
+      "issue": "URL パス不一致",
+      "description": "フロントエンド: $/api/growth-records/detail/$?user_id=$, バックエンド: /growth-records/detail/{record_id}",
+      "frontend_file": "frontend/src/libs/api/growth-records.ts",
+      "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+      "recommendation": "URLパスを統一してください"
+    },
+    {
+      "severity": "error",
+      "category": "growth-records",
+      "issue": "URL パス不一致",
+      "description": "フロントエンド: $/api/growth-records/update/$, バックエンド: /growth-records/update/{record_id}",
+      "frontend_file": "frontend/src/libs/api/growth-records.ts",
+      "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+      "recommendation": "URLパスを統一してください"
+    },
+    {
+      "severity": "warning",
+      "category": "growth-records",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/growth-records/delete/{record_id} (DELETE) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "growth-records",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/growth-records/milestones (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "growth-records",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/growth-records/timeline (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/growth_records.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "error",
+      "category": "meal-plans",
+      "issue": "URL パス不一致",
+      "description": "フロントエンド: $/api/meal-plans/$?user_id=$, バックエンド: /meal-plans/{plan_id}",
+      "frontend_file": "frontend/src/libs/api/meal-plans.ts",
+      "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+      "recommendation": "URLパスを統一してください"
+    },
+    {
+      "severity": "error",
+      "category": "meal-plans",
+      "issue": "URL パス不一致",
+      "description": "フロントエンド: $/api/meal-plans/$?user_id=$, バックエンド: /meal-plans/{plan_id}",
+      "frontend_file": "frontend/src/libs/api/meal-plans.ts",
+      "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+      "recommendation": "URLパスを統一してください"
+    },
+    {
+      "severity": "error",
+      "category": "meal-plans",
+      "issue": "URL パス不一致",
+      "description": "フロントエンド: $/api/meal-plans/$?user_id=$, バックエンド: /meal-plans/{plan_id}",
+      "frontend_file": "frontend/src/libs/api/meal-plans.ts",
+      "backend_file": "backend/src/presentation/api/routes/meal_plans.py",
+      "recommendation": "URLパスを統一してください"
+    },
+    {
+      "severity": "warning",
+      "category": "memories",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/memories/list (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/memories.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "error",
+      "category": "memories",
+      "issue": "URL パス不一致",
+      "description": "フロントエンド: $/api/memories/detail/$?user_id=$, バックエンド: /memories/detail/{memory_id}",
+      "frontend_file": "frontend/src/libs/api/memories.ts",
+      "backend_file": "backend/src/presentation/api/routes/memories.py",
+      "recommendation": "URLパスを統一してください"
+    },
+    {
+      "severity": "error",
+      "category": "memories",
+      "issue": "URL パス不一致",
+      "description": "フロントエンド: $/api/memories/update/$, バックエンド: /memories/update/{memory_id}",
+      "frontend_file": "frontend/src/libs/api/memories.ts",
+      "backend_file": "backend/src/presentation/api/routes/memories.py",
+      "recommendation": "URLパスを統一してください"
+    },
+    {
+      "severity": "warning",
+      "category": "memories",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/memories/delete/{memory_id} (DELETE) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/memories.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "memories",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/memories/favorite/{memory_id} (PATCH) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/memories.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "warning",
+      "category": "schedules",
+      "issue": "フロントエンドで未使用のエンドポイント",
+      "description": "/schedules/list (GET) はフロントエンドで使用されていません",
+      "backend_file": "backend/src/presentation/api/routes/schedules.py",
+      "recommendation": "使用されていないエンドポイントを削除するか、フロントエンドで使用してください"
+    },
+    {
+      "severity": "error",
+      "category": "schedules",
+      "issue": "URL パス不一致",
+      "description": "フロントエンド: $/api/schedules/detail/$?user_id=$, バックエンド: /schedules/detail/{event_id}",
+      "frontend_file": "frontend/src/libs/api/schedules.ts",
+      "backend_file": "backend/src/presentation/api/routes/schedules.py",
+      "recommendation": "URLパスを統一してください"
+    },
+    {
+      "severity": "error",
+      "category": "schedules",
+      "issue": "URL パス不一致",
+      "description": "フロントエンド: $/api/schedules/update/$, バックエンド: /schedules/update/{event_id}",
+      "frontend_file": "frontend/src/libs/api/schedules.ts",
+      "backend_file": "backend/src/presentation/api/routes/schedules.py",
+      "recommendation": "URLパスを統一してください"
+    },
+    {
+      "severity": "error",
+      "category": "schedules",
+      "issue": "URL パス不一致",
+      "description": "フロントエンド: $/api/schedules/delete/$?user_id=$, バックエンド: /schedules/delete/{event_id}",
+      "frontend_file": "frontend/src/libs/api/schedules.ts",
+      "backend_file": "backend/src/presentation/api/routes/schedules.py",
+      "recommendation": "URLパスを統一してください"
+    },
+    {
+      "severity": "error",
+      "category": "schedules",
+      "issue": "URL パス不一致",
+      "description": "フロントエンド: $/api/schedules/status/$?user_id=$, バックエンド: /schedules/status/{event_id}",
+      "frontend_file": "frontend/src/libs/api/schedules.ts",
+      "backend_file": "backend/src/presentation/api/routes/schedules.py",
+      "recommendation": "URLパスを統一してください"
+    }
+  ],
+  "validation_rules": {
+    "prefix_consistency": {
+      "description": "すべての API エンドポイントは /api プレフィックスを使用する",
+      "exceptions": [
+        "ルートエンドポイント (/)",
+        "ヘルスチェック"
+      ]
+    },
+    "method_consistency": {
+      "description": "フロントエンドとバックエンドでHTTPメソッドが一致していること"
+    },
+    "path_parameter_consistency": {
+      "description": "パスパラメータの名前と位置が一致していること"
+    }
+  },
+  "statistics": {
+    "total_endpoints": 61,
+    "consistent_endpoints": 30,
+    "inconsistent_endpoints": 31,
+    "consistency_rate": "49.2%"
+  }
+}

@@ -2,11 +2,10 @@
 
 import json
 import logging
-import os
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-from uuid import uuid4
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+from uuid import uuid4
 
 from src.domain.entities import GrowthRecord
 
@@ -15,24 +14,24 @@ class GrowthRecordRepository:
     """成長記録JSON永続化リポジトリ"""
 
     def __init__(self, logger: logging.Logger, data_dir: str = "data"):
-        """
-        Args:
-            logger: ロガー（DIコンテナから注入）
-            data_dir: データディレクトリ
+        """Args:
+        logger: ロガー（DIコンテナから注入）
+        data_dir: データディレクトリ
+
         """
         self.logger = logger
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(exist_ok=True)
         self.file_path = self.data_dir / "growth_records.json"
 
-    def _load_records(self) -> Dict[str, Any]:
+    def _load_records(self) -> dict[str, Any]:
         """成長記録データを読み込み"""
         if self.file_path.exists():
-            with open(self.file_path, "r", encoding="utf-8") as f:
+            with open(self.file_path, encoding="utf-8") as f:
                 return json.load(f)
         return {}
 
-    def _save_records(self, records: Dict[str, Any]) -> None:
+    def _save_records(self, records: dict[str, Any]) -> None:
         """成長記録データを保存"""
         with open(self.file_path, "w", encoding="utf-8") as f:
             json.dump(records, f, ensure_ascii=False, indent=2)
@@ -45,6 +44,7 @@ class GrowthRecordRepository:
 
         Returns:
             dict: 保存結果
+
         """
         try:
             records = self._load_records()
@@ -69,7 +69,7 @@ class GrowthRecordRepository:
             self.logger.error(f"成長記録保存エラー: {e}")
             raise
 
-    async def get_growth_records(self, user_id: str, filters: Optional[Dict[str, Any]] = None) -> List[GrowthRecord]:
+    async def get_growth_records(self, user_id: str, filters: dict[str, Any] | None = None) -> list[GrowthRecord]:
         """成長記録一覧を取得
 
         Args:
@@ -78,6 +78,7 @@ class GrowthRecordRepository:
 
         Returns:
             List[GrowthRecord]: 成長記録一覧
+
         """
         try:
             records = self._load_records()
@@ -128,7 +129,7 @@ class GrowthRecordRepository:
             self.logger.error(f"成長記録一覧取得エラー: {e}")
             return []
 
-    async def get_growth_record(self, user_id: str, record_id: str) -> Optional[GrowthRecord]:
+    async def get_growth_record(self, user_id: str, record_id: str) -> GrowthRecord | None:
         """特定の成長記録を取得
 
         Args:
@@ -137,6 +138,7 @@ class GrowthRecordRepository:
 
         Returns:
             Optional[GrowthRecord]: 成長記録、存在しない場合はNone
+
         """
         try:
             records = self._load_records()
@@ -189,6 +191,7 @@ class GrowthRecordRepository:
 
         Returns:
             dict: 更新結果
+
         """
         try:
             records = self._load_records()
@@ -210,7 +213,7 @@ class GrowthRecordRepository:
             self.logger.error(f"成長記録更新エラー: {e}")
             raise
 
-    async def delete_growth_record(self, user_id: str, record_id: str) -> Optional[GrowthRecord]:
+    async def delete_growth_record(self, user_id: str, record_id: str) -> GrowthRecord | None:
         """成長記録を削除
 
         Args:
@@ -219,6 +222,7 @@ class GrowthRecordRepository:
 
         Returns:
             Optional[GrowthRecord]: 削除された記録、存在しない場合はNone
+
         """
         try:
             records = self._load_records()

@@ -2,11 +2,10 @@
 
 import json
 import logging
-import os
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-from uuid import uuid4
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+from uuid import uuid4
 
 from src.domain.entities import MemoryRecord
 
@@ -15,24 +14,24 @@ class MemoryRecordRepository:
     """メモリー記録JSON永続化リポジトリ"""
 
     def __init__(self, logger: logging.Logger, data_dir: str = "data"):
-        """
-        Args:
-            logger: ロガー（DIコンテナから注入）
-            data_dir: データディレクトリ
+        """Args:
+        logger: ロガー（DIコンテナから注入）
+        data_dir: データディレクトリ
+
         """
         self.logger = logger
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(exist_ok=True)
         self.file_path = self.data_dir / "memories.json"
 
-    def _load_records(self) -> Dict[str, Any]:
+    def _load_records(self) -> dict[str, Any]:
         """メモリー記録データを読み込み"""
         if self.file_path.exists():
-            with open(self.file_path, "r", encoding="utf-8") as f:
+            with open(self.file_path, encoding="utf-8") as f:
                 return json.load(f)
         return {}
 
-    def _save_records(self, records: Dict[str, Any]) -> None:
+    def _save_records(self, records: dict[str, Any]) -> None:
         """メモリー記録データを保存"""
         with open(self.file_path, "w", encoding="utf-8") as f:
             json.dump(records, f, ensure_ascii=False, indent=2)
@@ -45,6 +44,7 @@ class MemoryRecordRepository:
 
         Returns:
             dict: 保存結果
+
         """
         try:
             records = self._load_records()
@@ -69,7 +69,7 @@ class MemoryRecordRepository:
             self.logger.error(f"メモリー記録保存エラー: {e}")
             raise
 
-    async def get_memory_records(self, user_id: str, filters: Optional[Dict[str, Any]] = None) -> List[MemoryRecord]:
+    async def get_memory_records(self, user_id: str, filters: dict[str, Any] | None = None) -> list[MemoryRecord]:
         """メモリー記録一覧を取得
 
         Args:
@@ -78,6 +78,7 @@ class MemoryRecordRepository:
 
         Returns:
             List[MemoryRecord]: メモリー記録一覧
+
         """
         try:
             records = self._load_records()
@@ -130,7 +131,7 @@ class MemoryRecordRepository:
             self.logger.error(f"メモリー記録一覧取得エラー: {e}")
             return []
 
-    async def get_memory_record(self, user_id: str, memory_id: str) -> Optional[MemoryRecord]:
+    async def get_memory_record(self, user_id: str, memory_id: str) -> MemoryRecord | None:
         """特定のメモリー記録を取得
 
         Args:
@@ -139,6 +140,7 @@ class MemoryRecordRepository:
 
         Returns:
             Optional[MemoryRecord]: メモリー記録、存在しない場合はNone
+
         """
         try:
             records = self._load_records()
@@ -186,6 +188,7 @@ class MemoryRecordRepository:
 
         Returns:
             dict: 更新結果
+
         """
         try:
             records = self._load_records()
@@ -207,7 +210,7 @@ class MemoryRecordRepository:
             self.logger.error(f"メモリー記録更新エラー: {e}")
             raise
 
-    async def delete_memory_record(self, user_id: str, memory_id: str) -> Optional[MemoryRecord]:
+    async def delete_memory_record(self, user_id: str, memory_id: str) -> MemoryRecord | None:
         """メモリー記録を削除
 
         Args:
@@ -216,6 +219,7 @@ class MemoryRecordRepository:
 
         Returns:
             Optional[MemoryRecord]: 削除された記録、存在しない場合はNone
+
         """
         try:
             records = self._load_records()
@@ -259,7 +263,7 @@ class MemoryRecordRepository:
             self.logger.error(f"メモリー記録削除エラー: {e}")
             return None
 
-    async def get_all_tags(self, user_id: str) -> List[str]:
+    async def get_all_tags(self, user_id: str) -> list[str]:
         """ユーザーが使用中のタグ一覧を取得
 
         Args:
@@ -267,6 +271,7 @@ class MemoryRecordRepository:
 
         Returns:
             List[str]: タグ一覧
+
         """
         try:
             records = self._load_records()

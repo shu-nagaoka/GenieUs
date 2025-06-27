@@ -15,7 +15,7 @@ sleep 2
 # バックエンド起動
 echo "🔧 バックエンドを起動中..."
 cd backend
-python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload &
+LOG_LEVEL=info uv run python -m src.main &
 BACKEND_PID=$!
 echo "   バックエンド PID: $BACKEND_PID (ポート8000)"
 

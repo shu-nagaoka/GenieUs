@@ -1,7 +1,7 @@
 """予定イベント管理UseCase"""
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 from src.domain.entities import ScheduleEvent
 
@@ -10,15 +10,15 @@ class ScheduleEventUseCase:
     """予定イベント管理のビジネスロジック"""
 
     def __init__(self, schedule_event_repository, logger: logging.Logger):
-        """
-        Args:
-            schedule_event_repository: 予定イベントリポジトリ
-            logger: ロガー（DIコンテナから注入）
+        """Args:
+        schedule_event_repository: 予定イベントリポジトリ
+        logger: ロガー（DIコンテナから注入）
+
         """
         self.schedule_event_repository = schedule_event_repository
         self.logger = logger
 
-    async def create_schedule_event(self, user_id: str, event_data: dict) -> Dict[str, Any]:
+    async def create_schedule_event(self, user_id: str, event_data: dict) -> dict[str, Any]:
         """予定イベントを作成
 
         Args:
@@ -27,6 +27,7 @@ class ScheduleEventUseCase:
 
         Returns:
             Dict[str, Any]: 作成結果
+
         """
         try:
             self.logger.info(f"予定イベント作成開始: user_id={user_id}")
@@ -42,9 +43,9 @@ class ScheduleEventUseCase:
 
         except Exception as e:
             self.logger.error(f"予定イベント作成エラー: user_id={user_id}, error={e}")
-            return {"success": False, "message": f"予定イベントの作成に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"予定イベントの作成に失敗しました: {e!s}"}
 
-    async def get_schedule_events(self, user_id: str, filters: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def get_schedule_events(self, user_id: str, filters: dict[str, Any] | None = None) -> dict[str, Any]:
         """予定イベント一覧を取得
 
         Args:
@@ -53,6 +54,7 @@ class ScheduleEventUseCase:
 
         Returns:
             Dict[str, Any]: 取得結果
+
         """
         try:
             self.logger.info(f"予定イベント取得開始: user_id={user_id}")
@@ -64,9 +66,9 @@ class ScheduleEventUseCase:
 
         except Exception as e:
             self.logger.error(f"予定イベント取得エラー: user_id={user_id}, error={e}")
-            return {"success": False, "message": f"予定イベントの取得に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"予定イベントの取得に失敗しました: {e!s}"}
 
-    async def get_schedule_event(self, user_id: str, event_id: str) -> Dict[str, Any]:
+    async def get_schedule_event(self, user_id: str, event_id: str) -> dict[str, Any]:
         """特定の予定イベントを取得
 
         Args:
@@ -75,6 +77,7 @@ class ScheduleEventUseCase:
 
         Returns:
             Dict[str, Any]: 取得結果
+
         """
         try:
             self.logger.info(f"予定イベント詳細取得開始: user_id={user_id}, event_id={event_id}")
@@ -89,9 +92,9 @@ class ScheduleEventUseCase:
 
         except Exception as e:
             self.logger.error(f"予定イベント詳細取得エラー: user_id={user_id}, event_id={event_id}, error={e}")
-            return {"success": False, "message": f"予定イベントの取得に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"予定イベントの取得に失敗しました: {e!s}"}
 
-    async def update_schedule_event(self, user_id: str, event_id: str, update_data: dict) -> Dict[str, Any]:
+    async def update_schedule_event(self, user_id: str, event_id: str, update_data: dict) -> dict[str, Any]:
         """予定イベントを更新
 
         Args:
@@ -101,6 +104,7 @@ class ScheduleEventUseCase:
 
         Returns:
             Dict[str, Any]: 更新結果
+
         """
         try:
             self.logger.info(f"予定イベント更新開始: user_id={user_id}, event_id={event_id}")
@@ -123,9 +127,9 @@ class ScheduleEventUseCase:
 
         except Exception as e:
             self.logger.error(f"予定イベント更新エラー: user_id={user_id}, event_id={event_id}, error={e}")
-            return {"success": False, "message": f"予定イベントの更新に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"予定イベントの更新に失敗しました: {e!s}"}
 
-    async def delete_schedule_event(self, user_id: str, event_id: str) -> Dict[str, Any]:
+    async def delete_schedule_event(self, user_id: str, event_id: str) -> dict[str, Any]:
         """予定イベントを削除
 
         Args:
@@ -134,6 +138,7 @@ class ScheduleEventUseCase:
 
         Returns:
             Dict[str, Any]: 削除結果
+
         """
         try:
             self.logger.info(f"予定イベント削除開始: user_id={user_id}, event_id={event_id}")
@@ -148,9 +153,9 @@ class ScheduleEventUseCase:
 
         except Exception as e:
             self.logger.error(f"予定イベント削除エラー: user_id={user_id}, event_id={event_id}, error={e}")
-            return {"success": False, "message": f"予定イベントの削除に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"予定イベントの削除に失敗しました: {e!s}"}
 
-    async def update_schedule_status(self, user_id: str, event_id: str, status: str) -> Dict[str, Any]:
+    async def update_schedule_status(self, user_id: str, event_id: str, status: str) -> dict[str, Any]:
         """予定のステータスを更新
 
         Args:
@@ -160,6 +165,7 @@ class ScheduleEventUseCase:
 
         Returns:
             Dict[str, Any]: 更新結果
+
         """
         try:
             self.logger.info(f"予定ステータス更新開始: user_id={user_id}, event_id={event_id}, status={status}")
@@ -183,4 +189,4 @@ class ScheduleEventUseCase:
 
         except Exception as e:
             self.logger.error(f"予定ステータス更新エラー: user_id={user_id}, event_id={event_id}, error={e}")
-            return {"success": False, "message": f"予定ステータスの更新に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"予定ステータスの更新に失敗しました: {e!s}"}

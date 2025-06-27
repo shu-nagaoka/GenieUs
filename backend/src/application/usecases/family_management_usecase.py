@@ -1,7 +1,6 @@
 """家族情報管理UseCase"""
 
 import logging
-from typing import Optional
 
 from src.domain.entities import FamilyInfo
 
@@ -10,10 +9,10 @@ class FamilyManagementUseCase:
     """家族情報管理のビジネスロジック"""
 
     def __init__(self, family_repository, logger: logging.Logger):
-        """
-        Args:
-            family_repository: 家族情報リポジトリ
-            logger: ロガー（DIコンテナから注入）
+        """Args:
+        family_repository: 家族情報リポジトリ
+        logger: ロガー（DIコンテナから注入）
+
         """
         self.family_repository = family_repository
         self.logger = logger
@@ -27,6 +26,7 @@ class FamilyManagementUseCase:
 
         Returns:
             Dict[str, Any]: 登録結果
+
         """
         try:
             self.logger.info(f"家族情報登録開始: user_id={user_id}")
@@ -42,9 +42,9 @@ class FamilyManagementUseCase:
 
         except Exception as e:
             self.logger.error(f"家族情報登録エラー: user_id={user_id}, error={e}")
-            return {"success": False, "error": f"家族情報の登録に失敗しました: {str(e)}"}
+            return {"success": False, "error": f"家族情報の登録に失敗しました: {e!s}"}
 
-    async def get_family_info(self, user_id: str) -> Optional[dict]:
+    async def get_family_info(self, user_id: str) -> dict | None:
         """家族情報を取得
 
         Args:
@@ -52,6 +52,7 @@ class FamilyManagementUseCase:
 
         Returns:
             Optional[dict]: 家族情報、存在しない場合はNone
+
         """
         try:
             self.logger.info(f"家族情報取得開始: user_id={user_id}")
@@ -78,6 +79,7 @@ class FamilyManagementUseCase:
 
         Returns:
             Dict[str, Any]: 更新結果
+
         """
         try:
             self.logger.info(f"家族情報更新開始: user_id={user_id}")
@@ -99,7 +101,7 @@ class FamilyManagementUseCase:
 
         except Exception as e:
             self.logger.error(f"家族情報更新エラー: user_id={user_id}, error={e}")
-            return {"success": False, "error": f"家族情報の更新に失敗しました: {str(e)}"}
+            return {"success": False, "error": f"家族情報の更新に失敗しました: {e!s}"}
 
     async def delete_family_info(self, user_id: str) -> dict:
         """家族情報を削除
@@ -109,6 +111,7 @@ class FamilyManagementUseCase:
 
         Returns:
             Dict[str, Any]: 削除結果
+
         """
         try:
             self.logger.info(f"家族情報削除開始: user_id={user_id}")
@@ -125,4 +128,4 @@ class FamilyManagementUseCase:
 
         except Exception as e:
             self.logger.error(f"家族情報削除エラー: user_id={user_id}, error={e}")
-            return {"success": False, "error": f"家族情報の削除に失敗しました: {str(e)}"}
+            return {"success": False, "error": f"家族情報の削除に失敗しました: {e!s}"}

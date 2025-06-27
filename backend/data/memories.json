@@ -72,5 +72,37 @@
     "favorited": false,
     "created_at": "2025-06-24T13:44:05.020484",
     "updated_at": "2025-06-24T18:02:30.460845"
+  },
+  "8087d259-86c5-4f76-87fa-a5fab4c8ac5d": {
+    "id": "8087d259-86c5-4f76-87fa-a5fab4c8ac5d",
+    "user_id": "frontend_user",
+    "title": "string",
+    "description": "string",
+    "date": "string",
+    "type": "string",
+    "category": "string",
+    "media_url": "string",
+    "thumbnail_url": "string",
+    "location": "string",
+    "tags": [],
+    "favorited": false,
+    "created_at": "2025-06-26T23:27:05.649528",
+    "updated_at": "2025-06-26T23:27:05.650091"
+  },
+  "449e27bb-ad7d-4c4a-a631-5131c3d835d8": {
+    "id": "449e27bb-ad7d-4c4a-a631-5131c3d835d8",
+    "user_id": "frontend_user",
+    "title": "ddd",
+    "description": "dd",
+    "date": "2025-06-27",
+    "type": "photo",
+    "category": "daily",
+    "media_url": null,
+    "thumbnail_url": null,
+    "location": "",
+    "tags": [],
+    "favorited": false,
+    "created_at": "2025-06-27T10:01:09.375163",
+    "updated_at": "2025-06-27T10:01:09.375458"
   }
 }

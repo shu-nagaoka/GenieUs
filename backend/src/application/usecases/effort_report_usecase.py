@@ -1,7 +1,7 @@
 """努力レポート管理UseCase"""
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 from src.domain.entities import EffortReportRecord
 
@@ -10,15 +10,15 @@ class EffortReportUseCase:
     """努力レポート管理のビジネスロジック"""
 
     def __init__(self, effort_report_repository, logger: logging.Logger):
-        """
-        Args:
-            effort_report_repository: 努力レポートリポジトリ
-            logger: ロガー（DIコンテナから注入）
+        """Args:
+        effort_report_repository: 努力レポートリポジトリ
+        logger: ロガー（DIコンテナから注入）
+
         """
         self.effort_report_repository = effort_report_repository
         self.logger = logger
 
-    async def create_effort_report(self, user_id: str, report_data: dict) -> Dict[str, Any]:
+    async def create_effort_report(self, user_id: str, report_data: dict) -> dict[str, Any]:
         """努力レポートを作成
 
         Args:
@@ -27,6 +27,7 @@ class EffortReportUseCase:
 
         Returns:
             Dict[str, Any]: 作成結果
+
         """
         try:
             self.logger.info(f"努力レポート作成開始: user_id={user_id}")
@@ -42,9 +43,9 @@ class EffortReportUseCase:
 
         except Exception as e:
             self.logger.error(f"努力レポート作成エラー: user_id={user_id}, error={e}")
-            return {"success": False, "message": f"努力レポートの作成に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"努力レポートの作成に失敗しました: {e!s}"}
 
-    async def get_effort_reports(self, user_id: str, filters: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def get_effort_reports(self, user_id: str, filters: dict[str, Any] | None = None) -> dict[str, Any]:
         """努力レポート一覧を取得
 
         Args:
@@ -53,6 +54,7 @@ class EffortReportUseCase:
 
         Returns:
             Dict[str, Any]: 取得結果
+
         """
         try:
             self.logger.info(f"努力レポート取得開始: user_id={user_id}")
@@ -64,9 +66,9 @@ class EffortReportUseCase:
 
         except Exception as e:
             self.logger.error(f"努力レポート取得エラー: user_id={user_id}, error={e}")
-            return {"success": False, "message": f"努力レポートの取得に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"努力レポートの取得に失敗しました: {e!s}"}
 
-    async def get_effort_report(self, user_id: str, report_id: str) -> Dict[str, Any]:
+    async def get_effort_report(self, user_id: str, report_id: str) -> dict[str, Any]:
         """特定の努力レポートを取得
 
         Args:
@@ -75,6 +77,7 @@ class EffortReportUseCase:
 
         Returns:
             Dict[str, Any]: 取得結果
+
         """
         try:
             self.logger.info(f"努力レポート詳細取得開始: user_id={user_id}, report_id={report_id}")
@@ -89,9 +92,9 @@ class EffortReportUseCase:
 
         except Exception as e:
             self.logger.error(f"努力レポート詳細取得エラー: user_id={user_id}, report_id={report_id}, error={e}")
-            return {"success": False, "message": f"努力レポートの取得に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"努力レポートの取得に失敗しました: {e!s}"}
 
-    async def update_effort_report(self, user_id: str, report_id: str, update_data: dict) -> Dict[str, Any]:
+    async def update_effort_report(self, user_id: str, report_id: str, update_data: dict) -> dict[str, Any]:
         """努力レポートを更新
 
         Args:
@@ -101,6 +104,7 @@ class EffortReportUseCase:
 
         Returns:
             Dict[str, Any]: 更新結果
+
         """
         try:
             self.logger.info(f"努力レポート更新開始: user_id={user_id}, report_id={report_id}")
@@ -123,9 +127,9 @@ class EffortReportUseCase:
 
         except Exception as e:
             self.logger.error(f"努力レポート更新エラー: user_id={user_id}, report_id={report_id}, error={e}")
-            return {"success": False, "message": f"努力レポートの更新に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"努力レポートの更新に失敗しました: {e!s}"}
 
-    async def delete_effort_report(self, user_id: str, report_id: str) -> Dict[str, Any]:
+    async def delete_effort_report(self, user_id: str, report_id: str) -> dict[str, Any]:
         """努力レポートを削除
 
         Args:
@@ -134,6 +138,7 @@ class EffortReportUseCase:
 
         Returns:
             Dict[str, Any]: 削除結果
+
         """
         try:
             self.logger.info(f"努力レポート削除開始: user_id={user_id}, report_id={report_id}")
@@ -148,9 +153,9 @@ class EffortReportUseCase:
 
         except Exception as e:
             self.logger.error(f"努力レポート削除エラー: user_id={user_id}, report_id={report_id}, error={e}")
-            return {"success": False, "message": f"努力レポートの削除に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"努力レポートの削除に失敗しました: {e!s}"}
 
-    async def generate_effort_report(self, user_id: str, period_days: int = 7) -> Dict[str, Any]:
+    async def generate_effort_report(self, user_id: str, period_days: int = 7) -> dict[str, Any]:
         """努力レポートを自動生成
 
         Args:
@@ -159,6 +164,7 @@ class EffortReportUseCase:
 
         Returns:
             Dict[str, Any]: 生成結果
+
         """
         try:
             self.logger.info(f"努力レポート自動生成開始: user_id={user_id}, period_days={period_days}")
@@ -189,4 +195,4 @@ class EffortReportUseCase:
 
         except Exception as e:
             self.logger.error(f"努力レポート自動生成エラー: user_id={user_id}, error={e}")
-            return {"success": False, "message": f"努力レポートの自動生成に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"努力レポートの自動生成に失敗しました: {e!s}"}

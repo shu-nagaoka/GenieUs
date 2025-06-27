@@ -1,4 +1,4 @@
-"""15専門エージェント定数管理
+"""18専門エージェント定数管理
 
 プロンプト長期化対策とコード保守性向上のための統一定数管理
 エージェントディレクトリ内での一元的なプロンプト管理を実現
@@ -982,6 +982,8 @@ TOOL_ENABLED_AGENTS = {
     "voice_specialist": ["voice_analysis"],
     "record_specialist": ["record_management"],
     "file_specialist": ["file_management"],
+    "search_specialist": ["google_search"],
+    "outing_event_specialist": ["google_search"],
 }
 
 # 強制ルーティングキーワード（確実に対応する専門領域）
@@ -1626,3 +1628,95 @@ AGENT_KEYWORDS = {
         "来週",
     ],
 }
+
+# ===============================================================================
+# ルーティング関連定数（リファクタリングで追加）
+# ===============================================================================
+
+# 並列分析キーワード
+PARALLEL_ANALYSIS_KEYWORDS = [
+    "総合的に",
+    "詳しく分析",
+    "複数の視点",
+    "全体的に",
+    "多角的に",
+    "いろんな角度から",
+    "様々な専門家に",
+    "チーム分析",
+    "みんなで分析",
+    "複数の専門家",
+    "多面的",
+    "包括的",
+    "トータル",
+    "全ての専門家",
+    "複合的",
+]
+
+# 順次分析キーワード
+SEQUENTIAL_ANALYSIS_KEYWORDS = [
+    "段階的に",
+    "順番に",
+    "ステップごとに",
+    "順序立てて",
+    "一つずつ",
+    "順次",
+    "段階的分析",
+]
+
+# エージェント応答検証パターン
+AGENT_RESPONSE_PATTERNS = {
+    "nutrition_specialist": ["栄養", "食事", "離乳食", "食べ"],
+    "sleep_specialist": ["睡眠", "寝", "夜泣き"],
+    "health_specialist": ["健康", "体調", "症状", "病院"],
+    "development_specialist": ["発達", "成長", "できる", "月齢"],
+    "behavior_specialist": ["しつけ", "イヤイヤ", "行動"],
+    "play_learning_specialist": ["遊び", "おもちゃ", "学習"],
+    "safety_specialist": ["安全", "事故", "予防"],
+    "mental_care_specialist": ["心", "ストレス", "不安"],
+    "work_balance_specialist": ["仕事", "両立", "保育園"],
+    "special_support_specialist": ["療育", "支援", "配慮"],
+}
+
+# エラー判定キーワード
+ERROR_INDICATORS = ["エラー", "申し訳", "システム", "問題が発生"]
+
+# フォールバック優先順位
+FALLBACK_AGENT_PRIORITY = [
+    "coordinator",
+    "development_specialist",
+    "play_learning_specialist",
+    "health_specialist",
+    "nutrition_specialist",
+]
+
+# 不適切なルーティングパターン（エージェント間の専門外キーワード）
+INAPPROPRIATE_ROUTING_PATTERNS = {
+    "sleep_specialist": ["食事", "離乳食", "栄養", "食べない"],
+    "nutrition_specialist": ["夜泣き", "寝ない", "睡眠", "寝かしつけ"],
+    "health_specialist": ["遊び", "おもちゃ", "知育"],
+    "play_learning_specialist": ["熱", "病気", "体調不良"],
+}
+
+# ルーティング提案キーワード
+ROUTING_SUGGESTION_KEYWORDS = [
+    "専門家",
+    "専門医",
+    "栄養士",
+    "睡眠専門",
+    "発達専門",
+    "健康管理",
+    "行動専門",
+    "遊び専門",
+    "安全専門",
+    "心理専門",
+    "仕事両立",
+    "特別支援",
+    "詳しく相談",
+    "専門的なアドバイス",
+    "より詳しく",
+    "専門家に相談",
+    "詳しい話",
+    "深く相談",
+    "もっと知りたい",
+    "アドバイスが欲しい",
+]

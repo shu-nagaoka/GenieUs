@@ -6,7 +6,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Literal, List, Optional, Dict
+from typing import Any, Literal
 
 
 class EventType(str, Enum):
@@ -19,6 +19,30 @@ class EventType(str, Enum):
     PHOTO = "photo"
     HEALTH = "health"
     ACTIVITY = "activity"
+
+
+class MealType(str, Enum):
+    """食事タイプ列挙"""
+
+    BREAKFAST = "breakfast"
+    LUNCH = "lunch"
+    DINNER = "dinner"
+    SNACK = "snack"
+
+
+class DifficultyLevel(str, Enum):
+    """調理難易度列挙"""
+
+    EASY = "easy"
+    MEDIUM = "medium"
+    HARD = "hard"
+
+
+class PlanCreatedBy(str, Enum):
+    """プラン作成者列挙"""
+
+    USER = "user"
+    GENIE = "genie"
 
 
 class PredictionType(str, Enum):
@@ -405,7 +429,7 @@ class GrowthRecord:
 
     record_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str = ""
-    child_id: Optional[str] = None
+    child_id: str | None = None
     child_name: str = ""
     date: str = ""
     age_in_months: int = 0
@@ -413,15 +437,15 @@ class GrowthRecord:
     category: str = ""
     title: str = ""
     description: str = ""
-    value: Optional[str] = None
-    unit: Optional[str] = None
-    image_url: Optional[str] = None
+    value: str | None = None
+    unit: str | None = None
+    image_url: str | None = None
     detected_by: str = "parent"
-    confidence: Optional[float] = None
-    emotions: Optional[List[str]] = None
-    development_stage: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    confidence: float | None = None
+    emotions: list[str] | None = None
+    development_stage: str | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
 
     def __post_init__(self):
         """バリデーション"""
@@ -494,13 +518,13 @@ class MemoryRecord:
     date: str = ""
     type: str = ""  # photo, video, album
     category: str = ""  # milestone, daily, family, special
-    media_url: Optional[str] = None
-    thumbnail_url: Optional[str] = None
-    location: Optional[str] = None
-    tags: List[str] = field(default_factory=list)
+    media_url: str | None = None
+    thumbnail_url: str | None = None
+    location: str | None = None
+    tags: list[str] = field(default_factory=list)
     favorited: bool = False
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: str | None = None
+    updated_at: str | None = None
 
     def __post_init__(self):
         """バリデーション"""
@@ -560,12 +584,12 @@ class ScheduleEvent:
     date: str = ""
     time: str = ""
     type: str = ""  # vaccination, outing, checkup, other
-    location: Optional[str] = None
-    description: Optional[str] = None
+    location: str | None = None
+    description: str | None = None
     status: str = "upcoming"  # upcoming, completed, cancelled
     created_by: str = "genie"
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: str | None = None
+    updated_at: str | None = None
 
     def __post_init__(self):
         """バリデーション"""
@@ -620,12 +644,12 @@ class EffortReportRecord:
     period_days: int = 7
     effort_count: int = 0
     score: float = 0.0
-    highlights: List[str] = field(default_factory=list)
-    categories: Dict[str, int] = field(default_factory=dict)
+    highlights: list[str] = field(default_factory=list)
+    categories: dict[str, int] = field(default_factory=dict)
     summary: str = ""
-    achievements: List[str] = field(default_factory=list)
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    achievements: list[str] = field(default_factory=list)
+    created_at: str | None = None
+    updated_at: str | None = None
 
     def __post_init__(self):
         """バリデーション"""
@@ -678,6 +702,7 @@ class FamilyInfo:
     parent_name: str = ""
     family_structure: str = ""
     concerns: str = ""
+    living_area: str = ""  # 居住エリア情報（市区町村レベル）
     children: list[dict] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
@@ -695,6 +720,7 @@ class FamilyInfo:
             parent_name=family_data.get("parent_name", ""),
             family_structure=family_data.get("family_structure", ""),
             concerns=family_data.get("concerns", ""),
+            living_area=family_data.get("living_area", ""),
             children=family_data.get("children", []),
         )
 
@@ -706,7 +732,309 @@ class FamilyInfo:
             "parent_name": self.parent_name,
             "family_structure": self.family_structure,
             "concerns": self.concerns,
+            "living_area": self.living_area,
             "children": self.children,
             "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+        }
+
+
+@dataclass
+class NutritionInfo:
+    """栄養情報エンティティ"""
+
+    calories: float | None = None
+    protein: float | None = None
+    carbs: float | None = None
+    fat: float | None = None
+    fiber: float | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """辞書形式に変換"""
+        return {
+            "calories": self.calories,
+            "protein": self.protein,
+            "carbs": self.carbs,
+            "fat": self.fat,
+            "fiber": self.fiber,
+        }
+
+
+@dataclass
+class PlannedMeal:
+    """個別食事プランエンティティ"""
+
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    title: str = ""
+    description: str = ""
+    ingredients: list[str] = field(default_factory=list)
+    estimated_nutrition: NutritionInfo | None = None
+    difficulty: DifficultyLevel = DifficultyLevel.EASY
+    prep_time_minutes: int = 10
+    tags: list[str] = field(default_factory=list)
+    allergens: list[str] = field(default_factory=list)
+    recipe_url: str | None = None
+
+    def __post_init__(self):
+        """バリデーション"""
+        if not self.title.strip():
+            raise ValueError("title is required")
+        if self.prep_time_minutes < 0:
+            raise ValueError("prep_time_minutes must be non-negative")
+
+        if isinstance(self.difficulty, str):
+            self.difficulty = DifficultyLevel(self.difficulty)
+
+    def to_dict(self) -> dict[str, Any]:
+        """辞書形式に変換"""
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "ingredients": self.ingredients,
+            "estimated_nutrition": self.estimated_nutrition.to_dict() if self.estimated_nutrition else None,
+            "difficulty": self.difficulty.value,
+            "prep_time_minutes": self.prep_time_minutes,
+            "tags": self.tags,
+            "allergens": self.allergens,
+            "recipe_url": self.recipe_url,
+        }
+
+
+@dataclass
+class DayMealPlan:
+    """1日分の食事プランエンティティ"""
+
+    breakfast: PlannedMeal | None = None
+    lunch: PlannedMeal | None = None
+    dinner: PlannedMeal | None = None
+    snack: PlannedMeal | None = None
+
+    def get_meal_by_type(self, meal_type: MealType) -> PlannedMeal | None:
+        """食事タイプから食事プランを取得"""
+        meal_map = {
+            MealType.BREAKFAST: self.breakfast,
+            MealType.LUNCH: self.lunch,
+            MealType.DINNER: self.dinner,
+            MealType.SNACK: self.snack,
+        }
+        return meal_map.get(meal_type)
+
+    def set_meal_by_type(self, meal_type: MealType, meal: PlannedMeal) -> None:
+        """食事タイプで食事プランを設定"""
+        if meal_type == MealType.BREAKFAST:
+            self.breakfast = meal
+        elif meal_type == MealType.LUNCH:
+            self.lunch = meal
+        elif meal_type == MealType.DINNER:
+            self.dinner = meal
+        elif meal_type == MealType.SNACK:
+            self.snack = meal
+
+    def to_dict(self) -> dict[str, Any]:
+        """辞書形式に変換"""
+        return {
+            "breakfast": self.breakfast.to_dict() if self.breakfast else None,
+            "lunch": self.lunch.to_dict() if self.lunch else None,
+            "dinner": self.dinner.to_dict() if self.dinner else None,
+            "snack": self.snack.to_dict() if self.snack else None,
+        }
+
+
+@dataclass
+class NutritionGoals:
+    """栄養目標エンティティ"""
+
+    daily_calories: float = 300.0
+    daily_protein: float = 15.0
+    daily_carbs: float = 45.0
+    daily_fat: float = 8.0
+
+    def to_dict(self) -> dict[str, Any]:
+        """辞書形式に変換"""
+        return {
+            "daily_calories": self.daily_calories,
+            "daily_protein": self.daily_protein,
+            "daily_carbs": self.daily_carbs,
+            "daily_fat": self.daily_fat,
+        }
+
+
+@dataclass
+class MealPlan:
+    """1週間食事プランエンティティ"""
+
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str = ""
+    child_id: str | None = None
+    week_start: str = ""  # YYYY-MM-DD format
+    title: str = ""
+    description: str = ""
+    created_by: PlanCreatedBy = PlanCreatedBy.USER
+    # 7日分の食事プラン（monday, tuesday, ..., sunday）
+    meals: dict[str, DayMealPlan] = field(default_factory=dict)
+    nutrition_goals: NutritionGoals | None = None
+    notes: str | None = None
+    created_at: datetime = field(default_factory=datetime.now)
+    updated_at: datetime = field(default_factory=datetime.now)
+
+    def __post_init__(self):
+        """バリデーション"""
+        if not self.user_id.strip():
+            raise ValueError("user_id is required")
+        if not self.title.strip():
+            raise ValueError("title is required")
+        if not self.week_start:
+            raise ValueError("week_start is required")
+
+        if isinstance(self.created_by, str):
+            self.created_by = PlanCreatedBy(self.created_by)
+
+        # 7日分のキーを初期化
+        weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        for day in weekdays:
+            if day not in self.meals:
+                self.meals[day] = DayMealPlan()
+
+    @classmethod
+    def from_dict(cls, user_id: str, plan_data: dict) -> "MealPlan":
+        """辞書データから食事プランエンティティを作成"""
+        # 栄養目標の処理
+        nutrition_goals = None
+        if nutrition_goals_data := plan_data.get("nutrition_goals"):
+            nutrition_goals = NutritionGoals(
+                daily_calories=nutrition_goals_data.get("daily_calories", 300.0),
+                daily_protein=nutrition_goals_data.get("daily_protein", 15.0),
+                daily_carbs=nutrition_goals_data.get("daily_carbs", 45.0),
+                daily_fat=nutrition_goals_data.get("daily_fat", 8.0),
+            )
+
+        # 食事プランの処理
+        meals = {}
+        meals_data = plan_data.get("meals", {})
+        for day_key, day_meals_data in meals_data.items():
+            day_plan = DayMealPlan()
+
+            for meal_type_str, meal_data in day_meals_data.items():
+                if meal_data:
+                    # 栄養情報の処理
+                    nutrition_info = None
+                    if nutrition_data := meal_data.get("estimated_nutrition"):
+                        nutrition_info = NutritionInfo(
+                            calories=nutrition_data.get("calories"),
+                            protein=nutrition_data.get("protein"),
+                            carbs=nutrition_data.get("carbs"),
+                            fat=nutrition_data.get("fat"),
+                            fiber=nutrition_data.get("fiber"),
+                        )
+
+                    planned_meal = PlannedMeal(
+                        id=meal_data.get("id", str(uuid.uuid4())),
+                        title=meal_data.get("title", ""),
+                        description=meal_data.get("description", ""),
+                        ingredients=meal_data.get("ingredients", []),
+                        estimated_nutrition=nutrition_info,
+                        difficulty=DifficultyLevel(meal_data.get("difficulty", DifficultyLevel.EASY.value)),
+                        prep_time_minutes=meal_data.get("prep_time_minutes", 10),
+                        tags=meal_data.get("tags", []),
+                        allergens=meal_data.get("allergens", []),
+                        recipe_url=meal_data.get("recipe_url"),
+                    )
+
+                    try:
+                        meal_type = MealType(meal_type_str)
+                        day_plan.set_meal_by_type(meal_type, planned_meal)
+                    except ValueError:
+                        # 無効な meal_type は無視
+                        pass
+
+            meals[day_key] = day_plan
+
+        return cls(
+            id=plan_data.get("id", str(uuid.uuid4())),
+            user_id=user_id,
+            child_id=plan_data.get("child_id"),
+            week_start=plan_data.get("week_start", ""),
+            title=plan_data.get("title", ""),
+            description=plan_data.get("description", ""),
+            created_by=PlanCreatedBy(plan_data.get("created_by", PlanCreatedBy.USER.value)),
+            meals=meals,
+            nutrition_goals=nutrition_goals,
+            notes=plan_data.get("notes"),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """辞書形式に変換"""
+        meals_dict = {}
+        for day_key, day_plan in self.meals.items():
+            meals_dict[day_key] = day_plan.to_dict()
+
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "child_id": self.child_id,
+            "week_start": self.week_start,
+            "title": self.title,
+            "description": self.description,
+            "created_by": self.created_by.value,
+            "meals": meals_dict,
+            "nutrition_goals": self.nutrition_goals.to_dict() if self.nutrition_goals else None,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+        }
+
+
+@dataclass
+class User:
+    """ユーザーエンティティ（Google OAuth統合）"""
+
+    google_id: str = ""  # Google OAuth User ID (プライマリキー)
+    email: str = ""
+    name: str = ""
+    picture_url: str | None = None
+    locale: str | None = None  # 言語設定 (ja, en, etc.)
+    verified_email: bool = False
+    created_at: datetime = field(default_factory=datetime.now)
+    last_login: datetime = field(default_factory=datetime.now)
+    updated_at: datetime = field(default_factory=datetime.now)
+
+    def __post_init__(self):
+        """バリデーション"""
+        if not self.google_id.strip():
+            raise ValueError("google_id is required")
+        if not self.email.strip():
+            raise ValueError("email is required")
+        if not self.name.strip():
+            raise ValueError("name is required")
+
+    @classmethod
+    def from_google_oauth(cls, oauth_user_info: dict) -> "User":
+        """Google OAuth情報からユーザーエンティティを作成"""
+        return cls(
+            google_id=oauth_user_info.get("sub", ""),  # Google User ID
+            email=oauth_user_info.get("email", ""),
+            name=oauth_user_info.get("name", ""),
+            picture_url=oauth_user_info.get("picture"),
+            locale=oauth_user_info.get("locale"),
+            verified_email=oauth_user_info.get("email_verified", False),
+        )
+
+    def update_last_login(self) -> None:
+        """最終ログイン時刻を更新"""
+        self.last_login = datetime.now()
+        self.updated_at = datetime.now()
+
+    def to_dict(self) -> dict[str, Any]:
+        """辞書形式に変換"""
+        return {
+            "google_id": self.google_id,
+            "email": self.email,
+            "name": self.name,
+            "picture_url": self.picture_url,
+            "locale": self.locale,
+            "verified_email": self.verified_email,
+            "created_at": self.created_at.isoformat(),
+            "last_login": self.last_login.isoformat(),
             "updated_at": self.updated_at.isoformat(),
         }

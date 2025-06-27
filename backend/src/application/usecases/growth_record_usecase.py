@@ -1,8 +1,8 @@
 """成長記録管理UseCase"""
 
 import logging
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from typing import Any
 
 from src.domain.entities import GrowthRecord
 
@@ -11,17 +11,17 @@ class GrowthRecordUseCase:
     """成長記録管理のビジネスロジック"""
 
     def __init__(self, growth_record_repository, family_repository, logger: logging.Logger):
-        """
-        Args:
-            growth_record_repository: 成長記録リポジトリ
-            family_repository: 家族情報リポジトリ
-            logger: ロガー（DIコンテナから注入）
+        """Args:
+        growth_record_repository: 成長記録リポジトリ
+        family_repository: 家族情報リポジトリ
+        logger: ロガー（DIコンテナから注入）
+
         """
         self.growth_record_repository = growth_record_repository
         self.family_repository = family_repository
         self.logger = logger
 
-    async def create_growth_record(self, user_id: str, record_data: dict) -> Dict[str, Any]:
+    async def create_growth_record(self, user_id: str, record_data: dict) -> dict[str, Any]:
         """成長記録を作成
 
         Args:
@@ -30,6 +30,7 @@ class GrowthRecordUseCase:
 
         Returns:
             Dict[str, Any]: 作成結果
+
         """
         try:
             self.logger.info(f"成長記録作成開始: user_id={user_id}")
@@ -37,7 +38,7 @@ class GrowthRecordUseCase:
             # 子どもの情報から記録時点での月齢を自動計算
             if record_data.get("child_id") and record_data.get("date"):
                 calculated_age = await self._calculate_age_at_record_date(
-                    user_id, record_data["child_id"], record_data["date"]
+                    user_id, record_data["child_id"], record_data["date"],
                 )
                 if calculated_age is not None:
                     record_data["age_in_months"] = calculated_age
@@ -55,9 +56,9 @@ class GrowthRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"成長記録作成エラー: user_id={user_id}, error={e}")
-            return {"success": False, "message": f"成長記録の作成に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"成長記録の作成に失敗しました: {e!s}"}
 
-    async def get_growth_records(self, user_id: str, filters: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def get_growth_records(self, user_id: str, filters: dict[str, Any] | None = None) -> dict[str, Any]:
         """成長記録一覧を取得
 
         Args:
@@ -66,6 +67,7 @@ class GrowthRecordUseCase:
 
         Returns:
             Dict[str, Any]: 取得結果
+
         """
         try:
             self.logger.info(f"成長記録取得開始: user_id={user_id}")
@@ -77,9 +79,9 @@ class GrowthRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"成長記録取得エラー: user_id={user_id}, error={e}")
-            return {"success": False, "message": f"成長記録の取得に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"成長記録の取得に失敗しました: {e!s}"}
 
-    async def get_growth_record(self, user_id: str, record_id: str) -> Dict[str, Any]:
+    async def get_growth_record(self, user_id: str, record_id: str) -> dict[str, Any]:
         """特定の成長記録を取得
 
         Args:
@@ -88,6 +90,7 @@ class GrowthRecordUseCase:
 
         Returns:
             Dict[str, Any]: 取得結果
+
         """
         try:
             self.logger.info(f"成長記録詳細取得開始: user_id={user_id}, record_id={record_id}")
@@ -102,9 +105,9 @@ class GrowthRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"成長記録詳細取得エラー: user_id={user_id}, record_id={record_id}, error={e}")
-            return {"success": False, "message": f"成長記録の取得に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"成長記録の取得に失敗しました: {e!s}"}
 
-    async def update_growth_record(self, user_id: str, record_id: str, update_data: dict) -> Dict[str, Any]:
+    async def update_growth_record(self, user_id: str, record_id: str, update_data: dict) -> dict[str, Any]:
         """成長記録を更新
 
         Args:
@@ -114,6 +117,7 @@ class GrowthRecordUseCase:
 
         Returns:
             Dict[str, Any]: 更新結果
+
         """
         try:
             self.logger.info(f"成長記録更新開始: user_id={user_id}, record_id={record_id}")
@@ -131,7 +135,7 @@ class GrowthRecordUseCase:
             # 年齢再計算（日付が変更された場合）
             if update_data.get("date"):
                 calculated_age = await self._calculate_age_at_record_date(
-                    user_id, updated_data.get("child_id"), update_data["date"]
+                    user_id, updated_data.get("child_id"), update_data["date"],
                 )
                 if calculated_age is not None:
                     updated_data["age_in_months"] = calculated_age
@@ -145,9 +149,9 @@ class GrowthRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"成長記録更新エラー: user_id={user_id}, record_id={record_id}, error={e}")
-            return {"success": False, "message": f"成長記録の更新に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"成長記録の更新に失敗しました: {e!s}"}
 
-    async def delete_growth_record(self, user_id: str, record_id: str) -> Dict[str, Any]:
+    async def delete_growth_record(self, user_id: str, record_id: str) -> dict[str, Any]:
         """成長記録を削除
 
         Args:
@@ -156,6 +160,7 @@ class GrowthRecordUseCase:
 
         Returns:
             Dict[str, Any]: 削除結果
+
         """
         try:
             self.logger.info(f"成長記録削除開始: user_id={user_id}, record_id={record_id}")
@@ -170,9 +175,9 @@ class GrowthRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"成長記録削除エラー: user_id={user_id}, record_id={record_id}, error={e}")
-            return {"success": False, "message": f"成長記録の削除に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"成長記録の削除に失敗しました: {e!s}"}
 
-    async def get_children_for_growth_records(self, user_id: str) -> Dict[str, Any]:
+    async def get_children_for_growth_records(self, user_id: str) -> dict[str, Any]:
         """成長記録用の子ども一覧を取得
 
         Args:
@@ -180,6 +185,7 @@ class GrowthRecordUseCase:
 
         Returns:
             Dict[str, Any]: 子ども一覧
+
         """
         try:
             self.logger.info(f"子ども一覧取得開始: user_id={user_id}")
@@ -228,7 +234,7 @@ class GrowthRecordUseCase:
                         "age_in_months": age_in_months,
                         "gender": child.get("gender", ""),
                         "birth_date": child.get("birth_date", ""),
-                    }
+                    },
                 )
 
             self.logger.info(f"子ども一覧取得完了: user_id={user_id}, count={len(children)}")
@@ -236,9 +242,9 @@ class GrowthRecordUseCase:
 
         except Exception as e:
             self.logger.error(f"子ども一覧取得エラー: user_id={user_id}, error={e}")
-            return {"success": False, "message": f"子ども一覧の取得に失敗しました: {str(e)}"}
+            return {"success": False, "message": f"子ども一覧の取得に失敗しました: {e!s}"}
 
-    async def _calculate_age_at_record_date(self, user_id: str, child_id: str, record_date: str) -> Optional[int]:
+    async def _calculate_age_at_record_date(self, user_id: str, child_id: str, record_date: str) -> int | None:
         """記録日時点での年齢を計算
 
         Args:
@@ -248,6 +254,7 @@ class GrowthRecordUseCase:
 
         Returns:
             Optional[int]: 月齢（計算失敗時はNone）
+
         """
         try:
             family_info = await self.family_repository.get_family_info(user_id)

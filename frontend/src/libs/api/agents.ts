@@ -209,6 +209,8 @@ const mockAgents: Agent[] = [
  * 全エージェント一覧を取得
  */
 export async function getAgents(): Promise<ApiResponse<Agent[]>> {
+  // API fetch処理をコメントアウトし、ハードコーディングされたデータを使用
+  /*
   try {
     const response = await fetch(`${API_BASE_URL}/agents`)
     const data = await response.json()
@@ -227,12 +229,22 @@ export async function getAgents(): Promise<ApiResponse<Agent[]>> {
       message: 'エージェント一覧を取得しました（フォールバック）'
     }
   }
+  */
+  
+  // ハードコーディングされたデータを直接返す
+  return {
+    success: true,
+    data: mockAgents,
+    message: 'エージェント一覧を取得しました（ハードコーディング）'
+  }
 }
 
 /**
  * 特定エージェントの詳細情報を取得
  */
 export async function getAgent(agentId: string): Promise<ApiResponse<Agent>> {
+  // API fetch処理をコメントアウトし、ハードコーディングされたデータを使用
+  /*
   try {
     const response = await fetch(`${API_BASE_URL}/agents/${agentId}`)
     const data = await response.json()
@@ -258,6 +270,22 @@ export async function getAgent(agentId: string): Promise<ApiResponse<Agent>> {
       success: false,
       message: 'エージェント情報の取得に失敗しました'
     }
+  }
+  */
+  
+  // ハードコーディングされたデータから検索
+  const agent = mockAgents.find(a => a.id === agentId)
+  if (agent) {
+    return {
+      success: true,
+      data: agent,
+      message: 'エージェント情報を取得しました（ハードコーディング）'
+    }
+  }
+  
+  return {
+    success: false,
+    message: 'エージェント情報の取得に失敗しました'
   }
 }
 

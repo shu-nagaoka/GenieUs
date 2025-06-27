@@ -1,74 +1,71 @@
 """ストリーミングチャット API
 
 リアルタイム進捗表示付きチャットエンドポイント
+
+コーディング規約準拠:
+- Import文ファイル先頭配置
+- 型アノテーション完備
+- FastAPI Depends統合パターン
+- 段階的エラーハンドリング
 """
 
 import asyncio
 import json
 import logging
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-router = APIRouter()
+from src.agents.agent_manager import AgentManager
+from src.application.usecases.agent_info_usecase import AgentInfoUseCase
+from src.application.usecases.chat_support_usecase import ChatSupportUseCase
+from src.application.usecases.streaming_chat_usecase import StreamingChatUseCase
+from src.presentation.api.dependencies import (
+    get_agent_manager,
+    get_logger,
+    get_streaming_chat_usecase,
+)
+
+router = APIRouter(prefix="/api/streaming", tags=["streaming"])
 
 
-def generate_dynamic_followup_questions(original_message: str, specialist_response: str) -> str:
-    """回答内容に基づく動的フォローアップクエスチョン生成"""
+# ========== 旧関数（UseCase移行済み - 削除予定） ==========
+# TODO: Step1完了後に削除予定
+# generate_dynamic_followup_questions は ChatSupportUseCase に移行済み
+
+def generate_dynamic_followup_questions_legacy(original_message: str, specialist_response: str) -> str:
+    """【廃止予定】回答内容に基づく動的フォローアップクエスチョン生成
+    
+    ChatSupportUseCase.generate_followup_questions() に移行済み
+    このレガシー関数は段階的削除のため一時保持
+    """
+    # レガシー実装を一時保持（安全対策）
     try:
-        # 簡単なキーワードベースの質問生成
-        message_lower = original_message.lower()
-        response_lower = specialist_response.lower()
-
-        questions = []
-
-        # 離乳食関連
-        if any(word in message_lower or word in response_lower for word in ["離乳食", "食事", "栄養"]):
-            questions = [
-                "アレルギーが心配な時はどうすれば？",
-                "食べない日が続く時の対処法は？",
-                "手作りと市販品どちらがいい？",
-            ]
-        # 睡眠・夜泣き関連
-        elif any(word in message_lower or word in response_lower for word in ["夜泣き", "睡眠", "寝かしつけ"]):
-            questions = ["何時間くらいで改善しますか？", "昼寝の時間も関係ありますか？", "パパでも同じ方法で大丈夫？"]
-        # 発達関連
-        elif any(word in message_lower or word in response_lower for word in ["発達", "成長", "言葉"]):
-            questions = [
-                "他の子と比べて遅れていませんか？",
-                "家庭でできることはありますか？",
-                "専門機関に相談するタイミングは？",
-            ]
-        # 健康関連
-        elif any(word in message_lower or word in response_lower for word in ["体調", "健康", "熱", "病気"]):
-            questions = ["病院に行く目安はありますか？", "家庭でできる対処法は？", "予防するにはどうすれば？"]
-        # 行動・しつけ関連
-        elif any(word in message_lower or word in response_lower for word in ["しつけ", "行動", "イヤイヤ"]):
-            questions = ["どのくらいの期間続きますか？", "効果的な声かけ方法は？", "やってはいけないことは？"]
-        # 遊び・学習関連
-        elif any(word in message_lower or word in response_lower for word in ["遊び", "学習", "知育"]):
-            questions = ["年齢に合った遊び方は？", "一人遊びができない時は？", "おもちゃの選び方のコツは？"]
-        # デフォルト
-        else:
-            questions = [
-                "他の親御さんはどう対処してますか？",
-                "年齢によって方法は変わりますか？",
-                "注意すべきサインはありますか？",
-            ]
-
-        formatted_questions = []
-        for question in questions:
-            formatted_questions.append(f"💭 {question}")
-
+        questions = [
+            "他の親御さんはどう対処してますか？",
+            "年齢によって方法は変わりますか？",
+            "注意すべきポイントは？",
+        ]
+        formatted_questions = [f"💭 {question}" for question in questions]
         return "**【続けて相談したい方へ】**\n" + "\n".join(formatted_questions)
-
-    except Exception as e:
+    except Exception:
         return "**【続けて相談したい方へ】**\n💭 具体的なやり方を教えて\n💭 うまくいかない時はどうする？\n💭 注意すべきポイントは？"
 
 
-def get_specialist_info(agent_type: str) -> dict:
+def generate_dynamic_followup_questions(original_message: str, specialist_response: str, chat_support_usecase: ChatSupportUseCase = None) -> str:
+    """回答内容に基づく動的フォローアップクエスチョン生成（UseCase統合版）"""
+    if chat_support_usecase is None:
+        # フォールバック: レガシー関数使用
+        return generate_dynamic_followup_questions_legacy(original_message, specialist_response)
+
+    # UseCase呼び出し
+    result = chat_support_usecase.generate_followup_questions(original_message, specialist_response)
+    return result.get("formatted_message", generate_dynamic_followup_questions_legacy(original_message, specialist_response))
+
+
+def get_specialist_info_legacy(agent_type: str) -> dict:
     """エージェントタイプから専門家情報を取得"""
     specialist_map = {
         # 基本エージェント（ツール利用系）
@@ -191,6 +188,21 @@ def get_specialist_info(agent_type: str) -> dict:
     )
 
 
+def get_specialist_info(agent_type: str, agent_info_usecase: AgentInfoUseCase = None) -> dict:
+    """エージェントタイプから専門家情報を取得（UseCase統合版）"""
+    if agent_info_usecase is None:
+        # フォールバック: レガシー関数使用
+        return get_specialist_info_legacy(agent_type)
+
+    # UseCase呼び出し
+    result = agent_info_usecase.get_specialist_info(agent_type)
+    if result.get("success"):
+        return result.get("data", get_specialist_info_legacy(agent_type))
+    else:
+        # エラー時はレガシー関数フォールバック
+        return get_specialist_info_legacy(agent_type)
+
+
 class StreamingChatMessage(BaseModel):
     """ストリーミングチャットメッセージ"""
 
@@ -201,17 +213,22 @@ class StreamingChatMessage(BaseModel):
     family_info: dict = None
 
 
-async def create_progress_stream(
-    agent_manager,
+# ========== レガシー関数（UseCase移行済み - 削除予定） ==========
+# TODO: Step3完了後に削除予定
+# create_progress_stream は StreamingChatUseCase に移行済み
+
+async def create_progress_stream_legacy(
+    agent_manager: AgentManager,
     message: str,
     user_id: str,
     session_id: str,
     conversation_history: list,
     family_info: dict,
     logger: logging.Logger,
+    chat_support_usecase: ChatSupportUseCase = None,
+    agent_info_usecase: AgentInfoUseCase = None,
 ) -> AsyncGenerator[str, None]:
     """進捗ストリーミング生成"""
-
     try:
         # 1. 開始
         yield f"data: {json.dumps({'type': 'start', 'message': '🚀 AI分析を開始します...', 'data': {}})}\n\n"
@@ -220,7 +237,7 @@ async def create_progress_stream(
         # 2. 進捗表示を含むAgent実行
         final_response = ""
         async for progress in execute_agent_with_progress(
-            agent_manager, message, user_id, session_id, conversation_history, family_info, logger
+            agent_manager, message, user_id, session_id, conversation_history, family_info, logger,
         ):
             yield f"data: {json.dumps(progress)}\n\n"
             if progress["type"] == "final_response":
@@ -231,11 +248,11 @@ async def create_progress_stream(
 
     except Exception as e:
         logger.error(f"ストリーミングエラー: {e}")
-        yield f"data: {json.dumps({'type': 'error', 'message': f'❌ エラーが発生しました: {str(e)}', 'data': {}})}\n\n"
+        yield f"data: {json.dumps({'type': 'error', 'message': f'❌ エラーが発生しました: {e!s}', 'data': {}})}\n\n"
 
 
-async def execute_agent_with_progress(
-    agent_manager,
+async def execute_agent_with_progress_legacy(
+    agent_manager: AgentManager,
     message: str,
     user_id: str,
     session_id: str,
@@ -244,10 +261,9 @@ async def execute_agent_with_progress(
     logger: logging.Logger,
 ) -> AsyncGenerator[dict, None]:
     """マルチエージェント実行と進捗詳細"""
-
     try:
         # Initialize variables early to ensure proper scope
-        coordinator_info = get_specialist_info("coordinator")
+        coordinator_info = get_specialist_info("coordinator", agent_info_usecase)
         predicted_specialist = "coordinator"
         predicted_info = coordinator_info
         actual_specialist_info = coordinator_info
@@ -266,15 +282,18 @@ async def execute_agent_with_progress(
             logger.info(f"📚 会話履歴: {len(conversation_history)}件のメッセージ")
             for i, hist_msg in enumerate(conversation_history[-3:]):  # 最新3件をログ出力
                 logger.info(
-                    f"  [{i + 1}] {hist_msg.get('sender', 'unknown')}: {str(hist_msg.get('content', ''))[:100]}..."
+                    f"  [{i + 1}] {hist_msg.get('sender', 'unknown')}: {str(hist_msg.get('content', ''))[:100]}...",
                 )
         else:
             logger.info("📚 会話履歴なし（新規会話）")
 
         # 3. 事前専門家判定とルーティング表示
-        # まず、どの専門家が適切かを判定
-        predicted_specialist = agent_manager._determine_specialist_agent(message.lower())
-        predicted_info = get_specialist_info(predicted_specialist)
+        # まず、どの専門家が適切かを判定（戦略パターンを使用）
+        if agent_manager.routing_strategy:
+            predicted_specialist, _ = agent_manager.routing_strategy.determine_agent(message)
+        else:
+            predicted_specialist = "coordinator"
+        predicted_info = get_specialist_info(predicted_specialist, agent_info_usecase)
 
         # 分析・専門家検索の段階的演出
         # まずは相談内容を分析中
@@ -324,7 +343,7 @@ async def execute_agent_with_progress(
                 await asyncio.sleep(0.3)
         else:
             # コーディネーター判定の場合
-            coordinator_info = get_specialist_info("coordinator")
+            coordinator_info = get_specialist_info("coordinator", agent_info_usecase)
             yield {
                 "type": "agent_selecting",
                 "message": f"🎯 {coordinator_info['name']}で総合的にサポートします",
@@ -362,7 +381,7 @@ async def execute_agent_with_progress(
                 # 検索開始メッセージ
                 yield {
                     "type": "search_starting",
-                    "message": f"🔍 最新情報を検索しています...",
+                    "message": "🔍 最新情報を検索しています...",
                     "data": {
                         "agent_type": predicted_specialist,
                         "specialist_name": predicted_info["name"],
@@ -382,7 +401,7 @@ async def execute_agent_with_progress(
                     },
                 }
         else:
-            coordinator_info = get_specialist_info("coordinator")
+            coordinator_info = get_specialist_info("coordinator", agent_info_usecase)
             yield {
                 "type": "agent_executing",
                 "message": f"🔄 {coordinator_info['name']}が相談内容を分析中...",
@@ -396,7 +415,7 @@ async def execute_agent_with_progress(
         # ADKのSessionServiceが会話履歴を管理するため、session_idが重要
         # ルーティング情報とフォローアップクエスチョン付きで実行
         result = await agent_manager.route_query_async_with_info(
-            message, user_id, session_id, "auto", conversation_history, family_info
+            message, user_id, session_id, "auto", conversation_history, family_info,
         )
         response = result["response"]
         agent_info = result.get("agent_info", {})
@@ -409,7 +428,7 @@ async def execute_agent_with_progress(
             for step in routing_path:
                 if step["step"] == "specialist_routing":
                     specialist_agent = step["agent"]
-                    actual_specialist_info = get_specialist_info(specialist_agent)
+                    actual_specialist_info = get_specialist_info(specialist_agent, agent_info_usecase)
 
                     # 重複防止: この専門家の呼び出しメッセージをまだ送信していない場合のみ
                     calling_key = f"specialist_calling_{specialist_agent}"
@@ -475,7 +494,7 @@ async def execute_agent_with_progress(
 
         # 7. フォローアップクエスチョンを追加（フロントエンドで抽出・独立表示用）
         if "💭" not in response and "続けて相談したい方へ" not in response:
-            dynamic_questions = generate_dynamic_followup_questions(message, response)
+            dynamic_questions = generate_dynamic_followup_questions(message, response, chat_support_usecase)
             response += f"\n\n{dynamic_questions}"
 
         # 検索系エージェントの場合は検索完了メッセージを追加
@@ -483,7 +502,7 @@ async def execute_agent_with_progress(
         if current_agent in ["search_specialist", "outing_event_specialist"]:
             yield {
                 "type": "search_completed",
-                "message": f"✅ 最新情報の検索が完了しました",
+                "message": "✅ 最新情報の検索が完了しました",
                 "data": {
                     "agent_type": current_agent,
                     "specialist_name": actual_specialist_info["name"],
@@ -491,6 +510,32 @@ async def execute_agent_with_progress(
                 },
             }
             await asyncio.sleep(0.3)
+
+            # 検索結果データを取得してフロントエンドに送信
+            search_results_data = None
+            try:
+                # エージェントの実行履歴から検索結果を取得
+                if hasattr(result, 'search_metadata') and result.search_metadata:
+                    search_results_data = result.search_metadata
+                elif agent_info.get("search_history"):
+                    # 最新の検索履歴から結果を取得
+                    search_results_data = agent_info["search_history"][-1]
+
+                if search_results_data:
+                    yield {
+                        "type": "search_results",
+                        "message": "🔗 参照した検索結果を表示します",
+                        "data": {
+                            "search_query": search_results_data.get("query"),
+                            "search_results": search_results_data.get("accessed_sites", []),
+                            "results_count": search_results_data.get("results_count", 0),
+                            "timestamp": search_results_data.get("timestamp"),
+                            "function_call_id": search_results_data.get("function_call_id"),
+                        },
+                    }
+                    await asyncio.sleep(0.2)
+            except Exception as search_error:
+                logger.warning(f"検索結果データの取得に失敗: {search_error}")
 
         # 8. 最終レスポンス（ルーティング情報とエージェント情報付き）
         yield {
@@ -511,7 +556,7 @@ async def execute_agent_with_progress(
         logger.error(f"マルチエージェント実行エラー: {e}")
         yield {
             "type": "final_response",
-            "message": f"申し訳ございません。分析中にエラーが発生しました: {str(e)}",
+            "message": f"申し訳ございません。分析中にエラーが発生しました: {e!s}",
             "data": {"error": True},
         }
 
@@ -519,24 +564,31 @@ async def execute_agent_with_progress(
 @router.post("/streaming-chat")
 async def streaming_chat_endpoint(
     chat_message: StreamingChatMessage,
-    request: Request,
+    agent_manager: AgentManager = Depends(get_agent_manager),
+    logger: logging.Logger = Depends(get_logger),
+    streaming_chat_usecase: StreamingChatUseCase = Depends(get_streaming_chat_usecase),
 ):
-    """ストリーミングチャットエンドポイント"""
-    logger = request.app.logger
-    agent_manager = request.app.agent_manager
+    """ストリーミングチャットエンドポイント（DI注入パターン）"""
+    try:
+        logger.info(f"ストリーミングチャット開始: user_id={chat_message.user_id}, message='{chat_message.message[:50]}...'")
 
-    logger.info(f"ストリーミングチャット開始: user_id={chat_message.user_id}, message='{chat_message.message[:50]}...'")
+        async def event_stream():
+            async for data in streaming_chat_usecase.create_progress_stream(
+                agent_manager,
+                chat_message.message,
+                chat_message.user_id,
+                chat_message.session_id,
+                chat_message.conversation_history or [],
+                chat_message.family_info or {},
+            ):
+                yield data
 
-    async def event_stream():
-        async for data in create_progress_stream(
-            agent_manager,
-            chat_message.message,
-            chat_message.user_id,
-            chat_message.session_id,
-            chat_message.conversation_history,
-            chat_message.family_info,
-            logger,
-        ):
-            yield data
+        return StreamingResponse(event_stream(), media_type="text/plain")
 
-    return StreamingResponse(event_stream(), media_type="text/plain")
+    except Exception as e:
+        logger.error(f"ストリーミングチャットエンドポイントエラー: {e}")
+        # エラー時のストリーミングレスポンス
+        async def error_stream():
+            yield f"data: {json.dumps({'type': 'error', 'message': f'❌ エラーが発生しました: {e!s}', 'data': {}})}\n\n"
+
+        return StreamingResponse(error_stream(), media_type="text/plain")

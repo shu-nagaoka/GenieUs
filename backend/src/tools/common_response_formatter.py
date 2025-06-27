@@ -3,7 +3,7 @@
 全ツールが統一形式でAgentにレスポンスを返すための共通機能
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class ToolResponse:
@@ -13,9 +13,9 @@ class ToolResponse:
         self,
         success: bool,
         message: str,
-        data: Optional[Dict[str, Any]] = None,
-        suggestions: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
+        suggestions: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         self.success = success
         self.message = message
@@ -33,7 +33,7 @@ class ToolResponse:
 
         return "\n\n".join(response_parts)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """構造化データとして返す"""
         return {
             "success": self.success,
@@ -49,16 +49,15 @@ class ChildcareResponseFormatter:
 
     @staticmethod
     def image_analysis_success(
-        detected_items: List[str],
+        detected_items: list[str],
         emotion: str,
         activity: str,
         confidence: float,
-        suggestions: List[str],
-        safety_concerns: List[str],
+        suggestions: list[str],
+        safety_concerns: list[str],
         child_id: str,
     ) -> ToolResponse:
         """画像分析成功レスポンス"""
-
         # メインメッセージ構築
         message_parts = []
 
@@ -100,14 +99,13 @@ class ChildcareResponseFormatter:
     def voice_analysis_success(
         emotion_detected: str,
         crying_type: str,
-        needs_analysis: List[str],
-        comfort_suggestions: List[str],
+        needs_analysis: list[str],
+        comfort_suggestions: list[str],
         child_id: str,
     ) -> ToolResponse:
         """音声分析成功レスポンス"""
-
         message_parts = []
-        message_parts.append(f"🎵 音声分析結果:")
+        message_parts.append("🎵 音声分析結果:")
 
         if emotion_detected != "unknown":
             message_parts.append(f"😊 感情状態: {emotion_detected}")
@@ -132,7 +130,6 @@ class ChildcareResponseFormatter:
     @staticmethod
     def record_management_success(operation: str, result_summary: str, data_count: int, child_id: str) -> ToolResponse:
         """記録管理成功レスポンス"""
-
         message_parts = []
         message_parts.append(f"📝 記録管理: {operation}")
         message_parts.append(f"📊 処理結果: {result_summary}")
@@ -151,9 +148,8 @@ class ChildcareResponseFormatter:
         )
 
     @staticmethod
-    def file_management_success(operation: str, file_info: Dict[str, Any], child_id: str) -> ToolResponse:
+    def file_management_success(operation: str, file_info: dict[str, Any], child_id: str) -> ToolResponse:
         """ファイル管理成功レスポンス"""
-
         file_name = file_info.get("name", "不明")
         file_size = file_info.get("size", 0)
 
@@ -178,7 +174,6 @@ class ChildcareResponseFormatter:
     @staticmethod
     def error_response(tool_type: str, error_message: str, child_id: str = "default_child") -> ToolResponse:
         """エラーレスポンス統一形式"""
-
         return ToolResponse(
             success=False,
             message=f"申し訳ございません。{tool_type}中に問題が発生しました。",

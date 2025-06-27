@@ -4,7 +4,6 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Optional
 
 from src.domain.entities import FamilyInfo
 
@@ -13,10 +12,10 @@ class FamilyRepository:
     """家族情報JSON永続化リポジトリ"""
 
     def __init__(self, logger: logging.Logger, data_dir: str = "data"):
-        """
-        Args:
-            logger: ロガー（DIコンテナから注入）
-            data_dir: データディレクトリ
+        """Args:
+        logger: ロガー（DIコンテナから注入）
+        data_dir: データディレクトリ
+
         """
         self.logger = logger
         self.data_dir = Path(data_dir)
@@ -30,6 +29,7 @@ class FamilyRepository:
 
         Returns:
             dict: 保存結果
+
         """
         try:
             file_path = self.data_dir / f"{family_info.user_id}_family.json"
@@ -45,7 +45,7 @@ class FamilyRepository:
             self.logger.error(f"家族情報保存エラー: {e}")
             raise
 
-    async def get_family_info(self, user_id: str) -> Optional[FamilyInfo]:
+    async def get_family_info(self, user_id: str) -> FamilyInfo | None:
         """家族情報を取得
 
         Args:
@@ -53,6 +53,7 @@ class FamilyRepository:
 
         Returns:
             Optional[FamilyInfo]: 家族情報、存在しない場合はNone
+
         """
         try:
             file_path = self.data_dir / f"{user_id}_family.json"
@@ -62,7 +63,7 @@ class FamilyRepository:
                 return None
 
             # JSONファイルから読み込み
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 family_data = json.load(f)
 
             # FamilyInfoエンティティに変換
@@ -72,6 +73,7 @@ class FamilyRepository:
                 parent_name=family_data.get("parent_name", ""),
                 family_structure=family_data.get("family_structure", ""),
                 concerns=family_data.get("concerns", ""),
+                living_area=family_data.get("living_area", ""),
                 children=family_data.get("children", []),
             )
 
@@ -90,6 +92,7 @@ class FamilyRepository:
 
         Returns:
             bool: 削除成功したかどうか
+
         """
         try:
             file_path = self.data_dir / f"{user_id}_family.json"

@@ -1,8 +1,8 @@
 """努力レポート管理API - UseCase Pattern"""
 
-from typing import Dict, Any, List, Optional
+from typing import Any
 
-from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from src.application.usecases.effort_report_usecase import EffortReportUseCase
@@ -17,23 +17,23 @@ class EffortReportCreateRequest(BaseModel):
     period_days: int
     effort_count: int
     score: float
-    highlights: List[str]
-    categories: Dict[str, int]
+    highlights: list[str]
+    categories: dict[str, int]
     summary: str
-    achievements: List[str]
+    achievements: list[str]
     user_id: str = "frontend_user"
 
 
 class EffortReportUpdateRequest(BaseModel):
     """努力レポート更新リクエスト"""
 
-    period_days: Optional[int] = None
-    effort_count: Optional[int] = None
-    score: Optional[float] = None
-    highlights: Optional[List[str]] = None
-    categories: Optional[Dict[str, int]] = None
-    summary: Optional[str] = None
-    achievements: Optional[List[str]] = None
+    period_days: int | None = None
+    effort_count: int | None = None
+    score: float | None = None
+    highlights: list[str] | None = None
+    categories: dict[str, int] | None = None
+    summary: str | None = None
+    achievements: list[str] | None = None
     user_id: str = "frontend_user"
 
 
@@ -41,7 +41,7 @@ class EffortReportUpdateRequest(BaseModel):
 async def create_effort_report(
     request: EffortReportCreateRequest,
     effort_report_usecase: EffortReportUseCase = Depends(get_effort_report_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """努力レポートを作成"""
     try:
         request_data = request.model_dump()
@@ -57,7 +57,7 @@ async def create_effort_report(
 async def get_effort_reports(
     user_id: str = "frontend_user",
     effort_report_usecase: EffortReportUseCase = Depends(get_effort_report_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """努力レポート一覧を取得"""
     try:
         result = await effort_report_usecase.get_effort_reports(user_id)
@@ -71,7 +71,7 @@ async def get_effort_report(
     report_id: str,
     user_id: str = "frontend_user",
     effort_report_usecase: EffortReportUseCase = Depends(get_effort_report_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """特定の努力レポートを取得"""
     try:
         result = await effort_report_usecase.get_effort_report(user_id, report_id)
@@ -85,14 +85,14 @@ async def update_effort_report(
     report_id: str,
     request: EffortReportUpdateRequest,
     effort_report_usecase: EffortReportUseCase = Depends(get_effort_report_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """努力レポートを更新"""
     try:
         request_data = request.model_dump(exclude_unset=True)
         user_id = request_data.get("user_id", "frontend_user")
 
         result = await effort_report_usecase.update_effort_report(
-            user_id=user_id, report_id=report_id, update_data=request_data
+            user_id=user_id, report_id=report_id, update_data=request_data,
         )
         return result
     except Exception as e:
@@ -104,7 +104,7 @@ async def delete_effort_report(
     report_id: str,
     user_id: str = "frontend_user",
     effort_report_usecase: EffortReportUseCase = Depends(get_effort_report_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """努力レポートを削除"""
     try:
         result = await effort_report_usecase.delete_effort_report(user_id, report_id)
@@ -118,7 +118,7 @@ async def generate_effort_report(
     user_id: str = "frontend_user",
     period_days: int = 7,
     effort_report_usecase: EffortReportUseCase = Depends(get_effort_report_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """努力レポートを自動生成"""
     try:
         result = await effort_report_usecase.generate_effort_report(user_id=user_id, period_days=period_days)
@@ -131,7 +131,7 @@ async def generate_effort_report(
 async def get_latest_effort_report(
     user_id: str = "frontend_user",
     effort_report_usecase: EffortReportUseCase = Depends(get_effort_report_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """最新の努力レポートを取得"""
     try:
         reports_result = await effort_report_usecase.get_effort_reports(user_id)
@@ -150,7 +150,7 @@ async def get_latest_effort_report(
 async def get_effort_stats(
     user_id: str = "frontend_user",
     effort_report_usecase: EffortReportUseCase = Depends(get_effort_report_usecase),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """努力統計情報を取得"""
     try:
         reports_result = await effort_report_usecase.get_effort_reports(user_id)

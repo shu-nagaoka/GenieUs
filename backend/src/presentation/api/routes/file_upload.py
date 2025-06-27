@@ -1,13 +1,11 @@
-"""
-ファイルアップロード関連のAPIエンドポイント
+"""ファイルアップロード関連のAPIエンドポイント
 """
 
 import os
 import uuid
 from pathlib import Path
-from typing import Optional
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, Form
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -27,9 +25,9 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 class UploadResponse(BaseModel):
     success: bool
-    file_url: Optional[str] = None
-    file_id: Optional[str] = None
-    message: Optional[str] = None
+    file_url: str | None = None
+    file_id: str | None = None
+    message: str | None = None
 
 
 def is_valid_image(filename: str) -> bool:
@@ -39,14 +37,13 @@ def is_valid_image(filename: str) -> bool:
 
 @router.post("/upload/image", response_model=UploadResponse)
 async def upload_image(file: UploadFile = File(...), user_id: str = Form(default="frontend_user")):
-    """
-    画像ファイルをアップロード
+    """画像ファイルをアップロード
     """
     try:
         # ファイル形式のチェック
         if not is_valid_image(file.filename or ""):
             raise HTTPException(
-                status_code=400, detail="サポートされていないファイル形式です。JPG、PNG、GIF、WebPのみ対応しています。"
+                status_code=400, detail="サポートされていないファイル形式です。JPG、PNG、GIF、WebPのみ対応しています。",
             )
 
         # ファイルサイズのチェック
@@ -68,19 +65,18 @@ async def upload_image(file: UploadFile = File(...), user_id: str = Form(default
         file_url = f"/api/v1/files/images/{new_filename}"
 
         return UploadResponse(
-            success=True, file_url=file_url, file_id=file_id, message="画像が正常にアップロードされました"
+            success=True, file_url=file_url, file_id=file_id, message="画像が正常にアップロードされました",
         )
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ファイルアップロード中にエラーが発生しました: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"ファイルアップロード中にエラーが発生しました: {e!s}")
 
 
 @router.get("/images/{filename}")
 async def get_image(filename: str):
-    """
-    アップロードされた画像を取得
+    """アップロードされた画像を取得
     """
     try:
         file_path = IMAGES_DIR / filename
@@ -109,13 +105,12 @@ async def get_image(filename: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ファイル取得中にエラーが発生しました: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"ファイル取得中にエラーが発生しました: {e!s}")
 
 
 @router.delete("/images/{filename}")
 async def delete_image(filename: str, user_id: str = "frontend_user"):
-    """
-    アップロードされた画像を削除
+    """アップロードされた画像を削除
     """
     try:
         file_path = IMAGES_DIR / filename
@@ -131,4 +126,4 @@ async def delete_image(filename: str, user_id: str = "frontend_user"):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ファイル削除中にエラーが発生しました: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"ファイル削除中にエラーが発生しました: {e!s}")

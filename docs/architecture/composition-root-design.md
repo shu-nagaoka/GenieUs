@@ -205,20 +205,81 @@ def _create_image_analysis_tool(self, usecase: ImageAnalysisUseCase) -> Function
 
 ## 🔄 DIContainerからの移行
 
-### 移行の理由
+### 移行の理由 - なぜADKでComposition Rootが必要だったか
+
+#### 🚫 ADK + dependency-injectorの致命的問題
 
 ```
-❌ DIContainer問題点:
-- providers.Self()の循環参照問題
-- 複雑すぎる設定ファイル（100行以上）
-- 型安全性の不足
-- テスト時のモック注入困難
+🔥 ADK統合での決定的障壁:
+1. FunctionTool作成タイミング制約
+   - ADKのFunctionToolは初期化時にすべて確定する必要
+   - dependency-injectorのLazy loadingと根本的に相性が悪い
 
-✅ CompositionRoot利点:
-- 純粋なPython組み立て（循環参照なし）
-- シンプルで理解しやすい
-- 完全な型安全性
-- テスト時の柔軟なモック注入
+2. Google ADK特有の制約
+   - エージェント初期化時にツールリスト確定が必須
+   - 動的な依存解決ができない（ADK内部仕様）
+
+3. providers.Self()循環参照の深刻化
+   - ツール → UseCase → Repository → Loggerの複雑な依存関係
+   - ADK FunctionTool作成時に解決不可能な循環参照が頻発
+```
+
+#### 🎯 商用環境での一般的でない理由
+
+**普通のPython商用プロジェクトなら**:
+```python
+# ✅ 通常はこれで十分
+from dependency_injector import containers, providers
+
+class Container(containers.DeclarativeContainer):
+    config = providers.Singleton(get_config)
+    database = providers.Singleton(Database, url=config.provided.db_url)
+    user_service = providers.Factory(UserService, db=database)
+```
+
+**しかしADKプロジェクトでは**:
+```python
+# ❌ ADKでは不可能
+# エージェント初期化時にすべてのツールが必要
+# Lazy loadingでは間に合わない
+agent = Agent(
+    tools=[tool1, tool2, tool3],  # ここで全ツールが確定している必要
+    model="gemini-2.5-flash"
+)
+```
+
+#### 💡 結論: ADK特有の制約が手組みを強制
+
+```
+通常のPythonプロジェクト: dependency-injectorで十分
+ADKプロジェクト: 初期化タイミング制約でComposition Root必須
+```
+
+#### 📊 商用での位置づけ
+
+| プロジェクト種別 | 推奨DI | 理由 |
+|-----------------|-------|------|
+| **一般的なWebAPI** | dependency-injector | 標準的・チーム開発向け |
+| **ADK統合プロジェクト** | Composition Root | ADK制約による必須選択 |
+| **マイクロサービス** | dependency-injector | 統一パターン重視 |
+| **AI Agent系** | Composition Root | 初期化制約が厳しい |
+
+**📝 重要**: GenieUsの手組みComposition Rootは「ADK制約による技術的必然」であり、「設計の好み」ではありません。
+
+```
+❌ DIContainer問題点（ADK環境特有）:
+- providers.Self()の循環参照問題（ツール作成時に解決不可）
+- 複雑すぎる設定ファイル（100行以上、ADKツール初期化で破綻）
+- 型安全性の不足（ADK FunctionToolでの型不整合）
+- テスト時のモック注入困難（ADKツール初期化後は変更不可）
+- Lazy loading vs ADK初期化タイミングの根本的衝突
+
+✅ CompositionRoot利点（ADK統合での唯一解）:
+- 純粋なPython組み立て（循環参照完全回避）
+- ADK初期化タイミングに完全対応
+- 完全な型安全性（FunctionTool作成確実）
+- テスト時の柔軟なモック注入（初期化前にモック可能）
+- 初期化順序の完全制御（ADK要求仕様に準拠）
 ```
 
 ### 移行手順

@@ -16,11 +16,11 @@ NC='\033[0m' # No Color
 # ロゴ表示
 print_logo() {
     echo -e "${YELLOW}"
-    echo "   ____            _      _   _           _   "
-    echo "  / ___| ___ _ __ (_) ___| \ | | ___  ___| |_ "
-    echo " | |  _ / _ \ '_ \| |/ _ \|  \| |/ _ \/ __| __|"
-    echo " | |_| |  __/ | | | |  __/ |\  |  __/\__ \ |_ "
-    echo "  \____|\___|_| |_|_|\___|_| \_|\___||___/\__|"
+    echo "   ____            _      _   _       "
+    echo "  / ___| ___ _ __ (_) ___| | | |___   "
+    echo " | |  _ / _ \ '_ \| |/ _ \ | | / __|  "
+    echo " | |_| |  __/ | | | |  __/ |_| \__ \  "
+    echo "  \____|\___|_| |_|_|\___|\\___/|___/  "
     echo -e "${NC}"
     echo -e "${BLUE}🧞‍♂️ AI子育て支援アプリケーション - 開発統合メニュー${NC}"
     echo -e "${GREEN}✨ あなたの育児をサポートする魔法のジーニー ✨${NC}"
@@ -33,29 +33,40 @@ show_menu() {
     echo -e "${CYAN}           GenieUs 開発メニュー${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${GREEN}🚀 開発環境 (ローカル)${NC}"
-    echo -e "  ${YELLOW}1${NC}) 開発環境起動 (フロント+バック/ローカル)"
-    echo -e "  ${YELLOW}2${NC}) 開発環境停止 (全プロセス停止)"
-    echo ""
-    echo -e "${BLUE}🐳 Docker環境${NC}"
-    echo -e "  ${YELLOW}3${NC}) Docker開発環境起動 (./run.sh dev)"
-    echo -e "  ${YELLOW}4${NC}) Docker本番環境起動 (./run.sh prod)"
-    echo -e "  ${YELLOW}5${NC}) Dockerサービス停止 (./run.sh stop)"
-    echo -e "  ${YELLOW}6${NC}) Dockerクリーンアップ (./run.sh clean)"
+    echo -e "${GREEN}🚀 開発環境 (よく使う)${NC}"
+    echo -e "  ${YELLOW}1${NC}) 開発環境起動 (フロント:3000+バック:8000)"
+    echo -e "  ${YELLOW}2${NC}) テスト環境起動 (フロント:3001+バック:8001)"
+    echo -e "  ${YELLOW}3${NC}) インタラクティブ起動メニュー (環境選択)"
+    echo -e "  ${YELLOW}4${NC}) 開発環境停止 (全プロセス停止)"
     echo ""
     echo -e "${CYAN}🔧 開発ツール${NC}"
-    echo -e "  ${YELLOW}7${NC}) FastAPI単体起動 (バックエンドのみ)"
-    echo -e "  ${YELLOW}8${NC}) ADK Web UI起動 (エージェントテスト)"
-    echo -e "  ${YELLOW}9${NC}) ADK + FastAPI 同時起動 (統合開発)"
-    echo -e "  ${YELLOW}10${NC}) API テスト (curl でエンドポイント確認)"
-    echo -e "  ${YELLOW}11${NC}) ログ確認"
+    echo -e "  ${YELLOW}5${NC}) FastAPI単体起動 (バックエンドのみ)"
+    echo -e "  ${YELLOW}6${NC}) ADK Web UI起動 (エージェントテスト)"
+    echo -e "  ${YELLOW}7${NC}) ADK + FastAPI 同時起動 (統合開発)"
+    echo -e "  ${YELLOW}8${NC}) API テスト (curl でエンドポイント確認)"
+    echo -e "  ${YELLOW}9${NC}) ログ確認"
+    echo ""
+    echo -e "${BLUE}🐳 Docker環境${NC}"
+    echo -e "  ${YELLOW}10${NC}) Docker開発環境起動 (./run.sh dev)"
+    echo -e "  ${YELLOW}11${NC}) Docker本番環境起動 (./run.sh prod)"
+    echo -e "  ${YELLOW}12${NC}) Dockerサービス停止 (./run.sh stop)"
+    echo -e "  ${YELLOW}13${NC}) Dockerクリーンアップ (./run.sh clean)"
     echo ""
     echo -e "${GREEN}☁️  Cloud Run デプロイメント${NC}"
-    echo -e "  ${YELLOW}12${NC}) Cloud Run ステージング デプロイ"
-    echo -e "  ${YELLOW}13${NC}) Cloud Run 本番 デプロイ"
-    echo -e "  ${YELLOW}14${NC}) Cloud Run サービス状態確認"
-    echo -e "  ${YELLOW}15${NC}) Cloud Run ログ確認"
-    echo -e "  ${YELLOW}16${NC}) Cloud Run 設定・環境確認"
+    echo -e "  ${YELLOW}14${NC}) Cloud Run ステージング デプロイ"
+    echo -e "  ${YELLOW}15${NC}) Cloud Run 本番 デプロイ"
+    echo -e "  ${YELLOW}16${NC}) Cloud Run サービス状態確認"
+    echo -e "  ${YELLOW}17${NC}) Cloud Run ログ確認"
+    echo -e "  ${YELLOW}18${NC}) Cloud Run 設定・環境確認"
+    echo ""
+    echo -e "${GREEN}☁️  GCP管理${NC}"
+    echo -e "  ${YELLOW}19${NC}) GCPプロジェクト切り替え"
+    echo -e "  ${YELLOW}20${NC}) GCP認証・設定確認"
+    echo -e "  ${YELLOW}21${NC}) GCP権限・API詳細調査"
+    echo ""
+    echo -e "${CYAN}🔗 API整合性管理${NC}"
+    echo -e "  ${YELLOW}22${NC}) API URL整合性チェック (フロント⇔バック)"
+    echo -e "  ${YELLOW}23${NC}) APIマッピング自動更新"
     echo ""
     echo -e "${RED}🛑 その他${NC}"
     echo -e "  ${YELLOW}0${NC}) 終了"
@@ -69,10 +80,60 @@ start_local_dev() {
     ./scripts/start_dev.sh
 }
 
-# 2. ローカル開発環境停止
+# 2. ローカル開発環境停止 (全ポート対応)
 stop_local_dev() {
-    echo -e "${YELLOW}🛑 ローカル開発環境を停止します...${NC}"
-    ./scripts/stop_dev.sh
+    echo -e "${YELLOW}🛑 全開発環境を停止します...${NC}"
+    echo "停止するポートを選択してください:"
+    echo "  1) 通常の開発環境 (3000/8000)"
+    echo "  2) AI開発支援テスト環境 (30001/8001)"
+    echo "  3) 全ポート停止 (3000/8000/30001/8001)"
+    echo "  4) スクリプト使用 (./scripts/stop_dev.sh)"
+    echo ""
+    read -p "選択 (1-4): " stop_choice
+    
+    case $stop_choice in
+        1)
+            echo "開発環境 (3000/8000) を停止中..."
+            lsof -ti:3000 | xargs kill -9 2>/dev/null && echo "   ✅ ポート3000を停止" || echo "   ポート3000: プロセスなし"
+            lsof -ti:8000 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8000を停止" || echo "   ポート8000: プロセスなし"
+            ;;
+        2)
+            echo "テスト環境 (3001/8001) を停止中..."
+            lsof -ti:3001 | xargs kill -9 2>/dev/null && echo "   ✅ ポート3001を停止" || echo "   ポート3001: プロセスなし"
+            lsof -ti:8001 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8001を停止" || echo "   ポート8001: プロセスなし"
+            
+            # .env.localを復元
+            if [ -f frontend/.env.local.backup ]; then
+                cd frontend
+                mv .env.local.backup .env.local
+                echo "   ✅ 元の.env.localを復元"
+                cd ..
+            fi
+            ;;
+        3)
+            echo "全ポート (3000/8000/3001/8001) を停止中..."
+            lsof -ti:3000 | xargs kill -9 2>/dev/null && echo "   ✅ ポート3000を停止" || echo "   ポート3000: プロセスなし"
+            lsof -ti:8000 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8000を停止" || echo "   ポート8000: プロセスなし"
+            lsof -ti:3001 | xargs kill -9 2>/dev/null && echo "   ✅ ポート3001を停止" || echo "   ポート3001: プロセスなし"
+            lsof -ti:8001 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8001を停止" || echo "   ポート8001: プロセスなし"
+            
+            # .env.localを復元
+            if [ -f frontend/.env.local.backup ]; then
+                cd frontend
+                mv .env.local.backup .env.local
+                echo "   ✅ 元の.env.localを復元"
+                cd ..
+            fi
+            ;;
+        4)
+            echo "スクリプトで停止中..."
+            ./scripts/stop_dev.sh
+            ;;
+        *)
+            echo -e "${RED}無効な選択です${NC}"
+            ;;
+    esac
+    echo -e "${GREEN}停止処理完了${NC}"
 }
 
 # 3. Docker開発環境起動
@@ -657,6 +718,970 @@ check_file_exists() {
     fi
 }
 
+# 17. テスト環境起動 (AI開発支援用ポート3001+8001)
+start_test_environment() {
+    echo -e "${CYAN}🤖 AI開発支援用テスト環境を起動します...${NC}"
+    echo -e "${YELLOW}⚠️  開発者ローカル環境(3000/8000)との競合を避けるため、3001/8001ポートを使用します${NC}"
+    echo ""
+    
+    # 既存プロセス停止
+    echo "📛 既存のテスト環境プロセスを停止中..."
+    lsof -ti:3001 | xargs kill -9 2>/dev/null && echo "   ✅ ポート3001を停止" || echo "   ポート3001: プロセスなし"
+    lsof -ti:8001 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8001を停止" || echo "   ポート8001: プロセスなし"
+    
+    sleep 2
+    
+    # FastAPI起動 (ポート8001)
+    echo -e "${GREEN}🔧 FastAPI (ポート8001) を起動中...${NC}"
+    cd backend
+    
+    # 環境チェック
+    if [ ! -f .env.dev ]; then
+        echo -e "${YELLOW}⚠️  .env.devファイルが見つかりません${NC}"
+        echo -e "${YELLOW}   環境変数なしで起動します${NC}"
+    fi
+    
+    # 環境変数を設定してバックエンド起動
+    echo -e "${CYAN}バックエンド (ポート8001) を起動中...${NC}"
+    PORT=8001 FRONTEND_PORT=3001 LOG_LEVEL=info uv run python -m src.main &
+    
+    FASTAPI_PID=$!
+    echo "   FastAPI PID: $FASTAPI_PID"
+    cd ..
+    
+    sleep 3
+    
+    # フロントエンド起動 (ポート3001)
+    echo -e "${GREEN}🎨 フロントエンド (ポート3001) を起動中...${NC}"
+    cd frontend
+    
+    # 元の.env.localをバックアップしてテスト環境設定を適用
+    if [ -f .env.test ]; then
+        if [ -f .env.local ]; then
+            cp .env.local .env.local.backup
+            echo "   元の.env.localをバックアップ"
+        fi
+        cp .env.test .env.local
+        echo "   テスト環境設定(.env.test)を適用"
+    fi
+    
+    # Next.js開発サーバーをポート3001で起動（API URLも設定）
+    NEXT_PUBLIC_API_URL=http://localhost:8001/api/v1 npm run dev -- -p 3001 &
+    FRONTEND_PID=$!
+    echo "   フロントエンド PID: $FRONTEND_PID"
+    cd ..
+    
+    sleep 3
+    
+    echo ""
+    echo -e "${GREEN}✅ AI開発支援用テスト環境起動完了！${NC}"
+    echo ""
+    echo -e "${BLUE}📱 フロントエンド (テスト): http://localhost:3001${NC}"
+    echo -e "${BLUE}🔌 FastAPI (テスト): http://localhost:8001${NC}"
+    echo -e "${BLUE}📖 API ドキュメント (テスト): http://localhost:8001/docs${NC}"
+    echo ""
+    echo -e "${CYAN}💡 開発者ローカル環境との分離：${NC}"
+    echo -e "   📍 開発者用: フロント 3000、バック 8000"
+    echo -e "   🤖 AI支援用: フロント 3001、バック 8001"
+    echo ""
+    echo -e "${YELLOW}停止するには選択肢2で全停止してください${NC}"
+}
+
+# 18. GCPプロジェクト切り替え
+switch_gcp_project() {
+    echo -e "${CYAN}☁️  GCPプロジェクト切り替え${NC}"
+    echo ""
+    
+    # gcloud CLIチェック
+    if ! command -v gcloud &> /dev/null; then
+        echo -e "${RED}❌ gcloud CLIがインストールされていません${NC}"
+        echo -e "${YELLOW}   https://cloud.google.com/sdk/docs/install からインストールしてください${NC}"
+        return 1
+    fi
+    
+    # 現在の設定表示
+    echo -e "${BLUE}=== 現在の設定 ===${NC}"
+    local current_project=$(gcloud config get-value project 2>/dev/null || echo "未設定")
+    local current_account=$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>/dev/null || echo "未ログイン")
+    
+    echo -e "現在のプロジェクト: ${YELLOW}$current_project${NC}"
+    echo -e "現在のアカウント: ${YELLOW}$current_account${NC}"
+    echo ""
+    
+    # 認証チェック
+    if [ "$current_account" = "未ログイン" ]; then
+        echo -e "${RED}❌ GCPにログインしていません${NC}"
+        echo -e "${YELLOW}先にログインしますか？ (y/N): ${NC}"
+        read -p "" login_choice
+        if [[ $login_choice =~ ^[Yy]$ ]]; then
+            echo -e "${CYAN}ログイン中...${NC}"
+            gcloud auth login
+            if [ $? -ne 0 ]; then
+                echo -e "${RED}❌ ログインに失敗しました${NC}"
+                return 1
+            fi
+        else
+            echo -e "${YELLOW}ログインがキャンセルされました${NC}"
+            return 1
+        fi
+    fi
+    
+    # プロジェクト選択
+    echo -e "${BLUE}=== プロジェクト選択 ===${NC}"
+    echo "切り替え方法を選択してください:"
+    echo "  1) プロジェクト一覧から選択"
+    echo "  2) プロジェクトIDを直接入力"
+    echo "  3) よく使うプロジェクト（プリセット）"
+    echo "  0) キャンセル"
+    echo ""
+    read -p "選択 (0-3): " switch_choice
+    
+    case $switch_choice in
+        1)
+            echo -e "${CYAN}プロジェクト一覧を取得中...${NC}"
+            echo ""
+            
+            # プロジェクト一覧を取得
+            local projects=$(gcloud projects list --format="table(projectId,name)" --sort-by=projectId 2>/dev/null)
+            if [ $? -ne 0 ]; then
+                echo -e "${RED}❌ プロジェクト一覧の取得に失敗しました${NC}"
+                return 1
+            fi
+            
+            echo "$projects"
+            echo ""
+            read -p "プロジェクトIDを入力してください: " project_id
+            ;;
+        2)
+            read -p "プロジェクトIDを入力してください: " project_id
+            ;;
+        3)
+            echo -e "${CYAN}よく使うプロジェクト:${NC}"
+            echo "  1) team-sa-labo"
+            echo "  2) genius-dev"
+            echo "  3) genius-staging"
+            echo "  4) genius-production"
+            echo ""
+            read -p "選択 (1-4): " preset_choice
+            
+            case $preset_choice in
+                1) project_id="team-sa-labo" ;;
+                2) project_id="genius-dev" ;;
+                3) project_id="genius-staging" ;;
+                4) project_id="genius-production" ;;
+                *) 
+                    echo -e "${RED}無効な選択です${NC}"
+                    return 1
+                    ;;
+            esac
+            ;;
+        0)
+            echo -e "${YELLOW}キャンセルされました${NC}"
+            return 0
+            ;;
+        *)
+            echo -e "${RED}無効な選択です${NC}"
+            return 1
+            ;;
+    esac
+    
+    # プロジェクトIDの検証
+    if [ -z "$project_id" ]; then
+        echo -e "${RED}❌ プロジェクトIDが入力されていません${NC}"
+        return 1
+    fi
+    
+    # プロジェクト切り替え実行
+    echo -e "${CYAN}プロジェクトを '$project_id' に切り替え中...${NC}"
+    gcloud config set project "$project_id"
+    
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ プロジェクト切り替え完了${NC}"
+        echo ""
+        
+        # 切り替え後の確認
+        echo -e "${BLUE}=== 切り替え後の設定 ===${NC}"
+        echo -e "プロジェクト: ${GREEN}$(gcloud config get-value project 2>/dev/null)${NC}"
+        echo -e "アカウント: ${GREEN}$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>/dev/null)${NC}"
+        
+        # アカウント・プロジェクト適合性チェック
+        echo ""
+        echo -e "${YELLOW}アカウント・プロジェクト適合性をチェックしますか？ (y/N): ${NC}"
+        read -p "" check_compatibility
+        if [[ $check_compatibility =~ ^[Yy]$ ]]; then
+            check_account_project_compatibility "$project_id"
+        fi
+    else
+        echo -e "${RED}❌ プロジェクト切り替えに失敗しました${NC}"
+        echo -e "${YELLOW}   プロジェクトIDが正しいか、権限があるか確認してください${NC}"
+        return 1
+    fi
+}
+
+# 19. GCP認証・設定確認
+check_gcp_auth_config() {
+    echo -e "${CYAN}☁️  GCP認証・設定確認${NC}"
+    echo ""
+    
+    # gcloud CLIチェック
+    echo -e "${BLUE}=== gcloud CLI ===${NC}"
+    if command -v gcloud &> /dev/null; then
+        echo -e "✅ gcloud CLI: インストール済み"
+        local gcloud_version=$(gcloud --version | head -n1)
+        echo -e "   バージョン: $gcloud_version"
+    else
+        echo -e "❌ gcloud CLI: 未インストール"
+        echo -e "${YELLOW}   https://cloud.google.com/sdk/docs/install からインストールしてください${NC}"
+        return 1
+    fi
+    echo ""
+    
+    # 認証状態確認
+    echo -e "${BLUE}=== 認証状態 ===${NC}"
+    local auth_accounts=$(gcloud auth list --format="table(account,status)" 2>/dev/null)
+    if [ $? -eq 0 ]; then
+        echo "$auth_accounts"
+        
+        local active_account=$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>/dev/null)
+        if [ -n "$active_account" ]; then
+            echo -e "✅ アクティブアカウント: ${GREEN}$active_account${NC}"
+        else
+            echo -e "❌ アクティブアカウント: なし"
+            echo -e "${YELLOW}   'gcloud auth login' でログインしてください${NC}"
+        fi
+    else
+        echo -e "❌ 認証情報の取得に失敗しました"
+    fi
+    echo ""
+    
+    # プロジェクト設定確認
+    echo -e "${BLUE}=== プロジェクト設定 ===${NC}"
+    local current_project=$(gcloud config get-value project 2>/dev/null)
+    if [ -n "$current_project" ]; then
+        echo -e "✅ 現在のプロジェクト: ${GREEN}$current_project${NC}"
+        
+        # プロジェクト詳細取得
+        local project_info=$(gcloud projects describe "$current_project" --format="value(name,projectNumber)" 2>/dev/null)
+        if [ $? -eq 0 ]; then
+            echo -e "   プロジェクト詳細: $project_info"
+        fi
+    else
+        echo -e "❌ プロジェクト: 未設定"
+        echo -e "${YELLOW}   'gcloud config set project PROJECT_ID' で設定してください${NC}"
+    fi
+    echo ""
+    
+    # 設定一覧
+    echo -e "${BLUE}=== gcloud設定一覧 ===${NC}"
+    gcloud config list 2>/dev/null | head -20
+    echo ""
+    
+    # 利用可能なプロジェクト（権限チェック）
+    echo -e "${BLUE}=== 利用可能なプロジェクト ===${NC}"
+    echo -e "${CYAN}アクセス可能なプロジェクト一覧を取得中...${NC}"
+    local projects=$(gcloud projects list --format="table(projectId,name,projectNumber)" --limit=10 2>/dev/null)
+    if [ $? -eq 0 ]; then
+        echo "$projects"
+    else
+        echo -e "${YELLOW}プロジェクト一覧の取得に失敗しました（権限不足の可能性）${NC}"
+    fi
+    echo ""
+    
+    # ADC (Application Default Credentials) 確認
+    echo -e "${BLUE}=== Application Default Credentials ===${NC}"
+    if gcloud auth application-default print-access-token &>/dev/null; then
+        echo -e "✅ ADC: 設定済み"
+        local adc_account=$(gcloud auth application-default print-access-token | head -c 20 2>/dev/null)
+        echo -e "   アクセストークン: ${adc_account}... (一部のみ表示)"
+    else
+        echo -e "❌ ADC: 未設定"
+        echo -e "${YELLOW}   'gcloud auth application-default login' で設定してください${NC}"
+    fi
+    echo ""
+    
+    # アカウント・プロジェクト適合性チェック
+    if [ -n "$current_project" ] && [ "$active_account" != "未ログイン" ]; then
+        echo -e "${BLUE}=== アカウント・プロジェクト適合性 ===${NC}"
+        check_account_project_compatibility "$current_project"
+        echo ""
+    fi
+    
+    # クイックアクション
+    echo -e "${BLUE}=== クイックアクション ===${NC}"
+    echo "実行したいアクションを選択してください:"
+    echo "  1) 新しいアカウントでログイン"
+    echo "  2) ADC設定"
+    echo "  3) プロジェクト切り替え"
+    echo "  4) 設定をリセット"
+    echo "  5) アカウント・プロジェクト適合性詳細チェック"
+    echo "  0) 戻る"
+    echo ""
+    read -p "選択 (0-5): " action_choice
+    
+    case $action_choice in
+        1)
+            echo -e "${CYAN}新しいアカウントでログイン中...${NC}"
+            gcloud auth login
+            ;;
+        2)
+            echo -e "${CYAN}ADC設定中...${NC}"
+            gcloud auth application-default login
+            ;;
+        3)
+            switch_gcp_project
+            ;;
+        4)
+            echo -e "${RED}設定をリセットしますか？ (y/N): ${NC}"
+            read -p "" reset_confirm
+            if [[ $reset_confirm =~ ^[Yy]$ ]]; then
+                echo -e "${CYAN}設定リセット中...${NC}"
+                gcloud auth revoke --all
+                gcloud config unset project
+                echo -e "${GREEN}✅ 設定がリセットされました${NC}"
+            fi
+            ;;
+        5)
+            if [ -n "$current_project" ]; then
+                check_account_project_compatibility "$current_project" "detailed"
+            else
+                echo -e "${YELLOW}プロジェクトが設定されていません${NC}"
+            fi
+            ;;
+        0)
+            echo -e "${YELLOW}戻ります${NC}"
+            ;;
+        *)
+            echo -e "${RED}無効な選択です${NC}"
+            ;;
+    esac
+}
+
+# アカウント・プロジェクト適合性チェック
+check_account_project_compatibility() {
+    local project_id=$1
+    local mode=${2:-"simple"}  # simple or detailed
+    
+    if [ -z "$project_id" ]; then
+        echo -e "${RED}❌ プロジェクトIDが指定されていません${NC}"
+        return 1
+    fi
+    
+    local current_account=$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>/dev/null)
+    if [ -z "$current_account" ]; then
+        echo -e "${RED}❌ アクティブなアカウントが見つかりません${NC}"
+        return 1
+    fi
+    
+    echo -e "${CYAN}🔍 アカウント・プロジェクト適合性チェック中...${NC}"
+    echo -e "アカウント: ${YELLOW}$current_account${NC}"
+    echo -e "プロジェクト: ${YELLOW}$project_id${NC}"
+    echo ""
+    
+    # 1. プロジェクトアクセス権チェック
+    echo -e "${BLUE}📋 プロジェクトアクセス権:${NC}"
+    if gcloud projects describe "$project_id" &>/dev/null; then
+        echo -e "✅ プロジェクトにアクセス可能"
+        
+        # プロジェクト詳細情報
+        local project_info=$(gcloud projects describe "$project_id" --format="value(name,projectNumber,lifecycleState)" 2>/dev/null)
+        if [ -n "$project_info" ]; then
+            echo -e "   プロジェクト情報: $project_info"
+        fi
+    else
+        echo -e "❌ プロジェクトにアクセス不可"
+        echo -e "${YELLOW}   権限がないか、プロジェクトが存在しません${NC}"
+        return 1
+    fi
+    echo ""
+    
+    # 2. IAM権限チェック
+    echo -e "${BLUE}🔐 IAM権限:${NC}"
+    local iam_roles=$(gcloud projects get-iam-policy "$project_id" \
+        --flatten="bindings" \
+        --format="value(bindings.role)" \
+        --filter="bindings.members:user:$current_account" 2>/dev/null | sort | uniq)
+    
+    if [ -n "$iam_roles" ]; then
+        echo -e "✅ IAM権限あり"
+        echo -e "${CYAN}   付与されている役割:${NC}"
+        while IFS= read -r role; do
+            if [ -n "$role" ]; then
+                echo -e "   - $role"
+            fi
+        done <<< "$iam_roles"
+    else
+        echo -e "❌ IAM権限なし"
+        echo -e "${YELLOW}   このアカウントにはプロジェクトの明示的な権限がありません${NC}"
+    fi
+    echo ""
+    
+    # 3. アカウントドメインチェック
+    echo -e "${BLUE}📧 アカウントドメイン分析:${NC}"
+    local account_domain=$(echo "$current_account" | cut -d'@' -f2)
+    echo -e "   ドメイン: ${YELLOW}$account_domain${NC}"
+    
+    # 推奨ドメインチェック
+    case "$account_domain" in
+        "gmail.com")
+            echo -e "   📱 個人アカウント (Gmail)"
+            ;;
+        "googlemail.com")
+            echo -e "   📱 個人アカウント (Gmail)"
+            ;;
+        *)
+            echo -e "   🏢 組織アカウント ($account_domain)"
+            ;;
+    esac
+    echo ""
+    
+    # 4. プロジェクト・アカウント適合性判定
+    echo -e "${BLUE}🎯 適合性判定:${NC}"
+    
+    # プロジェクト名からの推測
+    local compatibility_score=0
+    local recommendations=()
+    
+    case "$project_id" in
+        *"team-sa-labo"*)
+            if [[ "$account_domain" == "gmail.com" || "$account_domain" == "googlemail.com" ]]; then
+                echo -e "✅ 個人開発プロジェクト + 個人アカウント: 適合"
+                compatibility_score=$((compatibility_score + 2))
+            else
+                echo -e "⚠️  個人開発プロジェクト + 組織アカウント: 注意"
+                recommendations+=("個人プロジェクトには個人アカウントを推奨")
+            fi
+            ;;
+        *"genius"*|*"production"*|*"staging"*)
+            if [[ "$account_domain" != "gmail.com" && "$account_domain" != "googlemail.com" ]]; then
+                echo -e "✅ 本番/ステージング環境 + 組織アカウント: 適合"
+                compatibility_score=$((compatibility_score + 2))
+            else
+                echo -e "⚠️  本番/ステージング環境 + 個人アカウント: 注意"
+                recommendations+=("本番環境には組織アカウントを推奨")
+            fi
+            ;;
+        *)
+            echo -e "🔍 プロジェクト種別を特定できません"
+            compatibility_score=$((compatibility_score + 1))
+            ;;
+    esac
+    
+    # 権限レベルによる判定
+    if echo "$iam_roles" | grep -q "roles/owner"; then
+        echo -e "✅ オーナー権限: 完全なアクセス権限"
+        compatibility_score=$((compatibility_score + 2))
+    elif echo "$iam_roles" | grep -q "roles/editor"; then
+        echo -e "✅ 編集者権限: 開発作業に適切"
+        compatibility_score=$((compatibility_score + 2))
+    elif echo "$iam_roles" | grep -q "roles/viewer"; then
+        echo -e "⚠️  閲覧者権限: 読み取り専用"
+        recommendations+=("開発作業には編集者権限以上が必要")
+    elif [ -n "$iam_roles" ]; then
+        echo -e "ℹ️  カスタム権限: 個別設定"
+        compatibility_score=$((compatibility_score + 1))
+    fi
+    
+    # 総合判定
+    echo ""
+    if [ $compatibility_score -ge 4 ]; then
+        echo -e "${GREEN}🎉 総合判定: 適合 (スコア: $compatibility_score/4)${NC}"
+        echo -e "${GREEN}   このアカウント・プロジェクトの組み合わせは適切です${NC}"
+    elif [ $compatibility_score -ge 2 ]; then
+        echo -e "${YELLOW}⚠️  総合判定: 注意 (スコア: $compatibility_score/4)${NC}"
+        echo -e "${YELLOW}   使用可能ですが、以下の推奨事項を確認してください${NC}"
+    else
+        echo -e "${RED}❌ 総合判定: 不適合 (スコア: $compatibility_score/4)${NC}"
+        echo -e "${RED}   アカウントまたはプロジェクトの見直しを推奨します${NC}"
+    fi
+    
+    # 推奨事項表示
+    if [ ${#recommendations[@]} -gt 0 ]; then
+        echo ""
+        echo -e "${BLUE}📝 推奨事項:${NC}"
+        for rec in "${recommendations[@]}"; do
+            echo -e "   • $rec"
+        done
+    fi
+    
+    # 詳細モードの場合は追加情報
+    if [ "$mode" = "detailed" ]; then
+        echo ""
+        echo -e "${BLUE}🔍 詳細情報:${NC}"
+        
+        # API有効化状況
+        echo -e "${CYAN}API有効化状況:${NC}"
+        local enabled_apis=$(gcloud services list --enabled --format="value(config.name)" --limit=10 2>/dev/null | head -5)
+        if [ -n "$enabled_apis" ]; then
+            echo -e "   有効なAPI (上位5つ):"
+            while IFS= read -r api; do
+                if [ -n "$api" ]; then
+                    echo -e "   - $api"
+                fi
+            done <<< "$enabled_apis"
+        else
+            echo -e "   API情報を取得できませんでした"
+        fi
+        
+        # 利用量・課金情報（権限があれば）
+        echo ""
+        echo -e "${CYAN}プロジェクト利用状況:${NC}"
+        if gcloud compute instances list --format="value(name)" --limit=1 &>/dev/null; then
+            local compute_count=$(gcloud compute instances list --format="value(name)" 2>/dev/null | wc -l)
+            echo -e "   Compute Engine インスタンス: $compute_count台"
+        fi
+        
+        if gcloud run services list --format="value(metadata.name)" --limit=1 &>/dev/null; then
+            local run_count=$(gcloud run services list --format="value(metadata.name)" 2>/dev/null | wc -l)
+            echo -e "   Cloud Run サービス: $run_count個"
+        fi
+    fi
+    
+    echo ""
+    return 0
+}
+
+# 20. GCP権限・API詳細調査
+check_gcp_permissions_detailed() {
+    echo -e "${CYAN}🔍 GCP権限・API詳細調査${NC}"
+    echo ""
+    
+    # gcloud CLIチェック
+    if ! command -v gcloud &> /dev/null; then
+        echo -e "${RED}❌ gcloud CLIがインストールされていません${NC}"
+        return 1
+    fi
+    
+    # プロジェクト確認
+    local current_project=$(gcloud config get-value project 2>/dev/null)
+    local current_account=$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>/dev/null)
+    
+    if [ -z "$current_project" ] || [ -z "$current_account" ]; then
+        echo -e "${RED}❌ プロジェクトまたはアカウントが設定されていません${NC}"
+        return 1
+    fi
+    
+    echo -e "${BLUE}=== 基本情報 ===${NC}"
+    echo -e "プロジェクト: ${YELLOW}$current_project${NC}"
+    echo -e "アカウント: ${YELLOW}$current_account${NC}"
+    echo ""
+    
+    # 調査項目選択
+    echo -e "${BLUE}調査項目を選択してください:${NC}"
+    echo "  1) 全体権限サマリー（推奨）"
+    echo "  2) IAM権限詳細"
+    echo "  3) API有効化状況"
+    echo "  4) Vertex AI / Gemini 権限"
+    echo "  5) Cloud Run 権限"
+    echo "  6) 必要権限診断"
+    echo "  7) 全調査実行"
+    echo "  0) 戻る"
+    echo ""
+    read -p "選択 (0-7): " investigation_choice
+    
+    case $investigation_choice in
+        1) check_permissions_summary "$current_project" "$current_account" ;;
+        2) check_iam_permissions_detailed "$current_project" "$current_account" ;;
+        3) check_api_status_detailed "$current_project" ;;
+        4) check_vertex_ai_permissions "$current_project" "$current_account" ;;
+        5) check_cloud_run_permissions "$current_project" "$current_account" ;;
+        6) diagnose_required_permissions "$current_project" "$current_account" ;;
+        7) 
+            check_permissions_summary "$current_project" "$current_account"
+            echo ""
+            check_api_status_detailed "$current_project"
+            echo ""
+            check_vertex_ai_permissions "$current_project" "$current_account"
+            echo ""
+            check_cloud_run_permissions "$current_project" "$current_account"
+            echo ""
+            diagnose_required_permissions "$current_project" "$current_account"
+            ;;
+        0) echo -e "${YELLOW}戻ります${NC}" ;;
+        *) echo -e "${RED}無効な選択です${NC}" ;;
+    esac
+}
+
+# 権限サマリー
+check_permissions_summary() {
+    local project_id=$1
+    local account=$2
+    
+    echo -e "${CYAN}📋 全体権限サマリー${NC}"
+    echo ""
+    
+    # プロジェクトアクセス確認
+    if gcloud projects describe "$project_id" &>/dev/null; then
+        echo -e "✅ プロジェクトアクセス: OK"
+    else
+        echo -e "❌ プロジェクトアクセス: NG"
+        return 1
+    fi
+    
+    # 主要な権限チェック
+    local basic_roles=$(gcloud projects get-iam-policy "$project_id" \
+        --flatten="bindings" \
+        --format="value(bindings.role)" \
+        --filter="bindings.members:user:$account" 2>/dev/null | grep -E "(owner|editor|viewer)" | head -3)
+    
+    if [ -n "$basic_roles" ]; then
+        echo -e "✅ 基本権限: $(echo "$basic_roles" | tr '\n' ' ')"
+    else
+        echo -e "⚠️  基本権限: カスタム権限のみ"
+    fi
+    
+    # 重要API確認
+    local critical_apis=("aiplatform.googleapis.com" "run.googleapis.com" "cloudbuild.googleapis.com")
+    local enabled_critical=0
+    
+    for api in "${critical_apis[@]}"; do
+        if gcloud services list --enabled --filter="config.name:$api" --format="value(config.name)" 2>/dev/null | grep -q "$api"; then
+            enabled_critical=$((enabled_critical + 1))
+        fi
+    done
+    
+    echo -e "✅ 重要API有効化: $enabled_critical/${#critical_apis[@]}"
+    
+    # 開発環境適合性
+    if echo "$basic_roles" | grep -q "editor\|owner"; then
+        echo -e "✅ 開発環境適合性: 良好"
+    else
+        echo -e "⚠️  開発環境適合性: 権限不足の可能性"
+    fi
+    
+    echo ""
+}
+
+# IAM権限詳細
+check_iam_permissions_detailed() {
+    local project_id=$1
+    local account=$2
+    
+    echo -e "${CYAN}🔐 IAM権限詳細${NC}"
+    echo ""
+    
+    # すべての権限取得
+    local all_roles=$(gcloud projects get-iam-policy "$project_id" \
+        --flatten="bindings" \
+        --format="value(bindings.role)" \
+        --filter="bindings.members:user:$account" 2>/dev/null | sort)
+    
+    if [ -z "$all_roles" ]; then
+        echo -e "❌ 明示的な権限が見つかりません"
+        echo -e "${YELLOW}   継承された権限または組織レベルの権限がある可能性${NC}"
+        return 1
+    fi
+    
+    echo -e "${BLUE}付与されている権限:${NC}"
+    local role_count=0
+    while IFS= read -r role; do
+        if [ -n "$role" ]; then
+            role_count=$((role_count + 1))
+            
+            # 権限の説明を追加
+            case "$role" in
+                "roles/owner")
+                    echo -e "   $role_count. ${GREEN}$role${NC} - 完全なアクセス権限"
+                    ;;
+                "roles/editor")
+                    echo -e "   $role_count. ${GREEN}$role${NC} - 読み取り・書き込み権限"
+                    ;;
+                "roles/viewer")
+                    echo -e "   $role_count. ${YELLOW}$role${NC} - 読み取り専用"
+                    ;;
+                *"aiplatform"*)
+                    echo -e "   $role_count. ${CYAN}$role${NC} - Vertex AI 関連"
+                    ;;
+                *"run"*)
+                    echo -e "   $role_count. ${CYAN}$role${NC} - Cloud Run 関連"
+                    ;;
+                *"cloudbuild"*)
+                    echo -e "   $role_count. ${CYAN}$role${NC} - Cloud Build 関連"
+                    ;;
+                *)
+                    echo -e "   $role_count. $role"
+                    ;;
+            esac
+        fi
+    done <<< "$all_roles"
+    
+    echo ""
+    echo -e "${BLUE}権限総数: $role_count${NC}"
+    echo ""
+}
+
+# API有効化状況詳細
+check_api_status_detailed() {
+    local project_id=$1
+    
+    echo -e "${CYAN}🔌 API有効化状況詳細${NC}"
+    echo ""
+    
+    # 開発に必要な主要API一覧
+    local required_apis=(
+        "aiplatform.googleapis.com:Vertex AI (Gemini)"
+        "run.googleapis.com:Cloud Run"
+        "cloudbuild.googleapis.com:Cloud Build"
+        "containerregistry.googleapis.com:Container Registry"
+        "storage.googleapis.com:Cloud Storage"
+        "logging.googleapis.com:Cloud Logging"
+        "monitoring.googleapis.com:Cloud Monitoring"
+    )
+    
+    echo -e "${BLUE}重要API確認:${NC}"
+    local enabled_count=0
+    
+    for api_info in "${required_apis[@]}"; do
+        local api_name=$(echo "$api_info" | cut -d':' -f1)
+        local api_desc=$(echo "$api_info" | cut -d':' -f2)
+        
+        if gcloud services list --enabled --filter="config.name:$api_name" --format="value(config.name)" 2>/dev/null | grep -q "$api_name"; then
+            echo -e "   ✅ $api_desc ($api_name)"
+            enabled_count=$((enabled_count + 1))
+        else
+            echo -e "   ❌ $api_desc ($api_name)"
+        fi
+    done
+    
+    echo ""
+    echo -e "${BLUE}有効化状況: $enabled_count/${#required_apis[@]}${NC}"
+    
+    if [ $enabled_count -lt ${#required_apis[@]} ]; then
+        echo ""
+        echo -e "${YELLOW}📝 未有効化APIを有効にする方法:${NC}"
+        echo -e "   gcloud services enable [API名]"
+        echo -e "   例: gcloud services enable aiplatform.googleapis.com"
+    fi
+    
+    # 全体のAPI数確認
+    local total_enabled=$(gcloud services list --enabled --format="value(config.name)" 2>/dev/null | wc -l)
+    echo ""
+    echo -e "${BLUE}総有効化API数: $total_enabled${NC}"
+    echo ""
+}
+
+# Vertex AI / Gemini 権限
+check_vertex_ai_permissions() {
+    local project_id=$1
+    local account=$2
+    
+    echo -e "${CYAN}🤖 Vertex AI / Gemini 権限調査${NC}"
+    echo ""
+    
+    # Vertex AI API確認
+    echo -e "${BLUE}Vertex AI API状況:${NC}"
+    if gcloud services list --enabled --filter="config.name:aiplatform.googleapis.com" --format="value(config.name)" 2>/dev/null | grep -q "aiplatform.googleapis.com"; then
+        echo -e "✅ Vertex AI API: 有効"
+    else
+        echo -e "❌ Vertex AI API: 無効"
+        echo -e "${YELLOW}   有効化コマンド: gcloud services enable aiplatform.googleapis.com${NC}"
+    fi
+    
+    # Vertex AI 関連権限確認
+    echo ""
+    echo -e "${BLUE}Vertex AI 権限:${NC}"
+    local ai_roles=$(gcloud projects get-iam-policy "$project_id" \
+        --flatten="bindings" \
+        --format="value(bindings.role)" \
+        --filter="bindings.members:user:$account" 2>/dev/null | grep -i aiplatform)
+    
+    if [ -n "$ai_roles" ]; then
+        echo -e "✅ Vertex AI専用権限:"
+        while IFS= read -r role; do
+            if [ -n "$role" ]; then
+                echo -e "   - $role"
+            fi
+        done <<< "$ai_roles"
+    else
+        echo -e "⚠️  Vertex AI専用権限なし"
+        
+        # 基本権限でカバーされているかチェック
+        local basic_roles=$(gcloud projects get-iam-policy "$project_id" \
+            --flatten="bindings" \
+            --format="value(bindings.role)" \
+            --filter="bindings.members:user:$account" 2>/dev/null | grep -E "(owner|editor)")
+        
+        if [ -n "$basic_roles" ]; then
+            echo -e "✅ 基本権限でカバー: $(echo "$basic_roles" | head -1)"
+        else
+            echo -e "❌ 基本権限も不足"
+        fi
+    fi
+    
+    # 実際にVertex AIにアクセステスト
+    echo ""
+    echo -e "${BLUE}Vertex AI アクセステスト:${NC}"
+    echo -e "${CYAN}モデル一覧取得を試行中...${NC}"
+    
+    local test_result=$(gcloud ai models list --region=us-central1 --limit=1 2>&1)
+    if echo "$test_result" | grep -q "PERMISSION_DENIED"; then
+        echo -e "❌ アクセス拒否: 権限不足"
+        echo -e "${YELLOW}   必要権限: aiplatform.models.list${NC}"
+    elif echo "$test_result" | grep -q "API.*not enabled"; then
+        echo -e "❌ API未有効化"
+    else
+        echo -e "✅ アクセス可能"
+    fi
+    
+    # Gemini特有のエラーチェック
+    echo ""
+    echo -e "${BLUE}Gemini アクセス診断:${NC}"
+    if echo "$test_result" | grep -q "403"; then
+        echo -e "❌ 403エラー: 権限またはAPI設定の問題"
+        echo -e "${YELLOW}   解決策:${NC}"
+        echo -e "   1. gcloud services enable aiplatform.googleapis.com"
+        echo -e "   2. 編集者権限以上の付与"
+        echo -e "   3. プロジェクトでのVertex AI有効化確認"
+    else
+        echo -e "ℹ️  基本的なアクセスは可能と思われます"
+    fi
+    
+    echo ""
+}
+
+# Cloud Run 権限
+check_cloud_run_permissions() {
+    local project_id=$1
+    local account=$2
+    
+    echo -e "${CYAN}🏃 Cloud Run 権限調査${NC}"
+    echo ""
+    
+    # Cloud Run API確認
+    echo -e "${BLUE}Cloud Run API状況:${NC}"
+    if gcloud services list --enabled --filter="config.name:run.googleapis.com" --format="value(config.name)" 2>/dev/null | grep -q "run.googleapis.com"; then
+        echo -e "✅ Cloud Run API: 有効"
+    else
+        echo -e "❌ Cloud Run API: 無効"
+        echo -e "${YELLOW}   有効化コマンド: gcloud services enable run.googleapis.com${NC}"
+    fi
+    
+    # Cloud Run権限確認
+    echo ""
+    echo -e "${BLUE}Cloud Run 権限:${NC}"
+    local run_roles=$(gcloud projects get-iam-policy "$project_id" \
+        --flatten="bindings" \
+        --format="value(bindings.role)" \
+        --filter="bindings.members:user:$account" 2>/dev/null | grep -i "run")
+    
+    if [ -n "$run_roles" ]; then
+        echo -e "✅ Cloud Run専用権限:"
+        while IFS= read -r role; do
+            if [ -n "$role" ]; then
+                echo -e "   - $role"
+            fi
+        done <<< "$run_roles"
+    else
+        echo -e "⚠️  Cloud Run専用権限なし（基本権限でカバーの可能性）"
+    fi
+    
+    # Cloud Runサービス一覧テスト
+    echo ""
+    echo -e "${BLUE}Cloud Run アクセステスト:${NC}"
+    local run_test=$(gcloud run services list --limit=1 2>&1)
+    if echo "$run_test" | grep -q "PERMISSION_DENIED"; then
+        echo -e "❌ アクセス拒否"
+    elif echo "$run_test" | grep -q "API.*not enabled"; then
+        echo -e "❌ API未有効化"
+    else
+        echo -e "✅ アクセス可能"
+    fi
+    
+    echo ""
+}
+
+# 必要権限診断
+diagnose_required_permissions() {
+    local project_id=$1
+    local account=$2
+    
+    echo -e "${CYAN}🩺 必要権限診断${NC}"
+    echo ""
+    
+    echo -e "${BLUE}GenieUs開発に必要な権限診断:${NC}"
+    echo ""
+    
+    # 基本権限チェック
+    local has_owner=$(gcloud projects get-iam-policy "$project_id" \
+        --flatten="bindings" \
+        --format="value(bindings.role)" \
+        --filter="bindings.members:user:$account" 2>/dev/null | grep -q "roles/owner" && echo "true" || echo "false")
+    
+    local has_editor=$(gcloud projects get-iam-policy "$project_id" \
+        --flatten="bindings" \
+        --format="value(bindings.role)" \
+        --filter="bindings.members:user:$account" 2>/dev/null | grep -q "roles/editor" && echo "true" || echo "false")
+    
+    # 診断結果
+    echo -e "${BLUE}基本権限診断:${NC}"
+    if [ "$has_owner" = "true" ]; then
+        echo -e "✅ オーナー権限: すべての操作が可能"
+        local diagnosis="excellent"
+    elif [ "$has_editor" = "true" ]; then
+        echo -e "✅ 編集者権限: 開発作業に十分"
+        local diagnosis="good"
+    else
+        echo -e "❌ 基本権限不足: 開発作業に制限あり"
+        local diagnosis="poor"
+    fi
+    
+    # API診断
+    echo ""
+    echo -e "${BLUE}API有効化診断:${NC}"
+    local critical_apis=("aiplatform.googleapis.com" "run.googleapis.com" "cloudbuild.googleapis.com")
+    local enabled_apis=0
+    
+    for api in "${critical_apis[@]}"; do
+        if gcloud services list --enabled --filter="config.name:$api" --format="value(config.name)" 2>/dev/null | grep -q "$api"; then
+            enabled_apis=$((enabled_apis + 1))
+        fi
+    done
+    
+    if [ $enabled_apis -eq ${#critical_apis[@]} ]; then
+        echo -e "✅ 重要API: すべて有効化済み ($enabled_apis/${#critical_apis[@]})"
+    elif [ $enabled_apis -gt 0 ]; then
+        echo -e "⚠️  重要API: 一部有効化済み ($enabled_apis/${#critical_apis[@]})"
+    else
+        echo -e "❌ 重要API: 未有効化 ($enabled_apis/${#critical_apis[@]})"
+    fi
+    
+    # 総合診断
+    echo ""
+    echo -e "${BLUE}総合診断:${NC}"
+    if [ "$diagnosis" = "excellent" ] && [ $enabled_apis -eq ${#critical_apis[@]} ]; then
+        echo -e "${GREEN}🎉 状態: 最適${NC}"
+        echo -e "${GREEN}   GenieUs開発に最適な環境です${NC}"
+    elif [ "$diagnosis" = "good" ] && [ $enabled_apis -gt 1 ]; then
+        echo -e "${YELLOW}⚠️  状態: 良好${NC}"
+        echo -e "${YELLOW}   開発可能ですが、一部改善の余地があります${NC}"
+    else
+        echo -e "${RED}❌ 状態: 要改善${NC}"
+        echo -e "${RED}   開発前に権限・API設定の見直しが必要です${NC}"
+    fi
+    
+    # 改善提案
+    echo ""
+    echo -e "${BLUE}改善提案:${NC}"
+    
+    if [ "$has_owner" != "true" ] && [ "$has_editor" != "true" ]; then
+        echo -e "   🔧 プロジェクトオーナーに編集者権限以上の付与を依頼"
+    fi
+    
+    if [ $enabled_apis -lt ${#critical_apis[@]} ]; then
+        echo -e "   🔧 未有効化APIの有効化:"
+        for api in "${critical_apis[@]}"; do
+            if ! gcloud services list --enabled --filter="config.name:$api" --format="value(config.name)" 2>/dev/null | grep -q "$api"; then
+                echo -e "      gcloud services enable $api"
+            fi
+        done
+    fi
+    
+    if [ "$project_id" = "blog-sample-381923" ]; then
+        echo -e "   🔧 team-sa-laboプロジェクトへの切り替えを検討"
+    fi
+    
+    echo ""
+}
+
 # メイン処理
 main() {
     while true; do
@@ -664,38 +1689,295 @@ main() {
         print_logo
         show_menu
         
-        read -p "選択してください (0-16): " choice
+        read -p "選択してください (0-23): " choice
         echo ""
         
         case $choice in
             1) start_local_dev ;;
-            2) stop_local_dev ;;
-            3) start_docker_dev ;;
-            4) start_docker_prod ;;
-            5) stop_docker ;;
-            6) clean_docker ;;
-            7) start_fastapi_only ;;
-            8) start_adk_ui ;;
-            9) start_integrated_dev ;;
-            10) test_api ;;
-            11) show_logs ;;
+            2) start_test_environment ;;
+            3) interactive_startup ;;
+            4) stop_local_dev ;;
+            5) start_fastapi_only ;;
+            6) start_adk_ui ;;
+            7) start_integrated_dev ;;
+            8) test_api ;;
+            9) show_logs ;;
+            10) start_docker_dev ;;
+            11) start_docker_prod ;;
+            12) stop_docker ;;
+            13) clean_docker ;;
+            14) deploy_cloud_run_staging ;;
+            15) deploy_cloud_run_production ;;
+            16) check_cloud_run_status ;;
+            17) show_cloud_run_logs ;;
+            18) check_cloud_run_config ;;
+            19) switch_gcp_project ;;
+            20) check_gcp_auth_config ;;
+            21) check_gcp_permissions_detailed ;;
+            22) check_api_consistency ;;
+            23) update_api_mapping ;;
             0) 
                 echo -e "${GREEN}👋 お疲れ様でした！${NC}"
                 exit 0
                 ;;
-            12) deploy_cloud_run_staging ;;
-            13) deploy_cloud_run_production ;;
-            14) check_cloud_run_status ;;
-            15) show_cloud_run_logs ;;
-            16) check_cloud_run_config ;;
             *)
-                echo -e "${RED}❌ 無効な選択です。0-16の数字を入力してください。${NC}"
+                echo -e "${RED}❌ 無効な選択です。0-23の数字を入力してください。${NC}"
                 ;;
         esac
         
         echo ""
         read -p "Enterキーを押して続行..."
     done
+}
+
+# 21. インタラクティブ起動メニュー
+interactive_startup() {
+    echo -e "${CYAN}"
+    echo "  ____            _      _   _     "
+    echo " / ___| ___ _ __ (_) ___| | | |___ "
+    echo "| |  _ / _ \ '_ \| |/ _ \ | | / __|"
+    echo "| |_| |  __/ | | | |  __/ |_| \__ \\"
+    echo " \____|\_____|_| |_|_|\___|\___/|___/"
+    echo -e "${NC}"
+    echo -e "${PURPLE}見えない成長に、光をあてる。不安な毎日を、自信に変える。${NC}"
+    echo ""
+    
+    # 環境選択メニュー
+    echo -e "${YELLOW}🚀 起動環境を選択してください:${NC}"
+    echo ""
+    echo "1) 開発環境 (local)  - フロント:3000, バック:8000"
+    echo "2) テスト環境 (test)  - フロント:3001, バック:8001"
+    echo "3) 戻る"
+    echo ""
+    
+    read -p "選択 (1-3): " env_choice
+    
+    case $env_choice in
+        1)
+            ENV_NAME="開発環境"
+            FRONTEND_PORT=3000
+            BACKEND_PORT=8000
+            API_URL="http://localhost:8000/api/v1"
+            CORS_PORT=3000
+            ;;
+        2)
+            ENV_NAME="テスト環境"
+            FRONTEND_PORT=3001
+            BACKEND_PORT=8001
+            API_URL="http://localhost:8001/api/v1"
+            CORS_PORT=3001
+            ;;
+        3)
+            return
+            ;;
+        *)
+            echo -e "${RED}❌ 無効な選択です。${NC}"
+            return
+            ;;
+    esac
+    
+    echo ""
+    echo -e "${BLUE}📊 起動設定:${NC}"
+    echo "  - 環境: $ENV_NAME"
+    echo "  - フロントエンド: http://localhost:$FRONTEND_PORT"
+    echo "  - バックエンド: http://localhost:$BACKEND_PORT"
+    echo "  - API URL: $API_URL"
+    echo ""
+    
+    # 起動モード選択
+    echo -e "${YELLOW}🛠️ 起動モードを選択してください:${NC}"
+    echo ""
+    echo "1) 両方起動 (フロントエンド + バックエンド)"
+    echo "2) フロントエンドのみ"
+    echo "3) バックエンドのみ"
+    echo "4) キャンセル"
+    echo ""
+    
+    read -p "選択 (1-4): " mode_choice
+    
+    case $mode_choice in
+        1)
+            echo -e "${GREEN}🚀 フロントエンド + バックエンドを起動します...${NC}"
+            start_both_services
+            ;;
+        2)
+            echo -e "${GREEN}🚀 フロントエンドを起動します...${NC}"
+            start_frontend_only
+            ;;
+        3)
+            echo -e "${GREEN}🚀 バックエンドを起動します...${NC}"
+            start_backend_only
+            ;;
+        4)
+            echo "キャンセルしました。"
+            return
+            ;;
+        *)
+            echo -e "${RED}❌ 無効な選択です。${NC}"
+            return
+            ;;
+    esac
+}
+
+# 両方起動
+start_both_services() {
+    echo -e "${GREEN}⚡ バックエンド起動中... (ポート: $BACKEND_PORT)${NC}"
+    cd backend
+    PORT="$BACKEND_PORT" FRONTEND_PORT="$CORS_PORT" LOG_LEVEL=info uv run python -m src.main &
+    BACKEND_PID=$!
+    cd ..
+    
+    echo "⏳ バックエンドの起動を待機中..."
+    sleep 5
+    
+    echo -e "${GREEN}🎨 フロントエンド起動中... (ポート: $FRONTEND_PORT)${NC}"
+    cd frontend
+    NEXT_PUBLIC_API_URL="$API_URL" npm run dev -- -p "$FRONTEND_PORT" &
+    FRONTEND_PID=$!
+    cd ..
+    
+    echo ""
+    echo "✅ 起動完了!"
+    echo "  - フロントエンド: http://localhost:$FRONTEND_PORT"
+    echo "  - バックエンド: http://localhost:$BACKEND_PORT"
+    echo "  - API仕様書: http://localhost:$BACKEND_PORT/docs"
+    echo ""
+    echo "🛑 終了するには Ctrl+C を押してください"
+    
+    # 終了時のクリーンアップ
+    cleanup_services() {
+        echo ""
+        echo "🛑 サーバーを停止中..."
+        kill $BACKEND_PID 2>/dev/null || true
+        kill $FRONTEND_PID 2>/dev/null || true
+        echo "✅ 停止完了"
+    }
+    
+    trap cleanup_services EXIT INT TERM
+    wait
+}
+
+# フロントエンドのみ起動
+start_frontend_only() {
+    echo -e "${GREEN}🎨 フロントエンド起動中... (ポート: $FRONTEND_PORT)${NC}"
+    cd frontend
+    NEXT_PUBLIC_API_URL="$API_URL" npm run dev -- -p "$FRONTEND_PORT"
+    cd ..
+}
+
+# バックエンドのみ起動
+start_backend_only() {
+    echo -e "${GREEN}⚡ バックエンド起動中... (ポート: $BACKEND_PORT)${NC}"
+    cd backend
+    PORT="$BACKEND_PORT" FRONTEND_PORT="$CORS_PORT" LOG_LEVEL=info uv run python -m src.main
+    cd ..
+}
+
+# 22. API URL整合性チェック
+check_api_consistency() {
+    echo -e "${CYAN}🔍 API URL整合性チェック${NC}"
+    echo -e "${BLUE}フロントエンドとバックエンドのAPI URL整合性を検証します${NC}"
+    echo ""
+    
+    # Node.js確認
+    if ! command -v node &> /dev/null; then
+        echo -e "${RED}❌ Node.js がインストールされていません${NC}"
+        echo -e "${YELLOW}   Node.js 16以上をインストールしてください${NC}"
+        return 1
+    fi
+    
+    # スクリプト存在確認
+    if [ ! -f "scripts/check-api-consistency.js" ]; then
+        echo -e "${RED}❌ API整合性チェックスクリプトが見つかりません${NC}"
+        echo -e "${YELLOW}   scripts/check-api-consistency.js を確認してください${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}🚀 API整合性チェックを実行中...${NC}"
+    echo ""
+    
+    # API整合性チェック実行
+    node scripts/check-api-consistency.js
+    
+    local exit_code=$?
+    
+    echo ""
+    if [ $exit_code -eq 0 ]; then
+        echo -e "${GREEN}✅ API整合性チェックが正常に完了しました${NC}"
+    else
+        echo -e "${RED}❌ API整合性チェックでエラーが発生しました${NC}"
+        echo -e "${YELLOW}   修正が必要な項目があります${NC}"
+    fi
+    
+    echo ""
+    echo -e "${BLUE}📚 その他のコマンド:${NC}"
+    echo -e "   ${YELLOW}選択肢23: APIマッピング自動更新${NC}"
+    echo -e "   ${YELLOW}./check-api.sh: プロジェクトルートから直接実行${NC}"
+    
+    return $exit_code
+}
+
+# 23. APIマッピング自動更新
+update_api_mapping() {
+    echo -e "${CYAN}🔄 APIマッピング自動更新${NC}"
+    echo -e "${BLUE}バックエンドとフロントエンドを解析してAPIマッピングを更新します${NC}"
+    echo ""
+    
+    # Node.js確認
+    if ! command -v node &> /dev/null; then
+        echo -e "${RED}❌ Node.js がインストールされていません${NC}"
+        echo -e "${YELLOW}   Node.js 16以上をインストールしてください${NC}"
+        return 1
+    fi
+    
+    # スクリプト存在確認
+    if [ ! -f "scripts/update-api-mapping.js" ]; then
+        echo -e "${RED}❌ APIマッピング更新スクリプトが見つかりません${NC}"
+        echo -e "${YELLOW}   scripts/update-api-mapping.js を確認してください${NC}"
+        return 1
+    fi
+    
+    # 現在のマッピングファイルをバックアップ
+    if [ -f "api-endpoints-mapping.json" ]; then
+        local backup_file="api-endpoints-mapping.json.backup.$(date +%Y%m%d_%H%M%S)"
+        cp "api-endpoints-mapping.json" "$backup_file"
+        echo -e "${YELLOW}📋 既存マッピングをバックアップ: ${backup_file}${NC}"
+    fi
+    
+    echo -e "${GREEN}🚀 APIマッピング更新を実行中...${NC}"
+    echo ""
+    
+    # APIマッピング更新実行
+    node scripts/update-api-mapping.js
+    
+    local exit_code=$?
+    
+    echo ""
+    if [ $exit_code -eq 0 ]; then
+        echo -e "${GREEN}✅ APIマッピング更新が正常に完了しました${NC}"
+        echo -e "${CYAN}📊 更新後の整合性チェックを実行します...${NC}"
+        echo ""
+        
+        # 更新後に整合性チェックを自動実行
+        node scripts/check-api-consistency.js
+        
+    else
+        echo -e "${RED}❌ APIマッピング更新でエラーが発生しました${NC}"
+        
+        # エラー時はバックアップから復元
+        if [ -f "$backup_file" ]; then
+            echo -e "${YELLOW}🔄 バックアップから復元中...${NC}"
+            cp "$backup_file" "api-endpoints-mapping.json"
+            echo -e "${GREEN}✅ バックアップから復元しました${NC}"
+        fi
+    fi
+    
+    echo ""
+    echo -e "${BLUE}📚 その他のコマンド:${NC}"
+    echo -e "   ${YELLOW}選択肢22: API整合性チェック${NC}"
+    echo -e "   ${YELLOW}./update-api.sh: プロジェクトルートから直接実行${NC}"
+    
+    return $exit_code
 }
 
 # スクリプト実行

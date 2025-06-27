@@ -40,7 +40,7 @@ async def test_main_integration():
         logger.info("マルチエージェントチャット実行開始")
         # AgentManagerのroute_queryを直接テスト（シンプルな文字列レスポンス）
         response_text = await agent_manager.route_query_async(
-            test_message.message, test_message.user_id, test_message.session_id
+            test_message.message, test_message.user_id, test_message.session_id,
         )
 
         # 結果確認
