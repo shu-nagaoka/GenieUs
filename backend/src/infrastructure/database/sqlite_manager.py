@@ -1,6 +1,7 @@
 """SQLiteデータベース管理クラス - Composition Root統合版"""
 
 import logging
+import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
@@ -17,8 +18,9 @@ class SQLiteManager:
         self.logger = logger
         self.db_path = self._parse_database_url(settings.DATABASE_URL)
 
-        # データベースディレクトリを作成
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        # Cloud Run用: データベースディレクトリ作成をオプション化（staging/productionともにスキップ）
+        if os.getenv("ENVIRONMENT") not in ["production", "staging"]:
+            self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         self.logger.info(f"SQLiteManager初期化: {self.db_path}")
 
