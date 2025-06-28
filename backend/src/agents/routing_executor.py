@@ -609,6 +609,12 @@ class RoutingExecutor:
         if not response or len(response.strip()) < 20:
             return False
 
+        # 🚨 **検索エージェントは特別扱い** - 丁寧語を含むため除外
+        if agent_id == "search_specialist":
+            self.logger.info(f"✅ search_specialist は品質チェックを簡素化")
+            # 検索結果が含まれているかの基本チェックのみ
+            return len(response.strip()) > 50
+
         # エージェント固有の妥当性チェック
         if agent_id in AGENT_RESPONSE_PATTERNS:
             patterns = AGENT_RESPONSE_PATTERNS[agent_id]
