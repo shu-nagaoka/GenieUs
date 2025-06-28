@@ -6,6 +6,7 @@
     "dev": "next dev",
     "prisma": "prisma generate && prisma migrate deploy",
     "build": "next build",
+    "build:docker": "next build",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",

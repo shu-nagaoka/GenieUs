@@ -13,8 +13,13 @@ RUN npm install
 # Copy the rest of application code
 COPY . .
 
+# Set environment variables before build
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV SKIP_ENV_VALIDATION=1
+
 # Build the application
-RUN npm run build
+RUN npm run build:docker
 
 # Expose port 3000
 EXPOSE 3000
