@@ -56,13 +56,13 @@ start_backend() {
     fi
     
     # uvでバックエンド起動（バックグラウンド）
-    nohup uv run uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload > backend.log 2>&1 &
+    nohup uv run uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload > backend.log 2>&1 &
     BACKEND_PID=$!
     echo $BACKEND_PID > ".backend.pid"
     
     echo -e "${GREEN}✅ バックエンド起動完了 (PID: $BACKEND_PID)${NC}"
-    echo -e "${BLUE}   🔗 API: http://localhost:8000${NC}"
-    echo -e "${BLUE}   📖 Docs: http://localhost:8000/docs${NC}"
+    echo -e "${BLUE}   🔗 API: http://localhost:8080${NC}"
+    echo -e "${BLUE}   📖 Docs: http://localhost:8080/docs${NC}"
     
     cd ..
 }
@@ -181,7 +181,7 @@ start_services() {
     
     # ヘルスチェック
     for i in {1..10}; do
-        if curl -s http://localhost:8000/health > /dev/null 2>&1; then
+        if curl -s http://localhost:8080/health > /dev/null 2>&1; then
             echo -e "${GREEN}✅ バックエンドが正常に起動しました${NC}"
             break
         fi
@@ -212,8 +212,8 @@ start_services() {
     echo -e "${BLUE}├─────────────────────────────────────┤${NC}"
     echo -e "${BLUE}│ 📱 フロントエンド: ${GREEN}http://localhost:3000${BLUE} │${NC}"
     echo -e "${BLUE}│ 💬 チャット画面:   ${GREEN}http://localhost:3000/chat${BLUE} │${NC}"
-    echo -e "${BLUE}│ 🔧 API:           ${GREEN}http://localhost:8000${BLUE} │${NC}"
-    echo -e "${BLUE}│ 📖 API仕様書:     ${GREEN}http://localhost:8000/docs${BLUE} │${NC}"
+    echo -e "${BLUE}│ 🔧 API:           ${GREEN}http://localhost:8080${BLUE} │${NC}"
+    echo -e "${BLUE}│ 📖 API仕様書:     ${GREEN}http://localhost:8080/docs${BLUE} │${NC}"
     echo -e "${BLUE}│ 🧞‍♂️ ADK Web UI:   ${GREEN}http://localhost:8001${BLUE} │${NC}"
     echo -e "${BLUE}│ 📚 ドキュメント:   ${GREEN}http://localhost:15080${BLUE} │${NC}"
     echo -e "${BLUE}└─────────────────────────────────────┘${NC}"

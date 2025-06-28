@@ -15,8 +15,8 @@ Google ADKを使用したAI子育て支援フルスタックアプリケーシ�
 ### アクセスポイント
 - **フロントエンドアプリ**: http://localhost:3000
 - **チャット画面**: http://localhost:3000/chat
-- **バックエンドAPI**: http://localhost:8000
-- **API仕様書**: http://localhost:8000/docs
+- **バックエンドAPI**: http://localhost:8080
+- **API仕様書**: http://localhost:8080/docs
 - **ADK Web UI**: http://localhost:8001
 
 ## 🏗️ アーキテクチャを理解する
@@ -163,7 +163,7 @@ agent_manager.initialize_all_components()
 3. **Composition Root**: main.pyでの中央集約組み立て（DIContainer完全置換）
 4. **Import文先頭配置**: 依存関係の明確化（最重要）
 5. **段階的フォールバック**: プライマリ→セカンダリ→フォールバック
-6. **開発ポート分離**: 開発者ローカル用(3000/8000)、テスト用(30001/8001)の併用
+6. **開発ポート分離**: 開発者ローカル用(3000/8080)、テスト用(30001/8001)の併用
 
 ## 📚 ドキュメント構成
 
@@ -303,7 +303,7 @@ agent_manager.initialize_all_components()
 - [ ] **setup_routes関数の使用**（非推奨パターン）
 - [ ] **@injectデコレータなしのDepends使用**
 - [ ] レイヤー責務を無視した実装
-- [ ] **ポート競合**: 開発者ローカル(3000/8000)とテスト(30001/8001)の混在使用
+- [ ] **ポート競合**: 開発者ローカル(3000/8080)とテスト(30001/8001)の混在使用
 
 ---
 

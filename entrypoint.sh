@@ -34,7 +34,7 @@ show_menu() {
     echo -e "${CYAN}═══════════════════════════════════════════════${NC}"
     echo ""
     echo -e "${GREEN}🚀 開発環境 (よく使う)${NC}"
-    echo -e "  ${YELLOW}1${NC}) 開発環境起動 (フロント:3000+バック:8000)"
+    echo -e "  ${YELLOW}1${NC}) 開発環境起動 (フロント:3000+バック:8080)"
     echo -e "  ${YELLOW}2${NC}) テスト環境起動 (フロント:3001+バック:8001)"
     echo -e "  ${YELLOW}3${NC}) インタラクティブ起動メニュー (環境選択)"
     echo -e "  ${YELLOW}4${NC}) 開発環境停止 (全プロセス停止)"
@@ -47,30 +47,34 @@ show_menu() {
     echo -e "  ${YELLOW}9${NC}) ログ確認"
     echo ""
     echo -e "${GREEN}📚 ドキュメント${NC}"
-    echo -e "  ${YELLOW}26${NC}) ドキュメント自動更新 (ワンショット)"
-    echo -e "  ${YELLOW}27${NC}) ドキュメント監視モード (リアルタイム自動更新)"
-    echo -e "  ${YELLOW}28${NC}) ドキュメントサーバー起動 (Web版)"
-    echo -e "  ${YELLOW}29${NC}) ドキュメントサーバー停止"
+    echo -e "  ${YELLOW}10${NC}) ドキュメント自動更新 (ワンショット)"
+    echo -e "  ${YELLOW}11${NC}) ドキュメント監視モード (リアルタイム自動更新)"
+    echo -e "  ${YELLOW}12${NC}) ドキュメントサーバー起動 (Web版)"
+    echo -e "  ${YELLOW}13${NC}) ドキュメントサーバー停止"
+    echo ""
+    echo -e "${CYAN}🔗 API整合性管理${NC}"
+    echo -e "  ${YELLOW}14${NC}) API URL整合性チェック (フロント⇔バック)"
+    echo -e "  ${YELLOW}15${NC}) APIマッピング自動更新"
     echo ""
     echo -e "${BLUE}🐳 Docker環境${NC}"
-    echo -e "  ${YELLOW}10${NC}) Docker開発環境起動 (./run.sh dev)"
-    echo -e "  ${YELLOW}11${NC}) Docker本番環境起動 (./run.sh prod)"
-    echo -e "  ${YELLOW}12${NC}) Dockerサービス停止 (./run.sh stop)"
-    echo -e "  ${YELLOW}13${NC}) Dockerクリーンアップ (./run.sh clean)"
+    echo -e "  ${YELLOW}16${NC}) Docker開発環境起動 (./run.sh dev)"
+    echo -e "  ${YELLOW}17${NC}) Docker本番環境起動 (./run.sh prod)"
+    echo -e "  ${YELLOW}18${NC}) Dockerサービス停止 (./run.sh stop)"
+    echo -e "  ${YELLOW}19${NC}) Dockerクリーンアップ (./run.sh clean)"
     echo ""
     echo -e "${GREEN}☁️  Cloud Run デプロイメント${NC}"
-    echo -e "  ${YELLOW}14${NC}) 🏗️  Cloud Build デプロイ (ステージング) - ローカルDockerなし"
-    echo -e "  ${YELLOW}15${NC}) 🏗️  Cloud Build デプロイ (本番) - ローカルDockerなし"
-    echo -e "  ${YELLOW}16${NC}) 🐳 従来型デプロイ (ステージング) - ローカルDockerあり"
-    echo -e "  ${YELLOW}17${NC}) 🐳 従来型デプロイ (本番) - ローカルDockerあり"
-    echo -e "  ${YELLOW}18${NC}) Cloud Run サービス状態確認"
-    echo -e "  ${YELLOW}19${NC}) Cloud Run ログ確認"
-    echo -e "  ${YELLOW}20${NC}) Cloud Run 設定・環境確認"
+    echo -e "  ${YELLOW}20${NC}) 🏗️  Cloud Build デプロイ (ステージング) - ローカルDockerなし"
+    echo -e "  ${YELLOW}21${NC}) 🏗️  Cloud Build デプロイ (本番) - ローカルDockerなし"
+    echo -e "  ${YELLOW}22${NC}) 🐳 従来型デプロイ (ステージング) - ローカルDockerあり"
+    echo -e "  ${YELLOW}23${NC}) 🐳 従来型デプロイ (本番) - ローカルDockerあり"
+    echo -e "  ${YELLOW}24${NC}) Cloud Run サービス状態確認"
+    echo -e "  ${YELLOW}25${NC}) Cloud Run ログ確認"
+    echo -e "  ${YELLOW}26${NC}) Cloud Run 設定・環境確認"
     echo ""
     echo -e "${GREEN}☁️  GCP管理${NC}"
-    echo -e "  ${YELLOW}21${NC}) GCPプロジェクト切り替え"
-    echo -e "  ${YELLOW}22${NC}) GCP認証・設定確認"
-    echo -e "  ${YELLOW}23${NC}) GCP権限・API詳細調査"
+    echo -e "  ${YELLOW}27${NC}) GCPプロジェクト切り替え"
+    echo -e "  ${YELLOW}28${NC}) GCP認証・設定確認"
+    echo -e "  ${YELLOW}29${NC}) GCP権限・API詳細調査"
     echo ""
     echo -e "${GREEN}🔧 CI/CD セットアップ${NC}"
     echo -e "  ${YELLOW}30${NC}) 🎯 GCP CI/CD環境自動構築 (インタラクティブ)"
@@ -78,9 +82,6 @@ show_menu() {
     echo -e "  ${YELLOW}32${NC}) 🧪 CI/CDパイプライン動作テスト"
     echo -e "  ${YELLOW}33${NC}) 🚀 インタラクティブデプロイメント"
     echo ""
-    echo -e "${CYAN}🔗 API整合性管理${NC}"
-    echo -e "  ${YELLOW}24${NC}) API URL整合性チェック (フロント⇔バック)"
-    echo -e "  ${YELLOW}25${NC}) APIマッピング自動更新"
     echo ""
     echo -e "${RED}🛑 その他${NC}"
     echo -e "  ${YELLOW}0${NC}) 終了"
@@ -98,18 +99,18 @@ start_local_dev() {
 stop_local_dev() {
     echo -e "${YELLOW}🛑 全開発環境を停止します...${NC}"
     echo "停止するポートを選択してください:"
-    echo "  1) 通常の開発環境 (3000/8000)"
+    echo "  1) 通常の開発環境 (3000/8080)"
     echo "  2) AI開発支援テスト環境 (30001/8001)"
-    echo "  3) 全ポート停止 (3000/8000/30001/8001)"
+    echo "  3) 全ポート停止 (3000/8080/30001/8001)"
     echo "  4) スクリプト使用 (./scripts/stop_dev.sh)"
     echo ""
     read -p "選択 (1-4): " stop_choice
     
     case $stop_choice in
         1)
-            echo "開発環境 (3000/8000) を停止中..."
+            echo "開発環境 (3000/8080) を停止中..."
             lsof -ti:3000 | xargs kill -9 2>/dev/null && echo "   ✅ ポート3000を停止" || echo "   ポート3000: プロセスなし"
-            lsof -ti:8000 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8000を停止" || echo "   ポート8000: プロセスなし"
+            lsof -ti:8080 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8080を停止" || echo "   ポート8080: プロセスなし"
             ;;
         2)
             echo "テスト環境 (3001/8001) を停止中..."
@@ -125,9 +126,9 @@ stop_local_dev() {
             fi
             ;;
         3)
-            echo "全ポート (3000/8000/3001/8001) を停止中..."
+            echo "全ポート (3000/8080/3001/8001) を停止中..."
             lsof -ti:3000 | xargs kill -9 2>/dev/null && echo "   ✅ ポート3000を停止" || echo "   ポート3000: プロセスなし"
-            lsof -ti:8000 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8000を停止" || echo "   ポート8000: プロセスなし"
+            lsof -ti:8080 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8080を停止" || echo "   ポート8080: プロセスなし"
             lsof -ti:3001 | xargs kill -9 2>/dev/null && echo "   ✅ ポート3001を停止" || echo "   ポート3001: プロセスなし"
             lsof -ti:8001 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8001を停止" || echo "   ポート8001: プロセスなし"
             
@@ -180,13 +181,13 @@ start_fastapi_only() {
     echo ""
     
     # 既存プロセス停止
-    echo "📛 既存のポート8000プロセスを停止中..."
-    lsof -ti:8000 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8000を停止" || echo "   ポート8000: プロセスなし"
+    echo "📛 既存のポート8080プロセスを停止中..."
+    lsof -ti:8080 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8080を停止" || echo "   ポート8080: プロセスなし"
     
     sleep 2
     
     # FastAPI起動
-    echo -e "${GREEN}🚀 FastAPI (ポート8000) を起動中...${NC}"
+    echo -e "${GREEN}🚀 FastAPI (ポート8080) を起動中...${NC}"
     cd backend
     
     # 環境チェック
@@ -198,10 +199,10 @@ start_fastapi_only() {
     # uv が利用可能かチェック
     if command -v uv &> /dev/null; then
         echo -e "${CYAN}uvでFastAPIを起動します...${NC}"
-        uv run uvicorn src.app:app --host 0.0.0.0 --port 8000 --reload
+        uv run uvicorn src.app:app --host 0.0.0.0 --port 8080 --reload
     else
         echo -e "${CYAN}Pythonで直接FastAPIを起動します...${NC}"
-        python -m uvicorn src.app:app --host 0.0.0.0 --port 8000 --reload
+        python -m uvicorn src.app:app --host 0.0.0.0 --port 8080 --reload
     fi
 }
 
@@ -212,7 +213,7 @@ start_adk_ui() {
     echo ""
     
     # FastAPI停止
-    lsof -ti:8000 | xargs kill -9 2>/dev/null && echo "✅ FastAPI (ポート8000) を停止しました" || echo "ポート8000: プロセスなし"
+    lsof -ti:8080 | xargs kill -9 2>/dev/null && echo "✅ FastAPI (ポート8080) を停止しました" || echo "ポート8080: プロセスなし"
     
     echo ""
     echo "ADKエージェントのディレクトリを選択してください:"
@@ -223,11 +224,11 @@ start_adk_ui() {
     
     case $adk_choice in
         1)
-            echo -e "${GREEN}src/agentsでADK Web UI (ポート8000) を起動...${NC}"
+            echo -e "${GREEN}src/agentsでADK Web UI (ポート8080) を起動...${NC}"
             cd backend/src/agents && adk web
             ;;
         2)
-            echo -e "${GREEN}test_genieでADK Web UI (ポート8000) を起動...${NC}"
+            echo -e "${GREEN}test_genieでADK Web UI (ポート8080) を起動...${NC}"
             cd backend/test_genie && adk web
             ;;
         *)
@@ -244,15 +245,15 @@ start_integrated_dev() {
     # 既存プロセス停止
     echo "📛 既存のプロセスを停止中..."
     lsof -ti:3000 | xargs kill -9 2>/dev/null && echo "   ✅ ポート3000を停止" || echo "   ポート3000: プロセスなし"
-    lsof -ti:8000 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8000を停止" || echo "   ポート8000: プロセスなし"
+    lsof -ti:8080 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8080を停止" || echo "   ポート8080: プロセスなし"
     lsof -ti:8001 | xargs kill -9 2>/dev/null && echo "   ✅ ポート8001を停止" || echo "   ポート8001: プロセスなし"
     
     sleep 2
     
-    # FastAPI起動 (ポート8000)
-    echo -e "${GREEN}🔧 FastAPI (ポート8000) を起動中...${NC}"
+    # FastAPI起動 (ポート8080)
+    echo -e "${GREEN}🔧 FastAPI (ポート8080) を起動中...${NC}"
     cd backend
-    python -m uvicorn src.app:app --host 0.0.0.0 --port 8000 --reload &
+    python -m uvicorn src.app:app --host 0.0.0.0 --port 8080 --reload &
     FASTAPI_PID=$!
     echo "   FastAPI PID: $FASTAPI_PID"
     cd ..
@@ -301,8 +302,8 @@ start_integrated_dev() {
     echo -e "${GREEN}✅ 統合開発環境起動完了！${NC}"
     echo ""
     echo -e "${BLUE}📱 フロントエンド: http://localhost:3000${NC}"
-    echo -e "${BLUE}🔌 FastAPI: http://localhost:8000${NC}"
-    echo -e "${BLUE}📖 API ドキュメント: http://localhost:8000/docs${NC}"
+    echo -e "${BLUE}🔌 FastAPI: http://localhost:8080${NC}"
+    echo -e "${BLUE}📖 API ドキュメント: http://localhost:8080/docs${NC}"
     echo -e "${BLUE}🤖 ADK Web UI: http://localhost:8001${NC}"
     echo ""
     echo -e "${YELLOW}停止するには選択肢2で全停止してください${NC}"
@@ -320,7 +321,7 @@ test_api() {
     echo ""
     read -p "選択 (1-4): " api_choice
     
-    BASE_URL="http://localhost:8000"
+    BASE_URL="http://localhost:8080"
     
     case $api_choice in
         1)
@@ -377,7 +378,7 @@ show_logs() {
             ;;
         2)
             echo -e "${YELLOW}ポートの使用状況:${NC}"
-            lsof -i :3000,8000 2>/dev/null || echo "ポート3000,8000で動作中のプロセスはありません"
+            lsof -i :3000,8080 2>/dev/null || echo "ポート3000,8080で動作中のプロセスはありません"
             echo ""
             echo -e "${YELLOW}プロセス確認:${NC}"
             ps aux | grep -E "(uvicorn|next)" | grep -v grep || echo "該当プロセスはありません"
@@ -870,7 +871,7 @@ check_file_exists() {
 # 17. テスト環境起動 (AI開発支援用ポート3001+8001)
 start_test_environment() {
     echo -e "${CYAN}🤖 AI開発支援用テスト環境を起動します...${NC}"
-    echo -e "${YELLOW}⚠️  開発者ローカル環境(3000/8000)との競合を避けるため、3001/8001ポートを使用します${NC}"
+    echo -e "${YELLOW}⚠️  開発者ローカル環境(3000/8080)との競合を避けるため、3001/8001ポートを使用します${NC}"
     echo ""
     
     # 既存プロセス停止
@@ -930,7 +931,7 @@ start_test_environment() {
     echo -e "${BLUE}📖 API ドキュメント (テスト): http://localhost:8001/docs${NC}"
     echo ""
     echo -e "${CYAN}💡 開発者ローカル環境との分離：${NC}"
-    echo -e "   📍 開発者用: フロント 3000、バック 8000"
+    echo -e "   📍 開発者用: フロント 3000、バック 8080"
     echo -e "   🤖 AI支援用: フロント 3001、バック 8001"
     echo ""
     echo -e "${YELLOW}停止するには選択肢2で全停止してください${NC}"
@@ -1851,26 +1852,26 @@ main() {
             7) start_integrated_dev ;;
             8) test_api ;;
             9) show_logs ;;
-            10) start_docker_dev ;;
-            11) start_docker_prod ;;
-            12) stop_docker ;;
-            13) clean_docker ;;
-            14) deploy_cloudbuild_staging ;;
-            15) deploy_cloudbuild_production ;;
-            16) deploy_traditional_staging ;;
-            17) deploy_traditional_production ;;
-            18) check_cloud_run_status ;;
-            19) show_cloud_run_logs ;;
-            20) check_cloud_run_config ;;
-            21) switch_gcp_project ;;
-            22) check_gcp_auth_config ;;
-            23) check_gcp_permissions_detailed ;;
-            24) check_api_consistency ;;
-            25) update_api_mapping ;;
-            26) update_docs_navigation ;;
-            27) watch_docs_changes ;;
-            28) start_docs_server_advanced ;;
-            29) stop_docs_server ;;
+            10) update_docs_navigation ;;
+            11) watch_docs_changes ;;
+            12) start_docs_server_advanced ;;
+            13) stop_docs_server ;;
+            14) check_api_consistency ;;
+            15) update_api_mapping ;;
+            16) start_docker_dev ;;
+            17) start_docker_prod ;;
+            18) stop_docker ;;
+            19) clean_docker ;;
+            20) deploy_cloudbuild_staging ;;
+            21) deploy_cloudbuild_production ;;
+            22) deploy_traditional_staging ;;
+            23) deploy_traditional_production ;;
+            24) check_cloud_run_status ;;
+            25) show_cloud_run_logs ;;
+            26) check_cloud_run_config ;;
+            27) switch_gcp_project ;;
+            28) check_gcp_auth_config ;;
+            29) check_gcp_permissions_detailed ;;
             30) setup_gcp_cicd ;;
             31) setup_github_secrets ;;
             32) test_cicd_pipeline ;;
@@ -1904,7 +1905,7 @@ interactive_startup() {
     # 環境選択メニュー
     echo -e "${YELLOW}🚀 起動環境を選択してください:${NC}"
     echo ""
-    echo "1) 開発環境 (local)  - フロント:3000, バック:8000"
+    echo "1) 開発環境 (local)  - フロント:3000, バック:8080"
     echo "2) テスト環境 (test)  - フロント:3001, バック:8001"
     echo "3) 戻る"
     echo ""
@@ -1915,8 +1916,8 @@ interactive_startup() {
         1)
             ENV_NAME="開発環境"
             FRONTEND_PORT=3000
-            BACKEND_PORT=8000
-            API_URL="http://localhost:8000/api/v1"
+            BACKEND_PORT=8080
+            API_URL="http://localhost:8080/api/v1"
             CORS_PORT=3000
             ;;
         2)

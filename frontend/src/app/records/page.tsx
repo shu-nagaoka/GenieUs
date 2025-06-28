@@ -522,7 +522,7 @@ function CapturedMemoriesPageContent() {
                               <img
                                 src={
                                   memory.mediaUrl.startsWith('/api/')
-                                    ? `http://localhost:8000${memory.mediaUrl}`
+                                    ? `http://localhost:8080${memory.mediaUrl}`
                                     : memory.mediaUrl
                                 }
                                 alt={memory.title}

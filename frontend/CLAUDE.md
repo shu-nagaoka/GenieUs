@@ -63,7 +63,7 @@ src/
 
 1. **Component Architecture**: Uses shadcn/ui component library built on Radix UI with Tailwind CSS styling. Components are composed from primitives in `components/ui/`.
 
-2. **API Integration**: Currently uses direct fetch calls to `http://localhost:8000`. React Query is installed but not yet implemented for server state management.
+2. **API Integration**: Currently uses direct fetch calls to `http://localhost:8080`. React Query is installed but not yet implemented for server state management.
 
 3. **Styling System**: Tailwind CSS with CSS variables for theming. Theme colors are defined in `globals.css` and extended in `tailwind.config.ts`.
 
@@ -89,7 +89,7 @@ The chat interface renders AI responses with proper Markdown formatting:
 
 ```typescript
 // POST to /api/v1/chat
-const response = await fetch('http://localhost:8000/api/v1/chat', {
+const response = await fetch('http://localhost:8080/api/v1/chat', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -105,7 +105,7 @@ const response = await fetch('http://localhost:8000/api/v1/chat', {
 Required in `.env.local`:
 
 - Authentication providers configuration
-- Backend API URL (currently hardcoded as `http://localhost:8000`)
+- Backend API URL (currently hardcoded as `http://localhost:8080`)
 
 ## Testing Strategy
 

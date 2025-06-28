@@ -24,7 +24,7 @@ export default function APITestPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('http://localhost:8000/api/v1/ping')
+      const res = await fetch('http://localhost:8080/api/v1/ping')
       const data = await res.json()
       setResponse({
         response: `Ping応答: ${data.message}`,
@@ -48,7 +48,7 @@ export default function APITestPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('http://localhost:8000/api/v1/test', {
+      const res = await fetch('http://localhost:8080/api/v1/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -120,6 +120,11 @@
           "description": "GenieUsアーキテクチャにおけるUseCase層の設計ルール、戻り値仕様、命名規約を完全整理したドキュメント。"
         },
         {
+          "title": "📖 画像分析機能実装ガイド",
+          "file": "technical/image-analysis-implementation.md",
+          "description": "子育て支援AI画像分析機能の包括的な実装ドキュメント"
+        },
+        {
           "title": "🤖 エージェントルーティング安定化改善",
           "file": "technical/routing-stability-improvements.md",
           "description": "1. **LLMベースルーティングの不安定性**"
