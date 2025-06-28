@@ -75,7 +75,7 @@ export async function apiCall<T = any>(
 ): Promise<ApiResponse<T>> {
   const {
     requireAuth = false,
-    baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
     ...fetchOptions
   } = options
 

@@ -207,8 +207,8 @@ async def root():
 
 
 if __name__ == "__main__":
-    # 環境変数からポート設定を取得（デフォルト: 8000）
-    port = int(os.getenv("PORT", "8000"))
+    # 環境変数からポート設定を取得（デフォルト: 8080でCloud Runと統一）
+    port = int(os.getenv("PORT", "8080"))
     host = os.getenv("HOST", "0.0.0.0")
     log_level = os.getenv("LOG_LEVEL", "info")
     reload = os.getenv("RELOAD", "true").lower() == "true"

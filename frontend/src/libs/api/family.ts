@@ -31,7 +31,7 @@ export interface ApiResponse<T = any> {
   error?: string
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
 /**
  * 家族情報を取得

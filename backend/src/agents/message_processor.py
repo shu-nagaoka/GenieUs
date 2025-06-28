@@ -55,8 +55,19 @@ class MessageProcessor:
 
         # 画像情報セクション（画像がある場合）
         if image_path:
-            self.logger.info(f"🖼️ 画像添付を検出: {len(image_path) if image_path else 0}文字のBase64データ")
-            image_text = f"【画像情報】\n画像タイプ: 子どもの写真が添付されています\n分析指示: analyze_child_imageツールを使用して画像を分析してください\n"
+            self.logger.info(f"🖼️ 画像添付を検出: {len(image_path) if image_path else 0}文字")
+            # ファイルパスかBase64データかを判定
+            if image_path.startswith("data:image/"):
+                data_type = "Base64データ"
+            elif "/" in image_path or "\\" in image_path:
+                data_type = "ファイルパス"
+            else:
+                data_type = "不明な形式"
+            
+            image_text = f"【画像情報】\n画像タイプ: 子どもの写真が添付されています（{data_type}）\n"
+            image_text += f"画像パス: {image_path}\n"
+            image_text += f"分析指示: analyze_child_imageツールを使用して、上記の画像パス（{image_path}）を指定して画像を分析してください\n"
+            
             if multimodal_context:
                 image_description = multimodal_context.get('image_description', '')
                 if image_description:

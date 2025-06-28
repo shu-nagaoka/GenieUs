@@ -789,7 +789,7 @@ export default function GrowthTrackingPage() {
                                         <img
                                           src={
                                             record.imageUrl.startsWith('/api/')
-                                              ? `http://localhost:8000${record.imageUrl}`
+                                              ? `http://localhost:8080${record.imageUrl}`
                                               : record.imageUrl
                                           }
                                           alt={record.title}

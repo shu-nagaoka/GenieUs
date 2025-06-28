@@ -258,15 +258,25 @@ function ChatPageContent() {
 
       setCurrentStreamingId(streamingMessageId)
 
-      // Web検索ONの場合、強力な検索指示を埋め込み
-      const finalStreamingMessage = webSearchEnabled
-        ? `🔍 FORCE_SEARCH_AGENT_ROUTING 🔍
+      // Web検索ON または 画像添付時の強力な指示を埋め込み
+      let finalStreamingMessage = query
+      
+      if (webSearchEnabled) {
+        finalStreamingMessage = `🔍 FORCE_SEARCH_AGENT_ROUTING 🔍
 SYSTEM_INSTRUCTION: この質問は必ず検索エージェント(search_specialist)で処理してください。
 他のエージェントへのルーティングは禁止します。
 専門性コンテキストより検索要求を優先してください。
 検索要求: ${query}
 END_SYSTEM_INSTRUCTION`
-        : query
+      } else if (currentSelectedImage) {
+        finalStreamingMessage = `🖼️ FORCE_IMAGE_ANALYSIS_ROUTING 🖼️
+SYSTEM_INSTRUCTION: この画像は必ず画像分析エージェント(image_specialist)で処理してください。
+他のエージェントへのルーティングは禁止します。
+画像添付時は画像分析を最優先してください。
+コーディネーターをスキップして直接image_specialistにルーティングしてください。
+画像分析要求: ${query || '画像を分析してください'}
+END_SYSTEM_INSTRUCTION`
+      }
 
       // 画像がある場合のローカルファイルパス取得
       const imagePath = currentSelectedImage ? await getLocalFilePath(currentSelectedImage) : null
@@ -365,7 +375,7 @@ END_SYSTEM_INSTRUCTION`
       })
 
       // 実際のAPIを呼び出し（バックエンドAPIエンドポイントに合わせて修正）
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
       // Web検索ON または 画像添付時の強力な指示を埋め込み
       let finalMessage = query

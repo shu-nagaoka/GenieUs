@@ -2,7 +2,7 @@
  * 成長記録API関連の関数
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
 // 新しいカテゴリ型定義
 export type GrowthType =

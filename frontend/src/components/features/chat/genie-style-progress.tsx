@@ -487,6 +487,8 @@ export function GenieStyleProgress({
       let actualSessionId = sessionId
       let actualUserId = userId
 
+      let parsedData: any = {}
+      
       try {
         const parsed = JSON.parse(message)
         if (parsed.message) {
@@ -495,6 +497,7 @@ export function GenieStyleProgress({
           familyInfo = parsed.family_info || null
           actualSessionId = parsed.session_id || sessionId
           actualUserId = parsed.user_id || userId
+          parsedData = parsed  // 全データを保持
         }
       } catch (e) {
         // JSON parsing failed, use message as is
@@ -516,7 +519,24 @@ export function GenieStyleProgress({
         requestBody.family_info = familyInfo
       }
 
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      // 画像・マルチモーダル情報があれば追加
+      if (parsedData.message_type) {
+        requestBody.message_type = parsedData.message_type
+      }
+      if (parsedData.has_image) {
+        requestBody.has_image = parsedData.has_image
+      }
+      if (parsedData.image_path) {
+        requestBody.image_path = parsedData.image_path
+      }
+      if (parsedData.multimodal_context) {
+        requestBody.multimodal_context = parsedData.multimodal_context
+      }
+      if (parsedData.web_search_enabled !== undefined) {
+        requestBody.web_search_enabled = parsedData.web_search_enabled
+      }
+
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
       const streamingUrl = `${apiBaseUrl}/api/streaming/streaming-chat`
 
       console.log('🌐 API呼び出し実行:', {

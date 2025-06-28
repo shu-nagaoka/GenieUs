@@ -38,7 +38,7 @@ export interface BackendLoginResponse {
  */
 export async function loginToBackend(sessionUser: any): Promise<BackendLoginResponse> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
     console.log('Auth API URL:', `${apiUrl}/api/auth/login/google`) // デバッグ用
     const response = await fetch(`${apiUrl}/api/auth/login/google`, {
       method: 'POST',
@@ -79,7 +79,7 @@ export async function loginToBackend(sessionUser: any): Promise<BackendLoginResp
 export async function verifyBackendToken(token: string): Promise<{ valid: boolean; user?: any }> {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/verify`,
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/auth/verify`,
       {
         method: 'POST',
         headers: {
@@ -107,7 +107,7 @@ export async function verifyBackendToken(token: string): Promise<{ valid: boolea
 export async function getBackendUserProfile(token: string): Promise<any> {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/profile`,
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/auth/profile`,
       {
         method: 'GET',
         headers: {

@@ -158,7 +158,7 @@ export function PerplexityStyleProgress({
     setSearchData(null)
 
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
       const response = await fetch(`${apiBaseUrl}/api/streaming/streaming-chat`, {
         method: 'POST',
         headers: {
