@@ -40,32 +40,43 @@ async def lifespan(app: FastAPI):
 
     # 🎯 CompositionRoot一元初期化（アプリケーション全体で1度だけ）
     try:
-        temp_logger.info("CompositionRoot初期化開始...")
-        composition_root = CompositionRootFactory.create()
-        logger = composition_root.logger
-        logger.info("✅ CompositionRoot初期化完了")
+        # Cloud Run用環境変数で軽量起動モードを確認
+        fast_startup = os.getenv("FAST_STARTUP", "false").lower() == "true"
+        
+        if fast_startup:
+            temp_logger.info("⚡ 高速起動モード: 最小限の初期化のみ実行")
+            # 最小限のダミー設定でアプリを起動可能にする
+            app.agent_manager = None
+            app.logger = temp_logger
+            app.composition_root = None
+        else:
+            temp_logger.info("CompositionRoot初期化開始...")
+            composition_root = CompositionRootFactory.create()
+            logger = composition_root.logger
+            logger.info("✅ CompositionRoot初期化完了")
 
-        # AgentManagerに必要なツールとルーティング戦略、AgentRegistryを注入
-        all_tools = composition_root.get_all_tools()
-        routing_strategy = composition_root.get_routing_strategy()
-        agent_registry = composition_root.get_agent_registry()
-        agent_manager = AgentManager(
-            tools=all_tools,
-            logger=logger,
-            settings=composition_root.settings,
-            routing_strategy=routing_strategy,
-            agent_registry=agent_registry,
-        )
-        agent_manager.initialize_all_components()
-        logger.info("✅ AgentManager初期化完了（Pure Composition Root + ルーティング戦略）")
-
-        # FastAPIアプリには必要なコンポーネントのみ注入
-        app.agent_manager = agent_manager
-        app.logger = logger
-        app.composition_root = composition_root  # 家族管理UseCaseアクセス用
+            # AgentManagerに必要なツールとルーティング戦略、AgentRegistryを注入
+            all_tools = composition_root.get_all_tools()
+            routing_strategy = composition_root.get_routing_strategy()
+            agent_registry = composition_root.get_agent_registry()
+            agent_manager = AgentManager(
+                tools=all_tools,
+                logger=logger,
+                settings=composition_root.settings,
+                routing_strategy=routing_strategy,
+                agent_registry=agent_registry,
+            )
+            agent_manager.initialize_all_components()
+            logger.info("✅ AgentManager初期化完了（Pure Composition Root + ルーティング戦略）")
+            
+            # FastAPIアプリには必要なコンポーネントのみ注入
+            app.agent_manager = agent_manager
+            app.logger = logger
+            app.composition_root = composition_root  # 家族管理UseCaseアクセス用
         
         initialization_time = time.time() - start_time
-        logger.info(f"✅ FastAPIアプリ関連付け完了（Pure CompositionRoot）- 初期化時間: {initialization_time:.2f}秒")
+        current_logger = app.logger if hasattr(app, 'logger') else temp_logger
+        current_logger.info(f"✅ FastAPIアプリ関連付け完了 - 初期化時間: {initialization_time:.2f}秒")
 
     except Exception as e:
         temp_logger.error(f"❌ アプリケーション初期化失敗: {e}")
@@ -154,11 +165,24 @@ app.include_router(record_management_router, tags=["record_management"])
 app.include_router(search_history_router, tags=["search_history"])
 
 
-# ヘルスチェックエンドポイント（Cloud Run用）
+# 軽量ヘルスチェックエンドポイント（Cloud Run用）
 @app.get("/health")
 async def health_check():
-    """ヘルスチェックエンドポイント"""
+    """軽量ヘルスチェックエンドポイント - CompositionRoot初期化を待たない"""
     return {"status": "healthy", "service": "genius-backend"}
+
+# 深いヘルスチェックエンドポイント（依存関係確認）
+@app.get("/health/deep")
+async def deep_health_check(request):
+    """深いヘルスチェック - 依存関係が初期化されているかチェック"""
+    try:
+        # CompositionRootが初期化されているかチェック
+        if not hasattr(request.app, 'composition_root'):
+            return {"status": "initializing", "service": "genius-backend", "message": "Dependencies not ready"}
+        
+        return {"status": "ready", "service": "genius-backend", "dependencies": "initialized"}
+    except Exception as e:
+        return {"status": "error", "service": "genius-backend", "error": str(e)}
 
 
 @app.exception_handler(Exception)

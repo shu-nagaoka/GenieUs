@@ -52,8 +52,8 @@ ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# ヘルスチェック（ポートを動的に取得）
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+# ヘルスチェック（Cloud Run用に最適化 - 長い起動時間を考慮）
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
   CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
 # アプリケーションの起動（Cloud Run用に最適化）
