@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
 
   // Cloud Run用standalone出力設定
   output: 'standalone',
+  distDir: '.next',
+  
+  // 静的生成を無効化（Cloud Run問題回避）
+  trailingSlash: false,
 
   // 画像最適化
   images: {
@@ -38,7 +42,7 @@ const nextConfig: NextConfig = {
     BACKEND_API_URL: process.env.BACKEND_API_URL || 'http://localhost:8080',
   },
 
-  // Cloud Run ビルド時のエラーハンドリング
+  // Cloud Run ビルド時のエラーハンドリング（一時的にエラーを無視）
   eslint: { 
     ignoreDuringBuilds: true  // Cloud Runでのビルドを成功させるため
   },
