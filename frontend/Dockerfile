@@ -1,5 +1,5 @@
-# Use Node.js 18 for better compatibility
-FROM node:18-alpine
+# Use Node.js 20 for compatibility with package requirements
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
@@ -15,8 +15,8 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV SKIP_ENV_VALIDATION=1
 
-# Install dependencies with increased memory
-RUN npm install --verbose
+# Install dependencies (disable scripts to avoid Husky issues in Docker)
+RUN npm ci --ignore-scripts
 
 # Copy source code
 COPY . .
