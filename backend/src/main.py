@@ -44,63 +44,53 @@ async def lifespan(app: FastAPI):
     # 🎯 CompositionRoot一元初期化（アプリケーション全体で1度だけ）
     try:
         # Cloud Run用環境変数で軽量起動モードを確認
-        # Cloud Run用環境変数で軽量起動モードを確認
-        fast_startup = os.getenv("FAST_STARTUP", "false").lower() == "true"
+        temp_logger.info("CompositionRoot初期化開始...")
+        try:
+            composition_root = CompositionRootFactory.create()
+            temp_logger.info("✅ CompositionRootFactory.create() 完了")
+            
+            logger = composition_root.logger
+            logger.info("✅ CompositionRoot初期化完了")
 
-        if fast_startup:
-            temp_logger.info("⚡ 高速起動モード: 最小限の初期化のみ実行")
-            # 最小限のダミー設定でアプリを起動可能にする
-            app.agent_manager = None
-            app.logger = temp_logger
-            app.composition_root = None
-        else:
-            temp_logger.info("CompositionRoot初期化開始...")
-            try:
-                composition_root = CompositionRootFactory.create()
-                temp_logger.info("✅ CompositionRootFactory.create() 完了")
-                
-                logger = composition_root.logger
-                logger.info("✅ CompositionRoot初期化完了")
+            # AgentManagerに必要なツールとルーティング戦略、AgentRegistryを注入
+            logger.info("ツール取得開始...")
+            all_tools = composition_root.get_all_tools()
+            logger.info(f"✅ ツール取得完了: {len(all_tools)}個")
+            
+            logger.info("ルーティング戦略取得開始...")
+            routing_strategy = composition_root.get_routing_strategy()
+            logger.info("✅ ルーティング戦略取得完了")
+            
+            logger.info("エージェントレジストリ取得開始...")
+            agent_registry = composition_root.get_agent_registry()
+            logger.info("✅ エージェントレジストリ取得完了")
+            
+            logger.info("AgentManager初期化開始...")
+            agent_manager = AgentManager(
+                tools=all_tools,
+                logger=logger,
+                settings=composition_root.settings,
+                routing_strategy=routing_strategy,
+                agent_registry=agent_registry,
+                composition_root=composition_root,
+            )
+            logger.info("✅ AgentManagerインスタンス作成完了")
+            
+            logger.info("AgentManagerコンポーネント初期化開始...")
+            agent_manager.initialize_all_components()
+            logger.info("✅ AgentManager初期化完了（Pure Composition Root + ルーティング戦略）")
 
-                # AgentManagerに必要なツールとルーティング戦略、AgentRegistryを注入
-                logger.info("ツール取得開始...")
-                all_tools = composition_root.get_all_tools()
-                logger.info(f"✅ ツール取得完了: {len(all_tools)}個")
-                
-                logger.info("ルーティング戦略取得開始...")
-                routing_strategy = composition_root.get_routing_strategy()
-                logger.info("✅ ルーティング戦略取得完了")
-                
-                logger.info("エージェントレジストリ取得開始...")
-                agent_registry = composition_root.get_agent_registry()
-                logger.info("✅ エージェントレジストリ取得完了")
-                
-                logger.info("AgentManager初期化開始...")
-                agent_manager = AgentManager(
-                    tools=all_tools,
-                    logger=logger,
-                    settings=composition_root.settings,
-                    routing_strategy=routing_strategy,
-                    agent_registry=agent_registry,
-                    composition_root=composition_root,
-                )
-                logger.info("✅ AgentManagerインスタンス作成完了")
-                
-                logger.info("AgentManagerコンポーネント初期化開始...")
-                agent_manager.initialize_all_components()
-                logger.info("✅ AgentManager初期化完了（Pure Composition Root + ルーティング戦略）")
-
-                # FastAPIアプリには必要なコンポーネントのみ注入
-                app.agent_manager = agent_manager
-                app.logger = logger
-                app.composition_root = composition_root  # 家族管理UseCaseアクセス用
-                logger.info("✅ FastAPIアプリ注入完了")
-                
-            except Exception as init_error:
-                temp_logger.error(f"❌ 初期化段階でエラー: {init_error}")
-                import traceback
-                temp_logger.error(f"❌ スタックトレース: {traceback.format_exc()}")
-                raise
+            # FastAPIアプリには必要なコンポーネントのみ注入
+            app.agent_manager = agent_manager
+            app.logger = logger
+            app.composition_root = composition_root  # 家族管理UseCaseアクセス用
+            logger.info("✅ FastAPIアプリ注入完了")
+            
+        except Exception as init_error:
+            temp_logger.error(f"❌ 初期化段階でエラー: {init_error}")
+            import traceback
+            temp_logger.error(f"❌ スタックトレース: {traceback.format_exc()}")
+            raise
 
         initialization_time = time.time() - start_time
         current_logger = app.logger if hasattr(app, "logger") else temp_logger
