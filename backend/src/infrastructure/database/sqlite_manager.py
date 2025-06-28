@@ -38,21 +38,38 @@ class SQLiteManager:
     @contextmanager
     def get_connection(self):
         """データベース接続取得（コンテキストマネージャー）"""
-        connection = None
-        try:
-            connection = sqlite3.connect(self.db_path)
-            connection.row_factory = sqlite3.Row  # 辞書形式でアクセス可能
-            self.logger.debug(f"SQLite接続開始: {self.db_path}")
-            yield connection
-        except Exception as e:
-            if connection:
-                connection.rollback()
-            self.logger.error(f"SQLite接続エラー: {e}")
-            raise
-        finally:
-            if connection:
-                connection.close()
-                self.logger.debug("SQLite接続終了")
+        # Cloud Run環境ではメモリ内SQLiteを使用
+        if os.getenv("ENVIRONMENT") in ["production", "staging"]:
+            connection = None
+            try:
+                connection = sqlite3.connect(":memory:")
+                connection.row_factory = sqlite3.Row
+                self.logger.info("Cloud Run環境: メモリ内SQLiteデータベースを使用")
+                yield connection
+            except Exception as e:
+                if connection:
+                    connection.rollback()
+                self.logger.error(f"メモリ内SQLite接続エラー: {e}")
+                raise
+            finally:
+                if connection:
+                    connection.close()
+        else:
+            connection = None
+            try:
+                connection = sqlite3.connect(self.db_path)
+                connection.row_factory = sqlite3.Row  # 辞書形式でアクセス可能
+                self.logger.debug(f"SQLite接続開始: {self.db_path}")
+                yield connection
+            except Exception as e:
+                if connection:
+                    connection.rollback()
+                self.logger.error(f"SQLite接続エラー: {e}")
+                raise
+            finally:
+                if connection:
+                    connection.close()
+                    self.logger.debug("SQLite接続終了")
 
     def execute_query(self, query: str, params: tuple | None = None) -> list[dict[str, Any]]:
         """SELECT クエリ実行"""
