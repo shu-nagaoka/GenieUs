@@ -49,6 +49,9 @@ const nextConfig: NextConfig = {
   typescript: { 
     ignoreBuildErrors: true   // TypeScriptエラーも一時的に無視
   },
+  
+  // ビルド最適化
+  swcMinify: true,
 }
 
 export default nextConfig
