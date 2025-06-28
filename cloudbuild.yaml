@@ -85,7 +85,7 @@ steps:
         echo "Service: $SERVICE_NAME"
         
         # Cloud Buildでデプロイ（ローカルDockerは使わない）
-        gcloud run deploy $SERVICE_NAME \
+        gcloud run deploy "$SERVICE_NAME" \
           --source . \
           --platform managed \
           --region $_GCP_REGION \
@@ -106,7 +106,7 @@ steps:
           --quiet
         
         # バックエンドURL取得
-        BACKEND_URL=$(gcloud run services describe $SERVICE_NAME \
+        BACKEND_URL=$(gcloud run services describe "$SERVICE_NAME" \
           --platform managed \
           --region $_GCP_REGION \
           --format 'value(status.url)')
@@ -147,7 +147,7 @@ steps:
         echo "Backend URL: $BACKEND_URL"
         
         # Cloud Buildでデプロイ
-        gcloud run deploy $SERVICE_NAME \
+        gcloud run deploy "$SERVICE_NAME" \
           --source . \
           --platform managed \
           --region $_GCP_REGION \
@@ -166,7 +166,7 @@ steps:
           --quiet
         
         # フロントエンドURL取得
-        FRONTEND_URL=$(gcloud run services describe $SERVICE_NAME \
+        FRONTEND_URL=$(gcloud run services describe "$SERVICE_NAME" \
           --platform managed \
           --region $_GCP_REGION \
           --format 'value(status.url)')
@@ -231,15 +231,13 @@ substitutions:
   _GOOGLE_CLIENT_SECRET: ''
 
 # ビルド設定
+timeout: 1200s
 options:
   # ログ設定
   logging: CLOUD_LOGGING_ONLY
   
   # マシンタイプ（並行処理のためハイスペック）
   machineType: 'E2_HIGHCPU_8'
-  
-  # タイムアウト
-  timeout: 1200s
   
   # 環境変数
   env:
