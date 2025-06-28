@@ -49,6 +49,7 @@ import {
 import { FaUtensils, FaAppleAlt, FaCarrot, FaFish } from 'react-icons/fa'
 import Link from 'next/link'
 import { useMealRecordsManager, useCreateMealRecord } from '@/hooks/useMealRecords'
+import { usePrimaryChildId, useChildrenOptions } from '@/hooks/use-family-info'
 import type { MealRecord, NutritionSummary } from '@/libs/api/meal-records'
 
 type ViewMode = 'card' | 'table'
@@ -67,8 +68,7 @@ const detectionSourceLabels = {
   voice_ai: '音声AI',
 }
 
-// デフォルトの子供ID (実際にはユーザー認証から取得)
-const DEFAULT_CHILD_ID = 'frontend_child'
+// 削除：静的なDEFAULT_CHILD_IDは使用しない
 
 export default function MealRecordsPage() {
   return (
@@ -85,9 +85,18 @@ function MealRecordsPageContent() {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [selectedChildId, setSelectedChildId] = useState<string>('')
+
+  // 家族情報から子供情報を取得
+  const { childId: primaryChildId, isLoading: familyLoading, error: familyError } = usePrimaryChildId()
+  const { options: childrenOptions } = useChildrenOptions()
+  
+  // 選択された子供ID（デフォルトは最初の子供）
+  const currentChildId = selectedChildId || primaryChildId || ''
 
   // 新しい記録作成用のフォーム状態
   const [newMealForm, setNewMealForm] = useState({
+    child_id: '',
     meal_name: '',
     meal_type: 'breakfast' as const,
     detected_foods: '',
@@ -96,6 +105,7 @@ function MealRecordsPageContent() {
 
   // 編集用のフォーム状態
   const [editMealForm, setEditMealForm] = useState({
+    child_id: '',
     meal_name: '',
     meal_type: 'breakfast' as const,
     detected_foods: '',
@@ -114,7 +124,7 @@ function MealRecordsPageContent() {
     isCreating,
     isUpdating,
     isDeleting,
-  } = useMealRecordsManager(DEFAULT_CHILD_ID)
+  } = useMealRecordsManager(currentChildId)
 
   // フィルタリング済みの食事記録
   const filteredMealRecords = useMemo(() => {
@@ -155,7 +165,7 @@ function MealRecordsPageContent() {
         .filter(food => food.length > 0)
 
       await createMealRecord({
-        child_id: DEFAULT_CHILD_ID,
+        child_id: newMealForm.child_id || currentChildId,
         meal_name: newMealForm.meal_name,
         meal_type: newMealForm.meal_type,
         detected_foods: foodArray.length > 0 ? foodArray : undefined,
@@ -166,6 +176,7 @@ function MealRecordsPageContent() {
 
       // フォームリセット
       setNewMealForm({
+        child_id: '',
         meal_name: '',
         meal_type: 'breakfast',
         detected_foods: '',
@@ -183,6 +194,7 @@ function MealRecordsPageContent() {
   const handleEditMealRecord = (record: MealRecord) => {
     setSelectedRecord(record)
     setEditMealForm({
+      child_id: record.child_id,
       meal_name: record.meal_name,
       meal_type: record.meal_type,
       detected_foods: record.detected_foods.join(', '),
@@ -230,20 +242,22 @@ function MealRecordsPageContent() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading || familyLoading) {
     return (
       <AppLayout>
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
           <div className="inline-flex items-center gap-2">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-orange-500 border-t-transparent"></div>
-            <span className="text-gray-600">食事記録を読み込み中...</span>
+            <span className="text-gray-600">
+              {familyLoading ? '家族情報を読み込み中...' : '食事記録を読み込み中...'}
+            </span>
           </div>
         </div>
       </AppLayout>
     )
   }
 
-  if (error) {
+  if (error || familyError) {
     return (
       <AppLayout>
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
@@ -254,9 +268,11 @@ function MealRecordsPageContent() {
                   <UtensilsIcon className="h-6 w-6 text-red-600" />
                 </div>
               </div>
-              <h2 className="mb-2 text-lg font-semibold text-red-800">食事記録の読み込みに失敗しました</h2>
+              <h2 className="mb-2 text-lg font-semibold text-red-800">
+                {familyError ? '家族情報の読み込みに失敗しました' : '食事記録の読み込みに失敗しました'}
+              </h2>
               <p className="mb-4 text-sm text-red-600">
-                {error?.message || 'ネットワークエラーまたはサーバーエラーが発生しました'}
+                {(error || familyError)?.message || 'ネットワークエラーまたはサーバーエラーが発生しました'}
               </p>
               <Button 
                 onClick={() => window.location.reload()} 
@@ -264,6 +280,34 @@ function MealRecordsPageContent() {
               >
                 再読み込み
               </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
+    )
+  }
+
+  // 家族情報が取得できているかチェック
+  if (!currentChildId) {
+    return (
+      <AppLayout>
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
+          <Card className="border-amber-200 bg-amber-50 shadow-xl">
+            <CardContent className="p-6 text-center">
+              <div className="mb-4 flex justify-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+                  <UtensilsIcon className="h-6 w-6 text-amber-600" />
+                </div>
+              </div>
+              <h2 className="mb-2 text-lg font-semibold text-amber-800">お子様の情報が登録されていません</h2>
+              <p className="mb-4 text-sm text-amber-600">
+                食事記録を使用するには、まず家族情報でお子様を登録してください
+              </p>
+              <Link href="/family">
+                <Button className="bg-amber-600 text-white hover:bg-amber-700">
+                  家族情報を登録する
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
@@ -284,11 +328,34 @@ function MealRecordsPageContent() {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-gray-800">食事記録</h1>
-                  <p className="text-gray-600">お子様の食事を記録・栄養バランスを管理します</p>
+                  <p className="text-gray-600">
+                    {currentChildId}の食事を記録・栄養バランスを管理します
+                    {childrenOptions.length > 1 && (
+                      <span className="ml-2 text-sm text-amber-600">
+                        ({childrenOptions.length}人のお子様が登録済み)
+                      </span>
+                    )}
+                  </p>
                 </div>
               </div>
 
               <div className="flex items-center space-x-3">
+                {/* 子供選択ドロップダウン（複数いる場合のみ表示） */}
+                {childrenOptions.length > 1 && (
+                  <Select value={currentChildId} onValueChange={setSelectedChildId}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="お子様を選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {childrenOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
                 <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
                   <DialogTrigger asChild>
                     <Button className="bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg hover:from-orange-600 hover:to-amber-600">
@@ -304,6 +371,26 @@ function MealRecordsPageContent() {
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
+                      {/* 子供選択 */}
+                      <div>
+                        <Label htmlFor="child-select">お子様を選択</Label>
+                        <Select 
+                          value={newMealForm.child_id || currentChildId}
+                          onValueChange={(value) => setNewMealForm(prev => ({ ...prev, child_id: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="お子様を選択してください" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {childrenOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="meal-name">食事名</Label>
