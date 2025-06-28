@@ -242,20 +242,35 @@ async def root():
 
 
 if __name__ == "__main__":
-    # 環境変数からポート設定を取得（デフォルト: 8080でCloud Runと統一）
-    port = int(os.getenv("PORT", "8080"))
-    host = os.getenv("HOST", "0.0.0.0")
-    log_level = os.getenv("LOG_LEVEL", "info").lower()
-    reload = os.getenv("RELOAD", "false").lower() == "true"
+    print("=== GenieUs Backend Starting ===")
+    print(f"Python version: {os.sys.version}")
+    print(f"Environment variables:")
+    print(f"  ENVIRONMENT: {os.getenv('ENVIRONMENT', 'not_set')}")
+    print(f"  PORT: {os.getenv('PORT', 'not_set')}")
+    print(f"  FAST_STARTUP: {os.getenv('FAST_STARTUP', 'not_set')}")
+    print(f"  GOOGLE_CLOUD_PROJECT: {os.getenv('GOOGLE_CLOUD_PROJECT', 'not_set')}")
+    
+    try:
+        # 環境変数からポート設定を取得（デフォルト: 8080でCloud Runと統一）
+        port = int(os.getenv("PORT", "8080"))
+        host = os.getenv("HOST", "0.0.0.0")
+        log_level = os.getenv("LOG_LEVEL", "info").lower()
+        reload = os.getenv("RELOAD", "false").lower() == "true"
 
-    print(f"🚀 Starting FastAPI server on {host}:{port}")
-    print(f"📡 CORS Origins: {get_cors_origins()}")
+        print(f"🚀 Starting FastAPI server on {host}:{port}")
+        print(f"📡 CORS Origins: {get_cors_origins()}")
+        print("=== Starting uvicorn server ===")
 
-    # FastAPIサーバー起動
-    uvicorn.run(
-        "src.main:app",
-        host=host,
-        port=port,
-        reload=reload,
-        log_level=log_level,
-    )
+        # FastAPIサーバー起動
+        uvicorn.run(
+            "src.main:app",
+            host=host,
+            port=port,
+            reload=reload,
+            log_level=log_level,
+        )
+    except Exception as e:
+        print(f"❌ Critical startup error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
