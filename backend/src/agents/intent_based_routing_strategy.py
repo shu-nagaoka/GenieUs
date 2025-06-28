@@ -55,21 +55,45 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
             if message.strip() in ["はい", "yes", "Yes", "YES", "いいえ", "no", "No", "NO"]:
                 is_positive = message.strip() in ["はい", "yes", "Yes", "YES"]
                 if is_positive:
-                    self.logger.info(f"🎯 確認応答検出（肯定）: '{message.strip()}' → 直接食事記録API実行")
-                    return "meal_record_api", {
-                        "confidence": 1.0,
-                        "reasoning": "画像解析後の確認応答（肯定）- 直接食事記録API呼び出し",
-                        "matched_keywords": [message.strip()],
-                        "priority": "highest",
-                        "confirmation_response": True,
-                        "action": "create_meal_record_direct",
-                        "api_call": True,
-                    }
+                    # 確認文脈のタイプを判定
+                    context_type = self._get_confirmation_context_type(conversation_history)
+                    if context_type == "meal_record":
+                        self.logger.info(f"🎯 食事記録確認応答検出（肯定）: '{message.strip()}' → 直接食事記録API実行")
+                        return "meal_record_api", {
+                            "confidence": 1.0,
+                            "reasoning": "画像解析後の確認応答（肯定）- 直接食事記録API呼び出し",
+                            "matched_keywords": [message.strip()],
+                            "priority": "highest",
+                            "confirmation_response": True,
+                            "action": "create_meal_record_direct",
+                            "api_call": True,
+                        }
+                    elif context_type == "schedule_record":
+                        self.logger.info(f"🎯 スケジュール確認応答検出（肯定）: '{message.strip()}' → 直接スケジュール記録API実行")
+                        return "schedule_record_api", {
+                            "confidence": 1.0,
+                            "reasoning": "スケジュール提案後の確認応答（肯定）- 直接スケジュール記録API呼び出し",
+                            "matched_keywords": [message.strip()],
+                            "priority": "highest",
+                            "confirmation_response": True,
+                            "action": "create_schedule_record_direct",
+                            "api_call": True,
+                        }
+                    else:
+                        self.logger.info(f"🎯 一般確認応答検出（肯定）: '{message.strip()}' → coordinatorで継続")
+                        return "coordinator", {
+                            "confidence": 1.0,
+                            "reasoning": "一般確認応答（肯定）- 継続対話",
+                            "matched_keywords": [message.strip()],
+                            "priority": "highest",
+                            "confirmation_response": True,
+                            "action": "continue_conversation",
+                        }
                 else:
                     self.logger.info(f"🎯 確認応答検出（否定）: '{message.strip()}' → coordinatorで継続対話")
                     return "coordinator", {
                         "confidence": 1.0,
-                        "reasoning": "画像解析後の確認応答（否定）- 継続対話",
+                        "reasoning": "確認応答（否定）- 継続対話",
                         "matched_keywords": [message.strip()],
                         "priority": "highest",
                         "confirmation_response": True,
@@ -212,6 +236,83 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
             self.logger.info(f"🔍 確認文脈検出失敗: 画像解析キーワードなし、content_preview='{content[:100]}...'")
                     
         return False
+
+    def _get_confirmation_context_type(self, conversation_history: list) -> str:
+        """確認文脈のタイプを判定（food vs schedule vs general）
+        
+        Args:
+            conversation_history: 会話履歴
+            
+        Returns:
+            str: "meal_record", "schedule_record", または "general"
+        """
+        if not conversation_history:
+            return "general"
+        
+        # 直前のメッセージ（最新3件をチェック）を調べる
+        recent_messages = conversation_history[-3:] if len(conversation_history) >= 3 else conversation_history
+        
+        for message in reversed(recent_messages):
+            role = message.get("role")
+            content = message.get("content", "")
+            
+            # エージェントからのメッセージをチェック
+            if role == "genie" or role is None or role == "":
+                # 食事記録関連の確認文脈
+                meal_indicators = [
+                    "食事記録",
+                    "食事管理",
+                    "栄養記録",
+                    "お食事の記録",
+                    "食事管理システムに記録",
+                    "栄養バランスの参考",
+                    "画像分析",
+                    "お写真",
+                    "分析結果",
+                    "献立",
+                    "食べ物",
+                    "離乳食",
+                    "記録しておきませんか",
+                ]
+                
+                # スケジュール記録関連の確認文脈
+                schedule_indicators = [
+                    "予定",
+                    "スケジュール",
+                    "診察",
+                    "検診",
+                    "健診",
+                    "予約",
+                    "カレンダー",
+                    "予定表",
+                    "予定を登録",
+                    "スケジュールに記録",
+                    "予定を追加",
+                    "リマインダー",
+                    "アラーム",
+                    "忘れないように",
+                    "記録しておく",
+                    "次回の予約",
+                    "来週の診察",
+                    "来月の検診",
+                    "病院予約",
+                    "通院予定",
+                    "ワクチン接種",
+                    "予防接種の予定"
+                ]
+                
+                # スケジュール関連キーワードが多く含まれる場合
+                schedule_count = sum(1 for indicator in schedule_indicators if indicator in content)
+                meal_count = sum(1 for indicator in meal_indicators if indicator in content)
+                
+                if schedule_count > 0:
+                    self.logger.info(f"🔍 スケジュール確認文脈検出: {schedule_count}個のキーワード一致")
+                    return "schedule_record"
+                elif meal_count > 0:
+                    self.logger.info(f"🔍 食事記録確認文脈検出: {meal_count}個のキーワード一致")
+                    return "meal_record"
+        
+        return "general"
 
     def get_strategy_name(self) -> str:
         """戦略名取得"""

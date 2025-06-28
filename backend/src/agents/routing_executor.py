@@ -119,6 +119,14 @@ class RoutingExecutor:
                     conversation_history, user_id, session_id, family_info
                 )
                 return api_response, {"agent_id": "meal_record_api", "agent_name": "食事記録API", "display_name": "食事記録作成"}, routing_path
+            
+            # 📅 **特別処理**: schedule_record_api の場合は直接API実行
+            if selected_agent_type == "schedule_record_api":
+                self.logger.info(f"🎯 schedule_record_api実行: 会話履歴からスケジュール記録作成")
+                api_response = await self._execute_schedule_record_api(
+                    conversation_history, user_id, session_id, family_info
+                )
+                return api_response, {"agent_id": "schedule_record_api", "agent_name": "スケジュール記録API", "display_name": "スケジュール記録作成"}, routing_path
 
             # Runner取得
             if selected_agent_type not in runners:
@@ -1186,6 +1194,347 @@ JSONのみを返してください。余計な説明は不要です。
             
         except Exception as e:
             self.logger.error(f"❌ 食事記録API呼び出しエラー: {e}")
+            return {
+                "success": False,
+                "error": f"データベース保存エラー: {str(e)}"
+            }
+
+    async def _execute_schedule_record_api(
+        self,
+        conversation_history: list | None,
+        user_id: str,
+        session_id: str,
+        family_info: dict | None = None,
+    ) -> str:
+        """スケジュール記録API直接実行
+        
+        Args:
+            conversation_history: 会話履歴（スケジュール提案を含む）
+            user_id: ユーザーID
+            session_id: セッションID
+            family_info: 家族情報
+            
+        Returns:
+            str: スケジュール記録作成結果メッセージ
+        """
+        try:
+            self.logger.info("📅 スケジュール記録API実行開始: 会話履歴からスケジュール情報を抽出")
+            
+            # 会話履歴からスケジュール提案を抽出
+            schedule_proposal = await self._extract_schedule_proposal_from_history(conversation_history)
+            
+            if not schedule_proposal:
+                self.logger.warning("⚠️ 会話履歴にスケジュール提案が見つかりません")
+                return "申し訳ありません。スケジュール提案が見つからないため、予定を作成できませんでした。"
+            
+            # 家族情報から子供情報を取得
+            child_info = self._extract_child_info(family_info)
+            
+            # スケジュール記録データを構築
+            schedule_record_data = self._build_schedule_record_data(schedule_proposal, child_info, user_id)
+            
+            # スケジュール記録API呼び出し（実際のAPI呼び出し）
+            record_result = await self._call_schedule_record_api(schedule_record_data)
+            
+            if record_result.get("success"):
+                self.logger.info(f"✅ スケジュール記録作成成功: {record_result.get('schedule_id')}")
+                return f"✅ 予定を登録しました！\n\n📅 **予定詳細**:\n• タイトル: {schedule_record_data.get('title', '不明')}\n• 日時: {schedule_record_data.get('start_datetime', '不明')}\n• 場所: {schedule_record_data.get('location', '未定')}\n• 内容: {schedule_record_data.get('description', '詳細なし')}\n\n予定がカレンダーに保存されました。リマインダーも設定済みです！"
+            else:
+                self.logger.error(f"❌ スケジュール記録作成失敗: {record_result.get('error')}")
+                return f"申し訳ありません。予定の作成中にエラーが発生しました: {record_result.get('error', '不明なエラー')}"
+                
+        except Exception as e:
+            self.logger.error(f"❌ スケジュール記録API実行エラー: {e}")
+            return f"申し訳ありません。予定作成中にシステムエラーが発生しました: {e!s}"
+
+    async def _extract_schedule_proposal_from_history(self, conversation_history: list | None) -> dict | None:
+        """会話履歴からスケジュール提案を抽出（Gemini API使用）
+        
+        Args:
+            conversation_history: 会話履歴
+            
+        Returns:
+            dict | None: スケジュール提案データ
+        """
+        if not conversation_history:
+            return None
+            
+        # 最新のスケジュール提案を探す
+        schedule_proposal_content = None
+        for message in reversed(conversation_history):
+            role = message.get("role")
+            content = message.get("content", "")
+            
+            # エージェントからのメッセージ（genie役割またはNone/未指定）でスケジュール提案を探す
+            if role == "genie" or role is None or role == "":
+                # スケジュール提案の特徴的なキーワードを検出
+                schedule_proposal_indicators = [
+                    "予定",
+                    "スケジュール",
+                    "診察",
+                    "検診",
+                    "健診",
+                    "予約",
+                    "カレンダー",
+                    "日程",
+                    "時間",
+                    "午前",
+                    "午後",
+                    "来週",
+                    "来月",
+                    "明日",
+                    "病院",
+                    "クリニック",
+                    "受診",
+                    "通院",
+                    "ワクチン",
+                    "予防接種",
+                    "健康管理のジーニー",
+                    "次回の",
+                    "忘れないように",
+                    "記録しておく",
+                    "リマインダー",
+                    "お忘れなく",
+                    "予定表",
+                    "手帳"
+                ]
+                
+                # スケジュール提案または健康関連の内容が含まれているかチェック
+                for indicator in schedule_proposal_indicators:
+                    if indicator in content:
+                        schedule_proposal_content = content
+                        self.logger.info(f"🔍 スケジュール提案発見: '{indicator}' が含まれる応答")
+                        break
+                
+                if schedule_proposal_content:
+                    break
+        
+        if not schedule_proposal_content:
+            self.logger.warning("⚠️ 会話履歴にスケジュール提案が見つかりません")
+            return None
+        
+        # Gemini APIを使用してスケジュール提案を構造化
+        try:
+            return await self._structure_schedule_proposal_with_gemini(schedule_proposal_content)
+        except Exception as e:
+            self.logger.warning(f"⚠️ Gemini APIスケジュール構造化に失敗、フォールバックを使用: {e}")
+            return self._extract_schedule_from_text(schedule_proposal_content)
+
+    def _extract_schedule_from_text(self, content: str) -> dict:
+        """テキストからスケジュール情報を抽出（フォールバック）
+        
+        Args:
+            content: メッセージ内容
+            
+        Returns:
+            dict: 抽出されたスケジュール情報
+        """
+        # 基本的なスケジュールキーワードを検索
+        schedule_keywords = ["診察", "検診", "健診", "予約", "受診", "通院", "ワクチン", "予防接種"]
+        detected_schedules = [keyword for keyword in schedule_keywords if keyword in content]
+        
+        # デフォルトのスケジュール情報
+        return {
+            "title": detected_schedules[0] if detected_schedules else "健康関連の予定",
+            "description": "AI提案による健康管理の予定",
+            "event_type": "medical",
+            "extracted_from": "text_fallback",
+            "confidence": 0.5
+        }
+
+    async def _structure_schedule_proposal_with_gemini(self, schedule_proposal_content: str) -> dict:
+        """Gemini APIを使用してスケジュール提案を構造化
+        
+        Args:
+            schedule_proposal_content: スケジュール提案の自然言語レスポンス
+            
+        Returns:
+            dict: 構造化されたスケジュール提案
+        """
+        try:
+            # Vertex AI Gemini APIを使用してスケジュールデータを構造化
+            import os
+
+            import vertexai
+            from vertexai.generative_models import GenerativeModel
+
+            # Vertex AI初期化
+            project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "blog-sample-381923")
+            location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+            vertexai.init(project=project_id, location=location)
+            
+            model = GenerativeModel("gemini-2.5-flash")
+            
+            # 構造化プロンプト
+            structure_prompt = f"""
+以下の健康・医療関連の会話レスポンスから、スケジュール・予定情報を抽出してください。
+必ずJSON形式で応答し、以下の形式に従ってください：
+
+{{
+    "title": "予定のタイトル",
+    "description": "予定の詳細説明",
+    "event_type": "medical|school|outing|other",
+    "suggested_date": "YYYY-MM-DD（提案された日付があれば）",
+    "suggested_time": "HH:MM（提案された時間があれば）",
+    "location": "場所（病院・クリニック名など）",
+    "notes": "注意事項やメモ",
+    "reminder_needed": true/false,
+    "confidence": 0.0-1.0の数値,
+    "schedule_description": "スケジュールの簡潔な説明"
+}}
+
+スケジュール提案レスポンス:
+{schedule_proposal_content}
+
+JSONのみを返してください。余計な説明は不要です。
+"""
+
+            # API呼び出し
+            response = model.generate_content(structure_prompt)
+            response_text = response.text.strip()
+            
+            # JSON部分を抽出
+            json_start = response_text.find('{')
+            json_end = response_text.rfind('}') + 1
+            
+            if json_start >= 0 and json_end > json_start:
+                json_str = response_text[json_start:json_end]
+                structured_data = json.loads(json_str)
+                
+                self.logger.info(f"✅ Gemini APIスケジュール構造化成功: {structured_data.get('title', '不明')}")
+                return structured_data
+            else:
+                raise ValueError("JSONレスポンスが見つかりません")
+                
+        except Exception as e:
+            self.logger.error(f"❌ Gemini APIスケジュール構造化エラー: {e}")
+            # フォールバック: 基本的な構造化データを返す
+            return {
+                "title": "健康管理の予定",
+                "description": "AI提案による健康・医療関連の予定",
+                "event_type": "medical",
+                "suggested_date": "",
+                "suggested_time": "",
+                "location": "",
+                "notes": "Gemini API構造化に失敗しました",
+                "reminder_needed": True,
+                "confidence": 0.3,
+                "schedule_description": "会話から抽出されたスケジュール",
+                "original_content": schedule_proposal_content[:200] + "..." if len(schedule_proposal_content) > 200 else schedule_proposal_content
+            }
+
+    def _build_schedule_record_data(self, schedule_proposal: dict, child_info: dict, user_id: str) -> dict:
+        """スケジュール記録データを構築
+        
+        Args:
+            schedule_proposal: スケジュール提案結果
+            child_info: 子供情報
+            user_id: ユーザーID
+            
+        Returns:
+            dict: スケジュール記録データ
+        """
+        
+        title = schedule_proposal.get("title", "健康管理の予定")
+        description = schedule_proposal.get("description", "AI提案による予定")
+        
+        # 日時設定（提案がない場合はデフォルト値）
+        suggested_date = schedule_proposal.get("suggested_date", "")
+        suggested_time = schedule_proposal.get("suggested_time", "")
+        
+        if suggested_date and suggested_time:
+            start_datetime = f"{suggested_date}T{suggested_time}:00"
+        elif suggested_date:
+            start_datetime = f"{suggested_date}T10:00:00"  # デフォルト午前10時
+        else:
+            # 1週間後のデフォルト日時
+            from datetime import datetime, timedelta
+            default_datetime = datetime.now() + timedelta(days=7)
+            start_datetime = default_datetime.strftime("%Y-%m-%dT%H:%M:%S")
+        
+        return {
+            "user_id": user_id,
+            "title": title,
+            "description": description,
+            "start_datetime": start_datetime,
+            "event_type": schedule_proposal.get("event_type", "medical"),
+            "location": schedule_proposal.get("location", ""),
+            "notes": schedule_proposal.get("notes", ""),
+            "reminder_minutes": 60 if schedule_proposal.get("reminder_needed", True) else 0,  # 1時間前リマインダー
+            "confidence": schedule_proposal.get("confidence", 0.8)
+        }
+
+    async def _call_schedule_record_api(self, schedule_data: dict) -> dict:
+        """スケジュール記録API呼び出し（実際のデータベース保存）
+        
+        Args:
+            schedule_data: スケジュール記録データ
+            
+        Returns:
+            dict: API応答結果
+        """
+        try:
+            self.logger.info(f"📅 スケジュール記録API呼び出し: {schedule_data}")
+            
+            # Composition Rootから実際のScheduleManagementUseCaseを取得（重複初期化回避）
+            if self._composition_root:
+                schedule_usecase = self._composition_root._usecases.get("schedule_management")
+            else:
+                # フォールバック: 新規作成（非推奨パターン）
+                from src.di_provider.composition_root import CompositionRootFactory
+                composition_root = CompositionRootFactory.create()
+                schedule_usecase = composition_root._usecases.get("schedule_management")
+            
+            if not schedule_usecase:
+                self.logger.error("❌ ScheduleManagementUseCaseが利用できません")
+                return {
+                    "success": False,
+                    "error": "スケジュール管理機能が利用できません"
+                }
+            
+            # ScheduleRequestオブジェクトを作成
+            from datetime import datetime
+
+            from src.application.usecases.schedule_management_usecase import (
+                CreateScheduleRequest,
+            )
+            
+            schedule_request = CreateScheduleRequest(
+                user_id=schedule_data.get("user_id", "default_user"),
+                title=schedule_data.get("title"),
+                description=schedule_data.get("description", ""),
+                start_datetime=schedule_data.get("start_datetime"),
+                end_datetime=schedule_data.get("end_datetime", ""),
+                event_type=schedule_data.get("event_type", "medical"),
+                location=schedule_data.get("location", ""),
+                notes=schedule_data.get("notes", ""),
+                reminder_minutes=schedule_data.get("reminder_minutes", 60)
+            )
+            
+            # データベースに実際に保存
+            schedule_response = await schedule_usecase.create_schedule_event(schedule_request)
+            
+            if not schedule_response.success:
+                self.logger.error(f"❌ スケジュール記録作成失敗: {schedule_response.error}")
+                return {
+                    "success": False,
+                    "error": schedule_response.error
+                }
+            
+            schedule_record = schedule_response.schedule_event
+            schedule_id = schedule_record.get("id") if schedule_record else "unknown"
+            
+            self.logger.info(f"✅ 実際のスケジュールデータベース保存成功: {schedule_id}")
+            
+            return {
+                "success": True,
+                "schedule_id": schedule_id,
+                "message": "スケジュールがデータベースに正常に保存されました",
+                "record": schedule_record
+            }
+            
+        except Exception as e:
+            self.logger.error(f"❌ スケジュール記録API呼び出しエラー: {e}")
             return {
                 "success": False,
                 "error": f"データベース保存エラー: {str(e)}"
