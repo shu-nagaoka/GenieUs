@@ -39,6 +39,7 @@ class RoutingExecutor:
         logger: logging.Logger,
         routing_strategy: RoutingStrategy,
         message_processor: MessageProcessor,
+        composition_root = None,
         app_name: str = "GenieUs",
     ):
         """RoutingExecutor初期化
@@ -47,12 +48,14 @@ class RoutingExecutor:
             logger: DIコンテナから注入されるロガー
             routing_strategy: ルーティング戦略
             message_processor: メッセージプロセッサー
+            composition_root: CompositionRoot（重複初期化回避用）
             app_name: アプリケーション名
 
         """
         self.logger = logger
         self.routing_strategy = routing_strategy
         self.message_processor = message_processor
+        self._composition_root = composition_root
         self._app_name = app_name
 
     async def execute_with_routing(
@@ -1125,11 +1128,14 @@ JSONのみを返してください。余計な説明は不要です。
         try:
             self.logger.info(f"🍽️ 食事記録API呼び出し: {meal_data}")
             
-            # Composition Rootから実際のMealRecordUseCaseを取得
-            from src.di_provider.composition_root import CompositionRootFactory
-            
-            composition_root = CompositionRootFactory.create()
-            meal_record_usecase = composition_root._usecases.get("meal_record")
+            # Composition Rootから実際のMealRecordUseCaseを取得（重複初期化回避）
+            if self._composition_root:
+                meal_record_usecase = self._composition_root._usecases.get("meal_record")
+            else:
+                # フォールバック: 新規作成（非推奨パターン）
+                from src.di_provider.composition_root import CompositionRootFactory
+                composition_root = CompositionRootFactory.create()
+                meal_record_usecase = composition_root._usecases.get("meal_record")
             
             if not meal_record_usecase:
                 self.logger.error("❌ MealRecordUseCaseが利用できません")
@@ -1138,33 +1144,41 @@ JSONのみを返してください。余計な説明は不要です。
                     "error": "食事記録機能が利用できません（SQLiteモードでない可能性があります）"
                 }
             
-            # 実際のMealRecordUseCaseを呼び出してデータベースに保存
-            meal_record_request = {
-                "child_id": meal_data.get("child_id", "default_child"),
-                "meal_name": meal_data.get("meal_name"),
-                "meal_type": meal_data.get("meal_type", "snack"),
-                "meal_date": meal_data.get("meal_date"),
-                "detected_foods": meal_data.get("detected_foods", []),
-                "nutrition_info": meal_data.get("nutrition_info", {}),
-                "confidence": meal_data.get("confidence", 0.8),
-                "analysis_source": meal_data.get("analysis_source", "image_analysis")
-            }
+            # MealRecordRequestオブジェクトを作成
+            from src.application.usecases.meal_record_usecase import CreateMealRecordRequest
+            from datetime import datetime
+            
+            meal_record_request = CreateMealRecordRequest(
+                child_id=meal_data.get("child_id", "default_child"),
+                meal_name=meal_data.get("meal_name"),
+                meal_type=meal_data.get("meal_type", "snack"),
+                timestamp=datetime.fromisoformat(meal_data.get("meal_date").replace("Z", "+00:00")) if meal_data.get("meal_date") else datetime.now(),
+                detected_foods=meal_data.get("detected_foods", []),
+                nutrition_info=meal_data.get("nutrition_info", {}),
+                confidence=meal_data.get("confidence", 0.8),
+                analysis_source=meal_data.get("analysis_source", "image_analysis")
+            )
             
             # データベースに実際に保存
-            meal_record = await meal_record_usecase.create_meal_record(meal_record_request)
+            meal_record_response = await meal_record_usecase.create_meal_record(meal_record_request)
             
-            self.logger.info(f"✅ 実際のデータベース保存成功: {meal_record.meal_id}")
+            if not meal_record_response.success:
+                self.logger.error(f"❌ 食事記録作成失敗: {meal_record_response.error}")
+                return {
+                    "success": False,
+                    "error": meal_record_response.error
+                }
+            
+            meal_record = meal_record_response.meal_record
+            meal_id = meal_record.get("id") if meal_record else "unknown"
+            
+            self.logger.info(f"✅ 実際のデータベース保存成功: {meal_id}")
             
             return {
                 "success": True,
-                "meal_id": meal_record.meal_id,
+                "meal_id": meal_id,
                 "message": "食事記録がデータベースに正常に保存されました",
-                "record": {
-                    "id": meal_record.meal_id,
-                    "child_id": meal_record.child_id,
-                    "meal_name": meal_record.meal_name,
-                    "meal_date": meal_record.meal_date.isoformat() if meal_record.meal_date else None
-                }
+                "record": meal_record
             }
             
         except Exception as e:

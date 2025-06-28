@@ -19,7 +19,9 @@ class FamilyRepository:
         """
         self.logger = logger
         self.data_dir = Path(data_dir)
-        self.data_dir.mkdir(exist_ok=True)
+        # Cloud Run用: データディレクトリ作成をオプション化
+        if os.getenv("ENVIRONMENT") != "production":
+            self.data_dir.mkdir(exist_ok=True)
 
     async def save_family_info(self, family_info: FamilyInfo) -> dict:
         """家族情報を保存
@@ -32,6 +34,11 @@ class FamilyRepository:
 
         """
         try:
+            # 本番環境ではファイル保存をスキップ（データディレクトリなし）
+            if os.getenv("ENVIRONMENT") == "production":
+                self.logger.info(f"本番環境: 家族情報保存をスキップ - {family_info.user_id}")
+                return {"family_id": family_info.family_id, "status": "skipped_production"}
+            
             file_path = self.data_dir / f"{family_info.user_id}_family.json"
 
             # JSONファイルに保存
@@ -56,6 +63,11 @@ class FamilyRepository:
 
         """
         try:
+            # 本番環境ではファイル読み込みをスキップ（データディレクトリなし）
+            if os.getenv("ENVIRONMENT") == "production":
+                self.logger.info(f"本番環境: 家族情報取得をスキップ - {user_id}")
+                return None
+            
             file_path = self.data_dir / f"{user_id}_family.json"
 
             if not file_path.exists():
@@ -95,6 +107,11 @@ class FamilyRepository:
 
         """
         try:
+            # 本番環境ではファイル削除をスキップ（データディレクトリなし）
+            if os.getenv("ENVIRONMENT") == "production":
+                self.logger.info(f"本番環境: 家族情報削除をスキップ - {user_id}")
+                return True
+            
             file_path = self.data_dir / f"{user_id}_family.json"
 
             if file_path.exists():
