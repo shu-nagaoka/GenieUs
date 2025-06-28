@@ -15,8 +15,8 @@ WORKDIR /app
 # 依存関係ファイルのコピー
 COPY pyproject.toml uv.lock* ./
 
-# 依存関係のインストール（本番用のみ）
-RUN uv sync --frozen --no-dev
+# 依存関係のインストール（本番用のみ、インストールキャッシュ無効化）
+RUN uv sync --frozen --no-dev --no-cache
 
 # 実行用ステージ
 FROM python:3.12.8-slim as runner
@@ -43,17 +43,18 @@ COPY --chown=genius:genius src/ ./src/
 # 非rootユーザーに切り替え
 USER genius
 
-# ポート8000を公開
-EXPOSE 8000
+# ポートを動的に設定（Cloud RunはPORT=8080を設定）
+EXPOSE 8080
 
-# Cloud Run用環境変数
-ENV PORT=8000
+# Cloud Run用環境変数（PORTは実行時に設定される）
 ENV HOST=0.0.0.0
 ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
-# ヘルスチェック
+# ヘルスチェック（ポートを動的に取得）
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:${PORT}/health || exit 1
+  CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
 # アプリケーションの起動（Cloud Run用に最適化）
-CMD uvicorn src.main:app --host ${HOST} --port ${PORT} --workers 1
+CMD uvicorn src.main:app --host ${HOST} --port ${PORT:-8080} --workers 1

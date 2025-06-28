@@ -34,9 +34,13 @@ async def lifespan(app: FastAPI):
     # 起動時処理
     temp_logger = logging.getLogger(__name__)
     temp_logger.info("FastAPI application starting...")
+    
+    import time
+    start_time = time.time()
 
     # 🎯 CompositionRoot一元初期化（アプリケーション全体で1度だけ）
     try:
+        temp_logger.info("CompositionRoot初期化開始...")
         composition_root = CompositionRootFactory.create()
         logger = composition_root.logger
         logger.info("✅ CompositionRoot初期化完了")
@@ -59,7 +63,9 @@ async def lifespan(app: FastAPI):
         app.agent_manager = agent_manager
         app.logger = logger
         app.composition_root = composition_root  # 家族管理UseCaseアクセス用
-        logger.info("✅ FastAPIアプリ関連付け完了（Pure CompositionRoot）")
+        
+        initialization_time = time.time() - start_time
+        logger.info(f"✅ FastAPIアプリ関連付け完了（Pure CompositionRoot）- 初期化時間: {initialization_time:.2f}秒")
 
     except Exception as e:
         temp_logger.error(f"❌ アプリケーション初期化失敗: {e}")
@@ -146,6 +152,13 @@ app.include_router(record_management_router, tags=["record_management"])
 
 # 🔍 検索履歴ルーター
 app.include_router(search_history_router, tags=["search_history"])
+
+
+# ヘルスチェックエンドポイント（Cloud Run用）
+@app.get("/health")
+async def health_check():
+    """ヘルスチェックエンドポイント"""
+    return {"status": "healthy", "service": "genius-backend"}
 
 
 @app.exception_handler(Exception)
