@@ -10,19 +10,22 @@ RUN apk add --no-cache libc6-compat
 # Copy package files
 COPY package*.json ./
 
-# Set production environment
-ENV NODE_ENV=production
+# Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV SKIP_ENV_VALIDATION=1
 
-# Install dependencies (disable scripts to avoid Husky issues in Docker)
-RUN npm ci --ignore-scripts
+# Install dependencies including devDependencies (needed for build)
+# Note: --ignore-scripts prevents Husky from running in Docker
+RUN npm ci --ignore-scripts --include=dev
 
 # Copy source code
 COPY . .
 
 # Build with increased memory
 RUN npm run build
+
+# Set production environment after build
+ENV NODE_ENV=production
 
 # Expose port
 EXPOSE 3000
