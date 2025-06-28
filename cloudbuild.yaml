@@ -90,7 +90,7 @@ steps:
           --platform managed \
           --region $_GCP_REGION \
           --allow-unauthenticated \
-          --port 8000 \
+          --port 8080 \
           --cpu 1 \
           --memory 2Gi \
           --min-instances $MIN_INSTANCES \
@@ -98,6 +98,8 @@ steps:
           --service-account genius-backend-sa@$_GCP_PROJECT_ID.iam.gserviceaccount.com \
           --set-env-vars "GOOGLE_CLOUD_PROJECT=$_GCP_PROJECT_ID" \
           --set-env-vars "ENVIRONMENT=$_ENVIRONMENT" \
+          --set-env-vars "GOOGLE_GENAI_USE_VERTEXAI=True" \
+          --set-env-vars "GOOGLE_CLOUD_LOCATION=us-central1" \
           --set-env-vars "ROUTING_STRATEGY=${_ROUTING_STRATEGY:-enhanced}" \
           --set-env-vars "LOG_LEVEL=${_LOG_LEVEL:-INFO}" \
           --timeout 300 \
