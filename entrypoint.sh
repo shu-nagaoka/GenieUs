@@ -73,9 +73,10 @@ show_menu() {
     echo -e "  ${YELLOW}23${NC}) GCP権限・API詳細調査"
     echo ""
     echo -e "${GREEN}🔧 CI/CD セットアップ${NC}"
-    echo -e "  ${YELLOW}30${NC}) GCP CI/CD環境自動構築"
-    echo -e "  ${YELLOW}31${NC}) GitHub Secrets自動設定"
-    echo -e "  ${YELLOW}32${NC}) CI/CDパイプライン動作テスト"
+    echo -e "  ${YELLOW}30${NC}) 🎯 GCP CI/CD環境自動構築 (インタラクティブ)"
+    echo -e "  ${YELLOW}31${NC}) 🔐 GitHub Secrets自動設定"
+    echo -e "  ${YELLOW}32${NC}) 🧪 CI/CDパイプライン動作テスト"
+    echo -e "  ${YELLOW}33${NC}) 🚀 インタラクティブデプロイメント"
     echo ""
     echo -e "${CYAN}🔗 API整合性管理${NC}"
     echo -e "  ${YELLOW}24${NC}) API URL整合性チェック (フロント⇔バック)"
@@ -1837,7 +1838,7 @@ main() {
         print_logo
         show_menu
         
-        read -p "選択してください (0-28): " choice
+        read -p "選択してください (0-33): " choice
         echo ""
         
         case $choice in
@@ -1873,12 +1874,13 @@ main() {
             30) setup_gcp_cicd ;;
             31) setup_github_secrets ;;
             32) test_cicd_pipeline ;;
+            33) interactive_deployment ;;
             0) 
                 echo -e "${GREEN}👋 お疲れ様でした！${NC}"
                 exit 0
                 ;;
             *)
-                echo -e "${RED}❌ 無効な選択です。0-32の数字を入力してください。${NC}"
+                echo -e "${RED}❌ 無効な選択です。0-33の数字を入力してください。${NC}"
                 ;;
         esac
         
@@ -2241,10 +2243,193 @@ stop_docs_server() {
     cd docs && ./start-docs.sh stop
 }
 
-# 29. GCP CI/CD環境自動構築
+# ヘルパー関数: GCPアカウント選択
+select_gcp_account() {
+    echo -e "${CYAN}👤 GCPアカウント選択${NC}"
+    echo "======================="
+    echo ""
+    
+    # 利用可能なアカウント一覧取得
+    local accounts=$(gcloud auth list --format="value(account)" 2>/dev/null)
+    if [ -z "$accounts" ]; then
+        echo -e "${RED}❌ 認証済みアカウントが見つかりません${NC}"
+        echo -e "${YELLOW}💡 ログインしますか？ (y/N): ${NC}"
+        read -p "" login_choice
+        
+        if [[ $login_choice =~ ^[Yy]$ ]]; then
+            echo -e "${CYAN}🔐 GCPにログイン中...${NC}"
+            gcloud auth login
+            if [ $? -ne 0 ]; then
+                echo -e "${RED}❌ ログインに失敗しました${NC}"
+                return 1
+            fi
+            accounts=$(gcloud auth list --format="value(account)" 2>/dev/null)
+        else
+            echo -e "${YELLOW}⚠️ ログインがキャンセルされました${NC}"
+            return 1
+        fi
+    fi
+    
+    # アカウント選択メニュー
+    echo -e "${BLUE}📋 利用可能なアカウント:${NC}"
+    echo ""
+    
+    local account_array=()
+    local count=1
+    
+    while IFS= read -r account; do
+        if [ -n "$account" ]; then
+            echo -e "  ${YELLOW}${count}${NC}) $account"
+            account_array+=("$account")
+            count=$((count + 1))
+        fi
+    done <<< "$accounts"
+    
+    echo -e "  ${YELLOW}${count}${NC}) 新しいアカウントでログイン"
+    echo -e "  ${YELLOW}0${NC}) キャンセル"
+    echo ""
+    
+    read -p "アカウントを選択してください (0-$count): " account_choice
+    
+    if [ "$account_choice" = "0" ]; then
+        echo -e "${YELLOW}⚠️ キャンセルされました${NC}"
+        return 1
+    elif [ "$account_choice" = "$count" ]; then
+        echo -e "${CYAN}🔐 新しいアカウントでログイン中...${NC}"
+        gcloud auth login
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}❌ ログインに失敗しました${NC}"
+            return 1
+        fi
+        # 新しくログインしたアカウントを取得
+        SELECTED_ACCOUNT=$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>/dev/null | head -1)
+    elif [ "$account_choice" -ge 1 ] && [ "$account_choice" -lt "$count" ]; then
+        local array_index=$((account_choice - 1))
+        SELECTED_ACCOUNT="${account_array[$array_index]}"
+        
+        # アカウント切り替え
+        echo -e "${CYAN}🔄 アカウントを切り替え中: $SELECTED_ACCOUNT${NC}"
+        gcloud config set account "$SELECTED_ACCOUNT"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}❌ アカウント切り替えに失敗しました${NC}"
+            return 1
+        fi
+    else
+        echo -e "${RED}❌ 無効な選択です${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}✅ 選択されたアカウント: $SELECTED_ACCOUNT${NC}"
+    echo ""
+    return 0
+}
+
+# ヘルパー関数: GCPプロジェクト選択
+select_gcp_project() {
+    echo -e "${CYAN}🏗️ GCPプロジェクト選択${NC}"
+    echo "======================"
+    echo ""
+    
+    echo -e "${BLUE}📋 プロジェクト選択方法:${NC}"
+    echo ""
+    echo -e "  ${YELLOW}1${NC}) 全プロジェクトから選択"
+    echo -e "  ${YELLOW}2${NC}) blog-で始まるプロジェクトから選択"
+    echo -e "  ${YELLOW}3${NC}) プロジェクトIDを直接入力"
+    echo -e "  ${YELLOW}0${NC}) キャンセル"
+    echo ""
+    
+    read -p "選択してください (0-3): " project_method
+    
+    case $project_method in
+        1)
+            echo -e "${CYAN}📋 全プロジェクトを取得中...${NC}"
+            local projects=$(gcloud projects list --format="value(projectId,name)" --sort-by=projectId 2>/dev/null)
+            ;;
+        2)
+            echo -e "${CYAN}📋 blog-プロジェクトを取得中...${NC}"
+            local projects=$(gcloud projects list --filter="projectId:blog*" --format="value(projectId,name)" --sort-by=projectId 2>/dev/null)
+            ;;
+        3)
+            echo -e "${YELLOW}💡 プロジェクトIDを直接入力してください:${NC}"
+            read -p "Project ID: " direct_project_id
+            if [ -z "$direct_project_id" ]; then
+                echo -e "${RED}❌ プロジェクトIDが入力されていません${NC}"
+                return 1
+            fi
+            SELECTED_PROJECT="$direct_project_id"
+            echo -e "${GREEN}✅ 選択されたプロジェクト: $SELECTED_PROJECT${NC}"
+            echo ""
+            return 0
+            ;;
+        0)
+            echo -e "${YELLOW}⚠️ キャンセルされました${NC}"
+            return 1
+            ;;
+        *)
+            echo -e "${RED}❌ 無効な選択です${NC}"
+            return 1
+            ;;
+    esac
+    
+    if [ -z "$projects" ]; then
+        echo -e "${RED}❌ プロジェクトが見つかりません${NC}"
+        echo -e "${YELLOW}💡 権限またはフィルタ条件を確認してください${NC}"
+        return 1
+    fi
+    
+    echo ""
+    echo -e "${BLUE}📋 利用可能なプロジェクト:${NC}"
+    echo ""
+    
+    local project_array=()
+    local count=1
+    
+    while IFS= read -r project_line; do
+        if [ -n "$project_line" ]; then
+            local project_id=$(echo "$project_line" | cut -f1)
+            local project_name=$(echo "$project_line" | cut -f2)
+            echo -e "  ${YELLOW}${count}${NC}) $project_id"
+            if [ -n "$project_name" ] && [ "$project_name" != "$project_id" ]; then
+                echo -e "      └─ $project_name"
+            fi
+            project_array+=("$project_id")
+            count=$((count + 1))
+        fi
+    done <<< "$projects"
+    
+    echo -e "  ${YELLOW}0${NC}) キャンセル"
+    echo ""
+    
+    read -p "プロジェクトを選択してください (0-$((count-1))): " project_choice
+    
+    if [ "$project_choice" = "0" ]; then
+        echo -e "${YELLOW}⚠️ キャンセルされました${NC}"
+        return 1
+    elif [ "$project_choice" -ge 1 ] && [ "$project_choice" -lt "$count" ]; then
+        local array_index=$((project_choice - 1))
+        SELECTED_PROJECT="${project_array[$array_index]}"
+        
+        # プロジェクト切り替え
+        echo -e "${CYAN}🔄 プロジェクトを切り替え中: $SELECTED_PROJECT${NC}"
+        gcloud config set project "$SELECTED_PROJECT"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}❌ プロジェクト切り替えに失敗しました${NC}"
+            return 1
+        fi
+    else
+        echo -e "${RED}❌ 無効な選択です${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}✅ 選択されたプロジェクト: $SELECTED_PROJECT${NC}"
+    echo ""
+    return 0
+}
+
+# 29. GCP CI/CD環境自動構築 (インタラクティブ版)
 setup_gcp_cicd() {
-    echo -e "${GREEN}🔧 GCP CI/CD環境自動構築${NC}"
-    echo "=================================="
+    echo -e "${GREEN}🔧 GCP CI/CD環境自動構築 (インタラクティブ)${NC}"
+    echo "=================================================="
     echo ""
     
     # gcloud CLIチェック
@@ -2254,27 +2439,35 @@ setup_gcp_cicd() {
         return 1
     fi
     
-    # 認証チェック
-    if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q .; then
-        echo -e "${RED}❌ GCPにログインしていません${NC}"
-        echo -e "${YELLOW}   先にログインしてください: gcloud auth login${NC}"
+    # Step 1: アカウント選択
+    if ! select_gcp_account; then
+        echo -e "${RED}❌ アカウント選択に失敗しました${NC}"
         return 1
     fi
     
-    echo -e "${BLUE}🏗️ blog-で始まるGCPプロジェクト一覧:${NC}"
-    gcloud projects list --filter="name:blog*" --format="table(projectId,name,lifecycleState)"
+    # Step 2: プロジェクト選択
+    if ! select_gcp_project; then
+        echo -e "${RED}❌ プロジェクト選択に失敗しました${NC}"
+        return 1
+    fi
+    
+    # Step 3: 設定確認
+    echo -e "${BLUE}📋 設定確認${NC}"
+    echo "==================="
+    echo -e "アカウント: ${YELLOW}$SELECTED_ACCOUNT${NC}"
+    echo -e "プロジェクト: ${YELLOW}$SELECTED_PROJECT${NC}"
     echo ""
     
-    echo -e "${YELLOW}💡 使用するプロジェクトIDを入力してください:${NC}"
-    read -p "Project ID: " project_id
+    echo -e "${YELLOW}💡 この設定でGCP CI/CD環境を構築しますか？ (y/N): ${NC}"
+    read -p "" confirm_setup
     
-    if [ -z "$project_id" ]; then
-        echo -e "${RED}❌ プロジェクトIDが入力されていません${NC}"
+    if [[ ! $confirm_setup =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}⚠️ セットアップがキャンセルされました${NC}"
         return 1
     fi
     
+    # Step 4: スクリプト実行
     echo -e "${CYAN}🚀 GCP CI/CD環境構築を開始します...${NC}"
-    echo "Project ID: $project_id"
     echo ""
     
     # スクリプト実行権限確認
@@ -2284,14 +2477,14 @@ setup_gcp_cicd() {
     fi
     
     chmod +x ./scripts/setup-gcp-cicd.sh
-    ./scripts/setup-gcp-cicd.sh "$project_id"
+    ./scripts/setup-gcp-cicd.sh "$SELECTED_PROJECT"
     
     local exit_code=$?
     
     if [ $exit_code -eq 0 ]; then
         echo ""
         echo -e "${GREEN}✅ GCP CI/CD環境構築完了！${NC}"
-        echo -e "${YELLOW}📋 次のステップ: entrypoint.sh で選択肢30を実行してください${NC}"
+        echo -e "${YELLOW}📋 次のステップ: entrypoint.sh で選択肢31を実行してGitHub Secretsを設定してください${NC}"
     else
         echo -e "${RED}❌ GCP CI/CD環境構築でエラーが発生しました${NC}"
     fi
@@ -2479,6 +2672,138 @@ test_cicd_pipeline() {
     echo "   gh run watch --repo shu-nagaoka/GenieUs  # 実行状況をリアルタイム監視"
     echo "   gh run list --repo shu-nagaoka/GenieUs   # 実行履歴一覧"
     echo "   gh run view --repo shu-nagaoka/GenieUs   # 最新実行の詳細"
+}
+
+# 33. インタラクティブデプロイメント
+interactive_deployment() {
+    echo -e "${GREEN}🚀 インタラクティブデプロイメント${NC}"
+    echo "=================================="
+    echo ""
+    
+    # gcloud CLIチェック
+    if ! command -v gcloud &> /dev/null; then
+        echo -e "${RED}❌ gcloud CLIがインストールされていません${NC}"
+        echo -e "${YELLOW}   https://cloud.google.com/sdk/docs/install からインストールしてください${NC}"
+        return 1
+    fi
+    
+    # Step 1: アカウント選択
+    if ! select_gcp_account; then
+        echo -e "${RED}❌ アカウント選択に失敗しました${NC}"
+        return 1
+    fi
+    
+    # Step 2: プロジェクト選択
+    if ! select_gcp_project; then
+        echo -e "${RED}❌ プロジェクト選択に失敗しました${NC}"
+        return 1
+    fi
+    
+    # Step 3: デプロイ方式選択
+    echo -e "${BLUE}🏗️ デプロイ方式選択${NC}"
+    echo "==================="
+    echo ""
+    echo -e "  ${YELLOW}1${NC}) Cloud Build デプロイ (ステージング) - 推奨"
+    echo -e "  ${YELLOW}2${NC}) Cloud Build デプロイ (本番)"
+    echo -e "  ${YELLOW}3${NC}) 従来型デプロイ (ステージング) - ローカルDocker必要"
+    echo -e "  ${YELLOW}4${NC}) 従来型デプロイ (本番) - ローカルDocker必要"
+    echo -e "  ${YELLOW}5${NC}) GitHub Actions経由デプロイ"
+    echo -e "  ${YELLOW}0${NC}) キャンセル"
+    echo ""
+    
+    read -p "デプロイ方式を選択してください (0-5): " deploy_choice
+    
+    # Step 4: 設定確認
+    echo ""
+    echo -e "${BLUE}📋 デプロイ設定確認${NC}"
+    echo "========================"
+    echo -e "アカウント: ${YELLOW}$SELECTED_ACCOUNT${NC}"
+    echo -e "プロジェクト: ${YELLOW}$SELECTED_PROJECT${NC}"
+    
+    case $deploy_choice in
+        1)
+            echo -e "デプロイ方式: ${CYAN}Cloud Build (ステージング)${NC}"
+            echo -e "特徴: ${GREEN}ローカルDocker不要、高速並行ビルド${NC}"
+            ;;
+        2)
+            echo -e "デプロイ方式: ${RED}Cloud Build (本番)${NC}"
+            echo -e "特徴: ${RED}本番環境、注意が必要${NC}"
+            ;;
+        3)
+            echo -e "デプロイ方式: ${CYAN}従来型 (ステージング)${NC}"
+            echo -e "特徴: ${YELLOW}ローカルDocker必要${NC}"
+            ;;
+        4)
+            echo -e "デプロイ方式: ${RED}従来型 (本番)${NC}"
+            echo -e "特徴: ${RED}本番環境、ローカルDocker必要${NC}"
+            ;;
+        5)
+            echo -e "デプロイ方式: ${BLUE}GitHub Actions${NC}"
+            echo -e "特徴: ${CYAN}CI/CDパイプライン経由${NC}"
+            ;;
+        0)
+            echo -e "${YELLOW}⚠️ デプロイがキャンセルされました${NC}"
+            return 0
+            ;;
+        *)
+            echo -e "${RED}❌ 無効な選択です${NC}"
+            return 1
+            ;;
+    esac
+    
+    echo ""
+    echo -e "${YELLOW}💡 この設定でデプロイを実行しますか？ (y/N): ${NC}"
+    read -p "" confirm_deploy
+    
+    if [[ ! $confirm_deploy =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}⚠️ デプロイがキャンセルされました${NC}"
+        return 1
+    fi
+    
+    # Step 5: デプロイ実行
+    echo -e "${CYAN}🚀 デプロイを開始します...${NC}"
+    echo ""
+    
+    case $deploy_choice in
+        1)
+            # Cloud Build ステージング
+            export GCP_PROJECT_ID="$SELECTED_PROJECT"
+            deploy_cloudbuild_staging
+            ;;
+        2)
+            # Cloud Build 本番
+            export GCP_PROJECT_ID="$SELECTED_PROJECT"
+            deploy_cloudbuild_production
+            ;;
+        3)
+            # 従来型ステージング
+            export GCP_PROJECT_ID="$SELECTED_PROJECT"
+            deploy_traditional_staging
+            ;;
+        4)
+            # 従来型本番
+            export GCP_PROJECT_ID="$SELECTED_PROJECT"
+            deploy_traditional_production
+            ;;
+        5)
+            # GitHub Actions経由
+            echo -e "${BLUE}🔄 GitHub Actions経由デプロイ${NC}"
+            echo ""
+            echo -e "${YELLOW}💡 GitHub ActionsでデプロイするにはGitにプッシュしてください${NC}"
+            echo "1. git add ."
+            echo "2. git commit -m \"deploy: [メッセージ]\""
+            echo "3. git push origin main  # 本番デプロイ"
+            echo "   または"
+            echo "   git push origin develop  # ステージングデプロイ"
+            echo ""
+            echo -e "${CYAN}📊 GitHub Actions実行状況:${NC}"
+            if command -v gh &> /dev/null && gh auth status &>/dev/null; then
+                gh run list --repo shu-nagaoka/GenieUs --limit 5
+            else
+                echo -e "${YELLOW}⚠️ GitHub CLI未設定。ブラウザでGitHub Actionsを確認してください${NC}"
+            fi
+            ;;
+    esac
 }
 
 # スクリプト実行
