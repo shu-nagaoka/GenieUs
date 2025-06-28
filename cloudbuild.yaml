@@ -71,45 +71,62 @@ steps:
         
         cd backend
         
-        # サービス名決定
+        # サービス名決定とデプロイ
         if [ "$_ENVIRONMENT" = "production" ]; then
-          BACKEND_SERVICE_NAME="genius-backend"
-          MIN_INSTANCES=1
-          MAX_INSTANCES=5
+          echo "Service: genius-backend"
+          gcloud run deploy "genius-backend" \
+            --source . \
+            --platform managed \
+            --region $_GCP_REGION \
+            --allow-unauthenticated \
+            --port 8080 \
+            --cpu 1 \
+            --memory 2Gi \
+            --min-instances 1 \
+            --max-instances 5 \
+            --service-account genius-backend-sa@$_GCP_PROJECT_ID.iam.gserviceaccount.com \
+            --set-env-vars "GOOGLE_CLOUD_PROJECT=$_GCP_PROJECT_ID" \
+            --set-env-vars "ENVIRONMENT=$_ENVIRONMENT" \
+            --set-env-vars "GOOGLE_GENAI_USE_VERTEXAI=True" \
+            --set-env-vars "GOOGLE_CLOUD_LOCATION=us-central1" \
+            --set-env-vars "ROUTING_STRATEGY=${_ROUTING_STRATEGY:-enhanced}" \
+            --set-env-vars "LOG_LEVEL=${_LOG_LEVEL:-INFO}" \
+            --timeout 300 \
+            --quiet
+          
+          # バックエンドURL取得
+          BACKEND_URL=$(gcloud run services describe "genius-backend" \
+            --platform managed \
+            --region $_GCP_REGION \
+            --format 'value(status.url)')
         else
-          BACKEND_SERVICE_NAME="genius-backend-$_ENVIRONMENT"
-          MIN_INSTANCES=0
-          MAX_INSTANCES=3
+          echo "Service: genius-backend-$_ENVIRONMENT"
+          gcloud run deploy "genius-backend-$_ENVIRONMENT" \
+            --source . \
+            --platform managed \
+            --region $_GCP_REGION \
+            --allow-unauthenticated \
+            --port 8080 \
+            --cpu 1 \
+            --memory 2Gi \
+            --min-instances 0 \
+            --max-instances 3 \
+            --service-account genius-backend-sa@$_GCP_PROJECT_ID.iam.gserviceaccount.com \
+            --set-env-vars "GOOGLE_CLOUD_PROJECT=$_GCP_PROJECT_ID" \
+            --set-env-vars "ENVIRONMENT=$_ENVIRONMENT" \
+            --set-env-vars "GOOGLE_GENAI_USE_VERTEXAI=True" \
+            --set-env-vars "GOOGLE_CLOUD_LOCATION=us-central1" \
+            --set-env-vars "ROUTING_STRATEGY=${_ROUTING_STRATEGY:-enhanced}" \
+            --set-env-vars "LOG_LEVEL=${_LOG_LEVEL:-INFO}" \
+            --timeout 300 \
+            --quiet
+          
+          # バックエンドURL取得
+          BACKEND_URL=$(gcloud run services describe "genius-backend-$_ENVIRONMENT" \
+            --platform managed \
+            --region $_GCP_REGION \
+            --format 'value(status.url)')
         fi
-        
-        echo "Service: $BACKEND_SERVICE_NAME"
-        
-        # Cloud Buildでデプロイ（ローカルDockerは使わない）
-        gcloud run deploy "$BACKEND_SERVICE_NAME" \
-          --source . \
-          --platform managed \
-          --region $_GCP_REGION \
-          --allow-unauthenticated \
-          --port 8080 \
-          --cpu 1 \
-          --memory 2Gi \
-          --min-instances $MIN_INSTANCES \
-          --max-instances $MAX_INSTANCES \
-          --service-account genius-backend-sa@$_GCP_PROJECT_ID.iam.gserviceaccount.com \
-          --set-env-vars "GOOGLE_CLOUD_PROJECT=$_GCP_PROJECT_ID" \
-          --set-env-vars "ENVIRONMENT=$_ENVIRONMENT" \
-          --set-env-vars "GOOGLE_GENAI_USE_VERTEXAI=True" \
-          --set-env-vars "GOOGLE_CLOUD_LOCATION=us-central1" \
-          --set-env-vars "ROUTING_STRATEGY=${_ROUTING_STRATEGY:-enhanced}" \
-          --set-env-vars "LOG_LEVEL=${_LOG_LEVEL:-INFO}" \
-          --timeout 300 \
-          --quiet
-        
-        # バックエンドURL取得
-        BACKEND_URL=$(gcloud run services describe "$BACKEND_SERVICE_NAME" \
-          --platform managed \
-          --region $_GCP_REGION \
-          --format 'value(status.url)')
         
         echo "✅ バックエンドデプロイ完了: $BACKEND_URL"
         echo "$BACKEND_URL" > /workspace/backend_url.txt
@@ -132,44 +149,60 @@ steps:
         done
         BACKEND_URL=$(cat /workspace/backend_url.txt)
         
-        # サービス名決定
-        if [ "$_ENVIRONMENT" = "production" ]; then
-          FRONTEND_SERVICE_NAME="genius-frontend"
-          MIN_INSTANCES=1
-          MAX_INSTANCES=10
-        else
-          FRONTEND_SERVICE_NAME="genius-frontend-$_ENVIRONMENT"
-          MIN_INSTANCES=0
-          MAX_INSTANCES=5
-        fi
-        
-        echo "Service: $FRONTEND_SERVICE_NAME"
+        # サービス名決定とデプロイ
         echo "Backend URL: $BACKEND_URL"
         
-        # Cloud Buildでデプロイ
-        gcloud run deploy "$FRONTEND_SERVICE_NAME" \
-          --source . \
-          --platform managed \
-          --region $_GCP_REGION \
-          --allow-unauthenticated \
-          --port 3000 \
-          --cpu 1 \
-          --memory 1Gi \
-          --min-instances $MIN_INSTANCES \
-          --max-instances $MAX_INSTANCES \
-          --set-env-vars "NODE_ENV=production" \
-          --set-env-vars "NEXT_PUBLIC_API_BASE_URL=$BACKEND_URL" \
-          --set-env-vars "NEXTAUTH_SECRET=${_NEXTAUTH_SECRET:-default-secret}" \
-          --set-env-vars "GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID:-}" \
-          --set-env-vars "GOOGLE_CLIENT_SECRET=${_GOOGLE_CLIENT_SECRET:-}" \
-          --timeout 300 \
-          --quiet
-        
-        # フロントエンドURL取得
-        FRONTEND_URL=$(gcloud run services describe "$FRONTEND_SERVICE_NAME" \
-          --platform managed \
-          --region $_GCP_REGION \
-          --format 'value(status.url)')
+        if [ "$_ENVIRONMENT" = "production" ]; then
+          echo "Service: genius-frontend"
+          gcloud run deploy "genius-frontend" \
+            --source . \
+            --platform managed \
+            --region $_GCP_REGION \
+            --allow-unauthenticated \
+            --port 3000 \
+            --cpu 1 \
+            --memory 1Gi \
+            --min-instances 1 \
+            --max-instances 10 \
+            --set-env-vars "NODE_ENV=production" \
+            --set-env-vars "NEXT_PUBLIC_API_BASE_URL=$BACKEND_URL" \
+            --set-env-vars "NEXTAUTH_SECRET=${_NEXTAUTH_SECRET:-default-secret}" \
+            --set-env-vars "GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID:-}" \
+            --set-env-vars "GOOGLE_CLIENT_SECRET=${_GOOGLE_CLIENT_SECRET:-}" \
+            --timeout 300 \
+            --quiet
+          
+          # フロントエンドURL取得
+          FRONTEND_URL=$(gcloud run services describe "genius-frontend" \
+            --platform managed \
+            --region $_GCP_REGION \
+            --format 'value(status.url)')
+        else
+          echo "Service: genius-frontend-$_ENVIRONMENT"
+          gcloud run deploy "genius-frontend-$_ENVIRONMENT" \
+            --source . \
+            --platform managed \
+            --region $_GCP_REGION \
+            --allow-unauthenticated \
+            --port 3000 \
+            --cpu 1 \
+            --memory 1Gi \
+            --min-instances 0 \
+            --max-instances 5 \
+            --set-env-vars "NODE_ENV=production" \
+            --set-env-vars "NEXT_PUBLIC_API_BASE_URL=$BACKEND_URL" \
+            --set-env-vars "NEXTAUTH_SECRET=${_NEXTAUTH_SECRET:-default-secret}" \
+            --set-env-vars "GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID:-}" \
+            --set-env-vars "GOOGLE_CLIENT_SECRET=${_GOOGLE_CLIENT_SECRET:-}" \
+            --timeout 300 \
+            --quiet
+          
+          # フロントエンドURL取得
+          FRONTEND_URL=$(gcloud run services describe "genius-frontend-$_ENVIRONMENT" \
+            --platform managed \
+            --region $_GCP_REGION \
+            --format 'value(status.url)')
+        fi
         
         echo "✅ フロントエンドデプロイ完了: $FRONTEND_URL"
         echo "$FRONTEND_URL" > /workspace/frontend_url.txt
