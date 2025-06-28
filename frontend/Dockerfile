@@ -10,10 +10,7 @@ RUN apk add --no-cache libc6-compat
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production --omit=dev
-
-# Install dev dependencies needed for build
+# Install all dependencies (including dev dependencies for build)
 RUN npm ci
 
 # Copy source code
@@ -25,6 +22,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application
 RUN npm run build
+
+# Remove dev dependencies after build
+RUN npm prune --production
 
 # Expose port
 EXPOSE 3000
