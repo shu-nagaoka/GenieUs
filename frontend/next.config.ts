@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import path from 'path'
 
 const nextConfig: NextConfig = {
   // パフォーマンス最適化を有効化
@@ -48,6 +49,15 @@ const nextConfig: NextConfig = {
   },
   
   // Next.js 15では swcMinify はデフォルトで有効なので削除
+  
+  // Webpack設定でパスエイリアスを確実に設定
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname, 'src'),
+    }
+    return config
+  },
 }
 
 export default nextConfig
