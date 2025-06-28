@@ -56,5 +56,5 @@ ENV PYTHONDONTWRITEBYTECODE=1
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
   CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
-# アプリケーションの起動（Cloud Run用に最適化）
-CMD uvicorn src.main:app --host ${HOST} --port ${PORT:-8080} --workers 1
+# アプリケーションの起動（main.pyの設定を使用）
+CMD ["python", "-m", "src.main"]

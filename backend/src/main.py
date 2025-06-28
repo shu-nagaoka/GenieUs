@@ -245,7 +245,7 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", "8080"))
     host = os.getenv("HOST", "0.0.0.0")
     log_level = os.getenv("LOG_LEVEL", "info").lower()
-    reload = os.getenv("RELOAD", "true").lower() == "true"
+    reload = os.getenv("RELOAD", "false").lower() == "true"
 
     print(f"🚀 Starting FastAPI server on {host}:{port}")
     print(f"📡 CORS Origins: {get_cors_origins()}")
