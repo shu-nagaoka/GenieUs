@@ -110,13 +110,15 @@ jobs:
             --set-env-vars GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }} \
             --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=True \
             --set-env-vars GOOGLE_CLOUD_LOCATION=us-central1 \
+            --set-env-vars FAST_STARTUP=true \
             --cpu 1 \
             --memory 2Gi \
             --min-instances ${{ env.ENVIRONMENT == 'production' && '1' || '0' }} \
             --max-instances ${{ env.ENVIRONMENT == 'production' && '5' || '3' }} \
             --timeout 3600 \
             --cpu-boost \
-            --no-cpu-throttling
+            --no-cpu-throttling \
+            --execution-environment gen2
 
       - name: Get Backend URL
         run: |

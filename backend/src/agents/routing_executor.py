@@ -1112,7 +1112,7 @@ JSONのみを返してください。余計な説明は不要です。
                 "estimated_calories": len(detected_foods) * 50,  # 簡易推定
                 "food_variety": len(detected_foods)
             },
-            "analysis_source": "image_analysis",
+            "analysis_source": "image_ai",
             "confidence": image_analysis.get("analysis_confidence", 0.8)
         }
 
@@ -1156,7 +1156,7 @@ JSONのみを返してください。余計な説明は不要です。
                 detected_foods=meal_data.get("detected_foods", []),
                 nutrition_info=meal_data.get("nutrition_info", {}),
                 confidence=meal_data.get("confidence", 0.8),
-                analysis_source=meal_data.get("analysis_source", "image_analysis")
+                detection_source=meal_data.get("analysis_source", "image_ai")
             )
             
             # データベースに実際に保存
