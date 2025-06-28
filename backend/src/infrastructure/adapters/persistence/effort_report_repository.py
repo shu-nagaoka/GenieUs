@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -21,7 +22,9 @@ class EffortReportRepository:
         """
         self.logger = logger
         self.data_dir = Path(data_dir)
-        self.data_dir.mkdir(exist_ok=True)
+        # Cloud Run用: データディレクトリ作成をオプション化（staging/productionともにスキップ）
+        if os.getenv("ENVIRONMENT") not in ["production", "staging"]:
+            self.data_dir.mkdir(exist_ok=True)
         self.file_path = self.data_dir / "effort_reports.json"
 
     def _load_reports(self) -> dict[str, Any]:
