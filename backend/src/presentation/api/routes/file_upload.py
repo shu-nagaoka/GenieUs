@@ -14,8 +14,9 @@ router = APIRouter(prefix="/api/v1/files", tags=["files"])
 UPLOAD_DIR = Path(__file__).parent.parent.parent.parent / "data" / "uploads"
 IMAGES_DIR = UPLOAD_DIR / "images"
 
-# ディレクトリを作成（存在しない場合）
-IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+# Cloud Run用: ディレクトリ作成をオプション化（staging/productionともにスキップ）
+if os.getenv("ENVIRONMENT") not in ["production", "staging"]:
+    IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 # 許可されるファイル形式
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}

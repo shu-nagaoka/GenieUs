@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -303,7 +304,9 @@ class DataMigrator:
     async def backup_json_data(self, backup_dir: Path | None = None) -> dict[str, Any]:
         """既存JSONデータのバックアップ"""
         backup_dir = backup_dir or (self.data_dir / "backup" / datetime.now().strftime("%Y%m%d_%H%M%S"))
-        backup_dir.mkdir(parents=True, exist_ok=True)
+        # Cloud Run用: バックアップディレクトリ作成をオプション化（staging/productionともにスキップ）
+        if os.getenv("ENVIRONMENT") not in ["production", "staging"]:
+            backup_dir.mkdir(parents=True, exist_ok=True)
 
         self.logger.info(f"JSONデータバックアップ開始: {backup_dir}")
 

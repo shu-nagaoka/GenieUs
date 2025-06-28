@@ -629,6 +629,11 @@ class RoutingExecutor:
         """ルーティング決定の妥当性検証"""
         message_lower = message.lower()
 
+        # 🚨 **特別なAPIエージェントは常に有効**
+        if selected_agent in ["meal_record_api", "schedule_record_api"]:
+            self.logger.info(f"✅ API実行エージェント({selected_agent})は妥当性チェックをパス")
+            return True
+
         # 明らかに不適切なルーティングを検出
         inappropriate_routing = {
             "sleep_specialist": ["食事", "離乳食", "栄養", "食べない"],
@@ -651,6 +656,11 @@ class RoutingExecutor:
     def _auto_correct_routing(self, message: str, original_agent: str) -> str:
         """自動ルーティング修正"""
         message_lower = message.lower()
+
+        # 🚨 **特別なAPIエージェントは修正しない**
+        if original_agent in ["meal_record_api", "schedule_record_api"]:
+            self.logger.info(f"🔒 API実行エージェント({original_agent})は自動修正をスキップ")
+            return original_agent
 
         # 強制ルーティングをまず確認
         force_agent = self.routing_strategy._check_force_routing(message_lower)
