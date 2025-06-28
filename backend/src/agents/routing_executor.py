@@ -1114,7 +1114,7 @@ JSONのみを返してください。余計な説明は不要です。
         }
 
     async def _call_meal_record_api(self, meal_data: dict) -> dict:
-        """食事記録API呼び出し（実際のAPI）
+        """食事記録API呼び出し（実際のデータベース保存）
         
         Args:
             meal_data: 食事記録データ
@@ -1123,20 +1123,53 @@ JSONのみを返してください。余計な説明は不要です。
             dict: API応答結果
         """
         try:
-            # 実際の食事記録作成処理を実行
-            # TODO: 実際のMealRecordUseCaseを呼び出す
             self.logger.info(f"🍽️ 食事記録API呼び出し: {meal_data}")
             
-            # 成功をシミュレート（実際の実装では適切なAPI呼び出しを行う）
+            # Composition Rootから実際のMealRecordUseCaseを取得
+            from src.di_provider.composition_root import CompositionRootFactory
+            
+            composition_root = CompositionRootFactory.create()
+            meal_record_usecase = composition_root._usecases.get("meal_record")
+            
+            if not meal_record_usecase:
+                self.logger.error("❌ MealRecordUseCaseが利用できません")
+                return {
+                    "success": False,
+                    "error": "食事記録機能が利用できません（SQLiteモードでない可能性があります）"
+                }
+            
+            # 実際のMealRecordUseCaseを呼び出してデータベースに保存
+            meal_record_request = {
+                "child_id": meal_data.get("child_id", "default_child"),
+                "meal_name": meal_data.get("meal_name"),
+                "meal_type": meal_data.get("meal_type", "snack"),
+                "meal_date": meal_data.get("meal_date"),
+                "detected_foods": meal_data.get("detected_foods", []),
+                "nutrition_info": meal_data.get("nutrition_info", {}),
+                "confidence": meal_data.get("confidence", 0.8),
+                "analysis_source": meal_data.get("analysis_source", "image_analysis")
+            }
+            
+            # データベースに実際に保存
+            meal_record = await meal_record_usecase.create_meal_record(meal_record_request)
+            
+            self.logger.info(f"✅ 実際のデータベース保存成功: {meal_record.meal_id}")
+            
             return {
                 "success": True,
-                "meal_id": f"meal_{meal_data.get('child_id')}_{int(time.time())}",
-                "message": "食事記録が正常に作成されました"
+                "meal_id": meal_record.meal_id,
+                "message": "食事記録がデータベースに正常に保存されました",
+                "record": {
+                    "id": meal_record.meal_id,
+                    "child_id": meal_record.child_id,
+                    "meal_name": meal_record.meal_name,
+                    "meal_date": meal_record.meal_date.isoformat() if meal_record.meal_date else None
+                }
             }
             
         except Exception as e:
             self.logger.error(f"❌ 食事記録API呼び出しエラー: {e}")
             return {
                 "success": False,
-                "error": str(e)
+                "error": f"データベース保存エラー: {str(e)}"
             }
