@@ -888,7 +888,7 @@ class RoutingExecutor:
             self.logger.info("🍽️ 食事記録API実行開始: 会話履歴から画像解析結果を抽出")
             
             # 会話履歴から画像解析結果を抽出
-            image_analysis_result = self._extract_image_analysis_from_history(conversation_history)
+            image_analysis_result = await self._extract_image_analysis_from_history(conversation_history)
             
             if not image_analysis_result:
                 self.logger.warning("⚠️ 会話履歴に画像解析結果が見つかりません")
@@ -914,8 +914,8 @@ class RoutingExecutor:
             self.logger.error(f"❌ 食事記録API実行エラー: {e}")
             return f"申し訳ありません。食事記録作成中にシステムエラーが発生しました: {e!s}"
 
-    def _extract_image_analysis_from_history(self, conversation_history: list | None) -> dict | None:
-        """会話履歴から画像解析結果を抽出
+    async def _extract_image_analysis_from_history(self, conversation_history: list | None) -> dict | None:
+        """会話履歴から画像解析結果を抽出（Gemini API使用）
         
         Args:
             conversation_history: 会話履歴
@@ -927,31 +927,51 @@ class RoutingExecutor:
             return None
             
         # 最新の画像解析結果を探す
+        image_analysis_content = None
         for message in reversed(conversation_history):
-            if message.get("role") == "genie":
-                content = message.get("content", "")
+            role = message.get("role")
+            content = message.get("content", "")
+            
+            # エージェントからのメッセージ（genie役割またはNone/未指定）で画像解析結果を探す
+            if role == "genie" or role is None or role == "":
+                # 画像解析結果の特徴的なキーワードを検出
+                image_analysis_indicators = [
+                    "お食事中のお写真",
+                    "拝見しましたところ",
+                    "お食事は",
+                    "豆腐やトマト",
+                    "美味しそうで",
+                    "食べていたのでしょうね",
+                    "画像を分析",
+                    "写真を見て",
+                    "分析結果",
+                    "お写真からは",
+                    "この献立は",
+                    "栄養・食事のジーニー",
+                    "食事管理",
+                    "食事記録"
+                ]
                 
-                # detected_items等のキーワードを含む場合は画像解析結果と判定
-                if "detected_items" in content or "分析結果" in content:
-                    try:
-                        # JSON形式のデータを抽出を試行
-                        
-                        # JSONパターンを検索
-                        json_pattern = r'\{[^{}]*"detected_items"[^{}]*\}'
-                        json_match = re.search(json_pattern, content)
-                        
-                        if json_match:
-                            return json.loads(json_match.group())
-                        else:
-                            # JSONが見つからない場合はテキストから抽出
-                            return self._extract_from_text(content)
-                            
-                    except Exception as e:
-                        self.logger.warning(f"⚠️ 画像解析結果の解析に失敗: {e}")
-                        # フォールバック: テキストから基本情報を抽出
-                        return self._extract_from_text(content)
+                # 画像解析または食事関連の内容が含まれているかチェック
+                for indicator in image_analysis_indicators:
+                    if indicator in content:
+                        image_analysis_content = content
+                        self.logger.info(f"🔍 画像解析結果発見: '{indicator}' が含まれる応答")
+                        break
+                
+                if image_analysis_content:
+                    break
         
-        return None
+        if not image_analysis_content:
+            self.logger.warning("⚠️ 会話履歴に画像解析結果が見つかりません")
+            return None
+        
+        # Gemini APIを使用して画像解析結果を構造化
+        try:
+            return await self._structure_image_analysis_with_gemini(image_analysis_content)
+        except Exception as e:
+            self.logger.warning(f"⚠️ Gemini API構造化に失敗、フォールバックを使用: {e}")
+            return self._extract_from_text(image_analysis_content)
 
     def _extract_from_text(self, content: str) -> dict:
         """テキストから食事情報を抽出（フォールバック）
@@ -972,6 +992,78 @@ class RoutingExecutor:
             "meal_type": "main_meal",
             "extracted_from": "text_fallback"
         }
+
+    async def _structure_image_analysis_with_gemini(self, image_analysis_content: str) -> dict:
+        """Gemini APIを使用して画像解析結果を構造化
+        
+        Args:
+            image_analysis_content: 画像解析の自然言語レスポンス
+            
+        Returns:
+            dict: 構造化された画像解析結果
+        """
+        try:
+            # Vertex AI Gemini APIを使用してデータを構造化
+            import vertexai
+            from vertexai.generative_models import GenerativeModel
+            import os
+            
+            # Vertex AI初期化
+            project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "blog-sample-381923")
+            location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+            vertexai.init(project=project_id, location=location)
+            
+            model = GenerativeModel("gemini-2.5-flash")
+            
+            # 構造化プロンプト
+            structure_prompt = f"""
+以下の画像解析レスポンスから、食事記録用の構造化データを抽出してください。
+必ずJSON形式で応答し、以下の形式に従ってください：
+
+{{
+    "detected_items": ["食品名1", "食品名2", ...],
+    "meal_type": "breakfast|lunch|dinner|snack",
+    "estimated_portions": {{"食品名": "小盛り|普通|大盛り", ...}},
+    "nutritional_notes": "栄養に関するコメント",
+    "analysis_confidence": 0.0-1.0の数値,
+    "meal_description": "食事の簡潔な説明"
+}}
+
+画像解析レスポンス:
+{image_analysis_content}
+
+JSONのみを返してください。余計な説明は不要です。
+"""
+
+            # API呼び出し
+            response = model.generate_content(structure_prompt)
+            response_text = response.text.strip()
+            
+            # JSON部分を抽出
+            json_start = response_text.find('{')
+            json_end = response_text.rfind('}') + 1
+            
+            if json_start >= 0 and json_end > json_start:
+                json_str = response_text[json_start:json_end]
+                structured_data = json.loads(json_str)
+                
+                self.logger.info(f"✅ Gemini API構造化成功: {len(structured_data.get('detected_items', []))}個の食品を検出")
+                return structured_data
+            else:
+                raise ValueError("JSONレスポンスが見つかりません")
+                
+        except Exception as e:
+            self.logger.error(f"❌ Gemini API構造化エラー: {e}")
+            # フォールバック: 基本的な構造化データを返す
+            return {
+                "detected_items": ["画像から検出された食品"],
+                "meal_type": "main_meal",
+                "estimated_portions": {},
+                "nutritional_notes": "Gemini API構造化に失敗しました",
+                "analysis_confidence": 0.3,
+                "meal_description": "画像解析レスポンスから抽出",
+                "original_content": image_analysis_content[:200] + "..." if len(image_analysis_content) > 200 else image_analysis_content
+            }
 
     def _extract_child_info(self, family_info: dict | None) -> dict:
         """家族情報から子供情報を抽出
