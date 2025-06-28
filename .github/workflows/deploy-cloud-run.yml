@@ -134,11 +134,18 @@ jobs:
         echo "=== package.json exists? ==="
         ls -la frontend/package.json || echo "package.json not found"
 
-    - name: Deploy Frontend
+    - name: Build and Deploy Frontend via Container Registry
       run: |
         cd frontend
+        
+        # Build image with Cloud Build
+        gcloud builds submit \
+          --region ${{ env.REGION }} \
+          --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/genius-frontend:${{ github.sha }}
+        
+        # Deploy to Cloud Run using pre-built image
         gcloud run deploy genius-frontend-${{ env.ENVIRONMENT }} \
-          --source . \
+          --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/genius-frontend:${{ github.sha }} \
           --platform managed \
           --region ${{ env.REGION }} \
           --allow-unauthenticated \
@@ -158,14 +165,16 @@ jobs:
       if: failure()
       run: |
         echo "=== Recent Failed Builds ==="
-        gcloud builds list --filter="status=FAILURE" --limit=3 --format="table(id,createTime,status)"
+        gcloud builds list --filter="status=FAILURE" --limit=5 --format="table(id,createTime,status,source.repoSource.branchName)"
         echo "=== Getting latest failed build logs ==="
         BUILD_ID=$(gcloud builds list --filter="status=FAILURE" --limit=1 --format="value(id)")
         if [ ! -z "$BUILD_ID" ]; then
           echo "Build ID: $BUILD_ID"
-          gcloud builds log $BUILD_ID --region=${{ env.REGION }}
+          echo "=== Full Build Log ==="
+          gcloud builds log $BUILD_ID
         else
-          echo "No recent failed builds found"
+          echo "No recent failed builds found - checking all builds"
+          gcloud builds list --limit=5 --format="table(id,createTime,status)"
         fi
 
     - name: Get Frontend URL
