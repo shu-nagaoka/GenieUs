@@ -37,8 +37,11 @@ COPY --from=builder /app/.venv /app/.venv
 # 仮想環境をPATHに追加
 ENV PATH="/app/.venv/bin:$PATH"
 
-# アプリケーションコードのコピー
+# アプリケーションコードのコピー（dataディレクトリも含む）
 COPY --chown=genius:genius src/ ./src/
+
+# データディレクトリの権限確保（書き込み可能にする）
+RUN chmod -R 755 /app/src/data
 
 # 非rootユーザーに切り替え
 USER genius
