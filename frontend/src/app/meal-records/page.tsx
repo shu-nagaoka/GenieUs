@@ -216,6 +216,7 @@ function MealRecordsPageContent() {
       await updateMealRecord({
         mealRecordId: selectedRecord.id,
         request: {
+          child_id: editMealForm.child_id || currentChildId,
           meal_name: editMealForm.meal_name,
           meal_type: editMealForm.meal_type,
           detected_foods: foodArray.length > 0 ? foodArray : undefined,
@@ -975,6 +976,26 @@ function MealRecordsPageContent() {
               </DialogHeader>
               
               <div className="space-y-4 py-4">
+                {/* 子供選択ドロップダウン */}
+                <div>
+                  <Label htmlFor="edit-child-select">お子様を選択</Label>
+                  <Select 
+                    value={editMealForm.child_id}
+                    onValueChange={(value) => setEditMealForm(prev => ({ ...prev, child_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="お子様を選択してください" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {childrenOptions.map((child) => (
+                        <SelectItem key={child.value} value={child.value}>
+                          {child.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="edit-meal-name">食事名</Label>

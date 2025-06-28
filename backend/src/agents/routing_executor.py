@@ -3,22 +3,21 @@
 ルーティング決定に基づくエージェント実行、フォールバック処理を担当
 """
 
-import logging
-import time
-import json
-import re
 import datetime
+import json
+import logging
+import re
+import time
 
 from google.adk.runners import Runner
 from google.genai.types import Content, Part
-
 from src.agents.constants import (
     AGENT_DISPLAY_NAMES,
     AGENT_KEYWORDS,
     AGENT_RESPONSE_PATTERNS,
     ERROR_INDICATORS,
-    FALLBACK_AGENT_PRIORITY,
     EXPLICIT_SEARCH_FLAGS,
+    FALLBACK_AGENT_PRIORITY,
 )
 from src.agents.message_processor import MessageProcessor
 from src.agents.routing_strategy import RoutingStrategy
@@ -1007,10 +1006,11 @@ class RoutingExecutor:
         """
         try:
             # Vertex AI Gemini APIを使用してデータを構造化
+            import os
+
             import vertexai
             from vertexai.generative_models import GenerativeModel
-            import os
-            
+
             # Vertex AI初期化
             project_id = os.getenv("GOOGLE_CLOUD_PROJECT", "blog-sample-381923")
             location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
@@ -1145,8 +1145,11 @@ JSONのみを返してください。余計な説明は不要です。
                 }
             
             # MealRecordRequestオブジェクトを作成
-            from src.application.usecases.meal_record_usecase import CreateMealRecordRequest
             from datetime import datetime
+
+            from src.application.usecases.meal_record_usecase import (
+                CreateMealRecordRequest,
+            )
             
             meal_record_request = CreateMealRecordRequest(
                 child_id=meal_data.get("child_id", "default_child"),
