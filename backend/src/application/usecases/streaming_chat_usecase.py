@@ -79,7 +79,9 @@ class StreamingChatUseCase:
             )
             # 画像・マルチモーダル情報ログ追加
             if has_image:
-                self.logger.info(f"🖼️ 画像添付検出: message_type={message_type}, image_path={'あり' if image_path else 'なし'}")
+                self.logger.info(
+                    f"🖼️ 画像添付検出: message_type={message_type}, image_path={'あり' if image_path else 'なし'}"
+                )
 
             # ビジネスロジック: 初期状態設定
             progress_state = self._initialize_progress_state()

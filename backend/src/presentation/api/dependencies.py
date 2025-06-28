@@ -28,6 +28,9 @@ from src.application.usecases.search_history_usecase import SearchHistoryUseCase
 from src.application.usecases.streaming_chat_usecase import StreamingChatUseCase
 from src.application.usecases.user_management_usecase import UserManagementUseCase
 from src.application.usecases.voice_analysis_usecase import VoiceAnalysisUseCase
+from src.application.usecases.interactive_confirmation_usecase import InteractiveConfirmationUseCase
+from src.application.usecases.meal_record_usecase import MealRecordUseCase
+from src.di_provider.composition_root import CompositionRoot
 
 
 def get_family_management_usecase(request: Request) -> FamilyManagementUseCase:
@@ -114,6 +117,18 @@ def get_search_history_usecase(request: Request) -> SearchHistoryUseCase:
     return composition_root._usecases.get_required("search_history")
 
 
+def get_interactive_confirmation_usecase(request: Request) -> InteractiveConfirmationUseCase:
+    """Interactive Confirmation UseCaseを取得"""
+    composition_root = request.app.composition_root
+    return composition_root._usecases.get_required("interactive_confirmation")
+
+
+def get_meal_record_usecase(request: Request) -> MealRecordUseCase:
+    """食事記録UseCaseを取得"""
+    composition_root = request.app.composition_root
+    return composition_root._usecases.get_required("meal_record")
+
+
 # ========== AgentManager & Logger DI Functions ==========
 
 
@@ -125,6 +140,11 @@ def get_agent_manager(request: Request) -> AgentManager:
 def get_logger(request: Request) -> logging.Logger:
     """ロガーを取得（DI注入パターン）"""
     return request.app.logger
+
+
+def get_composition_root(request: Request) -> CompositionRoot:
+    """CompositionRootを取得（DI注入パターン）"""
+    return request.app.composition_root
 
 
 # ========== Generic UseCase Getter ==========

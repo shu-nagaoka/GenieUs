@@ -54,19 +54,22 @@ def main():
 
     # ポート設定（レアケースなポート）
     PORT = 15080
-    
+
     # ポート15080を使用しているプロセスを停止
     import subprocess
+
     try:
-        result = subprocess.run(['lsof', '-ti', f':{PORT}'], 
-                               capture_output=True, text=True, check=False)
+        result = subprocess.run(
+            ["lsof", "-ti", f":{PORT}"], capture_output=True, text=True, check=False
+        )
         if result.stdout.strip():
-            pids = result.stdout.strip().split('\n')
+            pids = result.stdout.strip().split("\n")
             for pid in pids:
                 if pid:
                     print(f"⚠️  ポート {PORT} が使用中です (PID: {pid})。停止中...")
-                    subprocess.run(['kill', pid], check=False)
+                    subprocess.run(["kill", pid], check=False)
             import time
+
             time.sleep(2)
     except Exception as e:
         print(f"ポートチェック中にエラー: {e}")

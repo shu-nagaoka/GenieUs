@@ -31,6 +31,15 @@ class MealType(str, Enum):
     SNACK = "snack"
 
 
+class FoodDetectionSource(str, Enum):
+    """食事検出ソース列挙"""
+
+    MANUAL = "manual"
+    IMAGE_AI = "image_ai"
+    VOICE_AI = "voice_ai"
+    IMPORT = "import"
+
+
 class DifficultyLevel(str, Enum):
     """調理難易度列挙"""
 
@@ -288,6 +297,134 @@ class EffortMetric:
             "comparison": self.comparison,
             "impact": self.impact,
         }
+
+
+@dataclass
+class MealRecord:
+    """個別食事記録エンティティ"""
+
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    child_id: str = ""
+    meal_name: str = ""
+    meal_type: MealType = MealType.SNACK
+    detected_foods: list[str] = field(default_factory=list)
+    nutrition_info: dict[str, Any] = field(default_factory=dict)
+    timestamp: datetime = field(default_factory=datetime.now)
+    detection_source: FoodDetectionSource = FoodDetectionSource.MANUAL
+    confidence: float = 1.0  # AI検出の信頼度 (0.0-1.0)
+    image_path: str | None = None
+    notes: str | None = None
+    created_at: datetime = field(default_factory=datetime.now)
+    updated_at: datetime = field(default_factory=datetime.now)
+
+    def __post_init__(self):
+        """バリデーション"""
+        if not self.child_id:
+            raise ValueError("child_id is required")
+        if not self.meal_name.strip():
+            raise ValueError("meal_name is required")
+        if not 0.0 <= self.confidence <= 1.0:
+            raise ValueError("confidence must be between 0.0 and 1.0")
+
+        # Enum変換
+        if isinstance(self.meal_type, str):
+            self.meal_type = MealType(self.meal_type)
+        if isinstance(self.detection_source, str):
+            self.detection_source = FoodDetectionSource(self.detection_source)
+
+    @classmethod
+    def create_from_ai_detection(
+        cls,
+        child_id: str,
+        meal_name: str,
+        detected_foods: list[str],
+        nutrition_info: dict[str, Any],
+        meal_type: MealType,
+        confidence: float,
+        image_path: str | None = None,
+        timestamp: datetime | None = None,
+    ) -> "MealRecord":
+        """AI検出結果から食事記録作成"""
+        return cls(
+            child_id=child_id,
+            meal_name=meal_name,
+            meal_type=meal_type,
+            detected_foods=detected_foods,
+            nutrition_info=nutrition_info,
+            detection_source=FoodDetectionSource.IMAGE_AI,
+            confidence=confidence,
+            image_path=image_path,
+            timestamp=timestamp or datetime.now(),
+        )
+
+    @classmethod
+    def create_manual_record(
+        cls,
+        child_id: str,
+        meal_name: str,
+        meal_type: MealType,
+        detected_foods: list[str] | None = None,
+        notes: str | None = None,
+        timestamp: datetime | None = None,
+    ) -> "MealRecord":
+        """手動入力から食事記録作成"""
+        return cls(
+            child_id=child_id,
+            meal_name=meal_name,
+            meal_type=meal_type,
+            detected_foods=detected_foods or [],
+            detection_source=FoodDetectionSource.MANUAL,
+            confidence=1.0,
+            notes=notes,
+            timestamp=timestamp or datetime.now(),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """辞書形式に変換"""
+        return {
+            "id": self.id,
+            "child_id": self.child_id,
+            "meal_name": self.meal_name,
+            "meal_type": self.meal_type.value,
+            "detected_foods": self.detected_foods,
+            "nutrition_info": self.nutrition_info,
+            "timestamp": self.timestamp.isoformat(),
+            "detection_source": self.detection_source.value,
+            "confidence": self.confidence,
+            "image_path": self.image_path,
+            "notes": self.notes,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+        }
+
+    def update_nutrition_info(self, nutrition_info: dict[str, Any]) -> None:
+        """栄養情報を更新"""
+        self.nutrition_info.update(nutrition_info)
+        self.updated_at = datetime.now()
+
+    def add_note(self, note: str) -> None:
+        """メモを追加"""
+        if self.notes:
+            self.notes += f"\n{note}"
+        else:
+            self.notes = note
+        self.updated_at = datetime.now()
+
+    @property
+    def is_ai_detected(self) -> bool:
+        """AI検出による記録かどうか"""
+        return self.detection_source in [FoodDetectionSource.IMAGE_AI, FoodDetectionSource.VOICE_AI]
+
+    @property
+    def total_nutrition_score(self) -> float:
+        """栄養バランススコア計算"""
+        if not self.nutrition_info:
+            return 0.0
+
+        balance_score = self.nutrition_info.get("balance_score", 0)
+        if isinstance(balance_score, (int, float)):
+            return float(balance_score)
+        return 0.0
 
 
 @dataclass

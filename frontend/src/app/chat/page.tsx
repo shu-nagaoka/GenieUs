@@ -24,8 +24,14 @@ const SearchResultsDisplay = lazy(() =>
     default: m.SearchResultsDisplay,
   }))
 )
+const InteractiveConfirmation = lazy(() =>
+  import('@/components/features/chat/interactive-confirmation').then(m => ({
+    default: m.InteractiveConfirmation,
+  }))
+)
 import { getFamilyInfo, formatFamilyInfoForChat } from '@/libs/api/family'
 import { uploadImage } from '@/libs/api/file-upload'
+import { parseInteractiveConfirmation, sendConfirmationResponse, type InteractiveConfirmationData } from '@/libs/api/interactive-confirmation'
 import remarkGfm from 'remark-gfm'
 // アイコンをバランス良く設定 - 必要なアイコンは保持
 import {
@@ -66,6 +72,7 @@ interface Message {
   type?: 'text' | 'audio' | 'image' | 'streaming'
   followUpQuestions?: string[]
   searchData?: SearchData
+  confirmationData?: InteractiveConfirmationData
   debugInfo?: {
     workflow_used?: string
     agents_involved?: string[]
@@ -113,6 +120,8 @@ function ChatPageContent() {
   const [familyInfo, setFamilyInfo] = useState<Record<string, unknown> | null>(null)
   const [currentFollowupQuestions, setCurrentFollowupQuestions] = useState<string[]>([])
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false)
+  const [hasActiveConfirmation, setHasActiveConfirmation] = useState<boolean>(false)
+  const [processingConfirmation, setProcessingConfirmation] = useState<boolean>(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -178,6 +187,7 @@ function ChatPageContent() {
       inline: 'nearest',
     })
   }
+
 
   const sendMessage = async () => {
     if (!inputValue.trim() && !selectedImage) return
@@ -464,6 +474,13 @@ END_SYSTEM_INSTRUCTION`
         setCurrentAgentInfo(data.agent_info)
       }
 
+      // インタラクティブ確認データを解析
+      const confirmationData = parseInteractiveConfirmation(data.response)
+      if (confirmationData) {
+        console.log('🤝 インタラクティブ確認データ検出:', confirmationData)
+        setHasActiveConfirmation(true)
+      }
+
       const genieMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: data.response,
@@ -471,6 +488,7 @@ END_SYSTEM_INSTRUCTION`
         timestamp: new Date(),
         type: 'text',
         followUpQuestions: data.follow_up_questions || [],
+        confirmationData: confirmationData || undefined,
         debugInfo: {
           workflow_used: data.debug_info?.session_info?.workflow_used,
           agents_involved: data.debug_info?.session_info?.agents_involved || [],
@@ -516,6 +534,84 @@ END_SYSTEM_INSTRUCTION`
   //   setIsOrchestrating(false)
   //   setIsTyping(true)
   // }
+
+  // インタラクティブ確認ハンドラ
+  const handleConfirmationResponse = async (answer: string, confirmationId: string) => {
+    try {
+      console.log('🤝 確認応答送信:', { answer, confirmationId })
+      setProcessingConfirmation(true)
+
+      // 該当の確認メッセージからcontextDataを取得
+      const confirmationMessage = messages.find(msg => 
+        msg.confirmationData?.confirmation_id === confirmationId
+      )
+      const contextData = confirmationMessage?.confirmationData?.context_data || {}
+
+      console.log('🔍 送信するコンテキストデータ:', contextData)
+
+      // 確認応答をサーバーに送信
+      const response = await sendConfirmationResponse({
+        confirmation_id: confirmationId,
+        user_response: answer,
+        user_id: 'frontend_user',
+        session_id: currentSession ? currentSession.id : 'default-session',
+        response_metadata: {
+          context_data: contextData
+        }
+      })
+
+      console.log('✅ 確認応答処理完了:', response)
+
+      // フォローアップアクションに応じた処理
+      if (response.followup_action?.action_type === 'proceed') {
+        // 肯定的な応答の場合、追加のメッセージを表示
+        const followupMessage: Message = {
+          id: (Date.now() + 2).toString(),
+          content: response.message + '\n\n処理を実行しています...',
+          sender: 'genie',
+          timestamp: new Date(),
+          type: 'text',
+        }
+        setMessages(prev => [...prev, followupMessage])
+      } else if (response.followup_action?.action_type === 'cancel') {
+        // 否定的な応答の場合
+        const cancelMessage: Message = {
+          id: (Date.now() + 2).toString(),
+          content: response.message,
+          sender: 'genie',
+          timestamp: new Date(),
+          type: 'text',
+        }
+        setMessages(prev => [...prev, cancelMessage])
+      }
+
+      setTimeout(scrollToBottom, 100)
+
+      // 確認処理完了後、1秒後に状態をリセット（UI遷移を自然にするため）
+      setTimeout(() => {
+        setHasActiveConfirmation(false)
+        setProcessingConfirmation(false)
+      }, 1000)
+
+    } catch (error) {
+      console.error('❌ 確認応答処理エラー:', error)
+      
+      // エラー時も状態をリセット
+      setHasActiveConfirmation(false)
+      setProcessingConfirmation(false)
+      
+      // エラーメッセージを表示
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        content: '申し訳ございません。確認応答の処理中にエラーが発生しました。もう一度お試しください。',
+        sender: 'genie',
+        timestamp: new Date(),
+        type: 'text',
+      }
+      setMessages(prev => [...prev, errorMessage])
+      setTimeout(scrollToBottom, 100)
+    }
+  }
 
   // フォローアップクエスチョンを除去するヘルパー関数
   const cleanResponseContent = (response: string): string => {
@@ -579,16 +675,24 @@ END_SYSTEM_INSTRUCTION`
 
     const cleanedResponse = cleanResponseContent(response)
 
+    // インタラクティブ確認データを解析
+    const confirmationData = parseInteractiveConfirmation(response)
+    if (confirmationData) {
+      console.log('🤝 ストリーミング応答でインタラクティブ確認データ検出:', confirmationData)
+      setHasActiveConfirmation(true)
+    }
+
     console.log('✨ メッセージ置換実行:', {
       targetId: currentStreamingId,
       cleanedResponseLength: cleanedResponse.length,
       cleanedResponsePreview: cleanedResponse.substring(0, 100) + '...',
+      hasConfirmationData: !!confirmationData,
     })
 
     setMessages(prev => {
       const updatedMessages = prev.map(msg =>
         msg.id === currentStreamingId
-          ? { ...msg, content: cleanedResponse, type: 'text' as const, searchData }
+          ? { ...msg, content: cleanedResponse, type: 'text' as const, searchData, confirmationData: confirmationData || undefined }
           : msg
       )
 
@@ -1117,6 +1221,18 @@ END_SYSTEM_INSTRUCTION`
                                 }))}
                               />
                             )}
+
+                            {/* インタラクティブ確認表示 */}
+                            {message.confirmationData && (
+                              <InteractiveConfirmation
+                                confirmationId={message.confirmationData.confirmation_id}
+                                question={message.confirmationData.question}
+                                options={message.confirmationData.options}
+                                contextData={message.confirmationData.context_data}
+                                onConfirm={handleConfirmationResponse}
+                                timeout={message.confirmationData.timeout_seconds}
+                              />
+                            )}
                           </div>
                         ) : (
                           <p className="whitespace-pre-line text-white">{message.content}</p>
@@ -1238,11 +1354,18 @@ END_SYSTEM_INSTRUCTION`
                     value={inputValue}
                     onChange={e => setInputValue(e.target.value)}
                     placeholder={
-                      webSearchEnabled
+                      hasActiveConfirmation || processingConfirmation
+                        ? '確認処理中です... 🤝'
+                        : webSearchEnabled
                         ? 'Web検索で最新情報を調べます... 🔍'
                         : '何でも相談してください... ✨'
                     }
-                    className="h-12 max-h-[100px] w-full resize-none rounded-lg border border-amber-200 bg-white px-4 py-3 text-sm transition-all duration-200 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    disabled={hasActiveConfirmation || processingConfirmation}
+                    className={`h-12 max-h-[100px] w-full resize-none rounded-lg border px-4 py-3 text-sm transition-all duration-200 ${
+                      hasActiveConfirmation || processingConfirmation
+                        ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-75'
+                        : 'border-amber-200 bg-white focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-500'
+                    }`}
                     rows={1}
                     onKeyDown={e => {
                       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -1330,7 +1453,7 @@ END_SYSTEM_INSTRUCTION`
                 <Button
                   onClick={sendMessage}
                   className="h-12 rounded-lg border-0 bg-gradient-to-r from-amber-500 to-orange-500 px-6 transition-all duration-200 hover:from-amber-600 hover:to-orange-600"
-                  disabled={!inputValue.trim() && !selectedImage}
+                  disabled={(!inputValue.trim() && !selectedImage) || hasActiveConfirmation || processingConfirmation}
                 >
                   <Send className="h-4 w-4" />
                 </Button>

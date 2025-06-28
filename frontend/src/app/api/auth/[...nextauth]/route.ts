@@ -34,7 +34,7 @@ const authOptions: NextAuthOptions = {
       }
       return session
     },
-    async signIn({ user, account, profile }) {
+    async signIn({ user: _user, account: _account, profile: _profile }) {
       // You can add custom logic here to verify the user
       // For now, we'll allow all Google users
       return true
