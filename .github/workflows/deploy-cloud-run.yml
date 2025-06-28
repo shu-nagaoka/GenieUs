@@ -125,6 +125,15 @@ jobs:
           --format 'value(status.url)')
         echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_ENV
 
+    - name: Debug Frontend Context
+      run: |
+        echo "=== Frontend Directory Contents ==="
+        ls -la frontend/
+        echo "=== Dockerfile exists? ==="
+        ls -la frontend/Dockerfile || echo "Dockerfile not found"
+        echo "=== package.json exists? ==="
+        ls -la frontend/package.json || echo "package.json not found"
+
     - name: Deploy Frontend
       run: |
         cd frontend
@@ -144,6 +153,20 @@ jobs:
           --min-instances ${{ env.ENVIRONMENT == 'production' && '1' || '0' }} \
           --max-instances ${{ env.ENVIRONMENT == 'production' && '10' || '5' }} \
           --port 3000
+
+    - name: Show Frontend Build Logs on Failure
+      if: failure()
+      run: |
+        echo "=== Recent Failed Builds ==="
+        gcloud builds list --filter="status=FAILURE" --limit=3 --format="table(id,createTime,status)"
+        echo "=== Getting latest failed build logs ==="
+        BUILD_ID=$(gcloud builds list --filter="status=FAILURE" --limit=1 --format="value(id)")
+        if [ ! -z "$BUILD_ID" ]; then
+          echo "Build ID: $BUILD_ID"
+          gcloud builds log $BUILD_ID --region=${{ env.REGION }}
+        else
+          echo "No recent failed builds found"
+        fi
 
     - name: Get Frontend URL
       run: |
