@@ -89,8 +89,8 @@ steps:
             --set-env-vars "ENVIRONMENT=$_ENVIRONMENT" \
             --set-env-vars "GOOGLE_GENAI_USE_VERTEXAI=True" \
             --set-env-vars "GOOGLE_CLOUD_LOCATION=us-central1" \
-            --set-env-vars "ROUTING_STRATEGY=${_ROUTING_STRATEGY:-enhanced}" \
-            --set-env-vars "LOG_LEVEL=${_LOG_LEVEL:-INFO}" \
+            --set-env-vars "ROUTING_STRATEGY=$_ROUTING_STRATEGY" \
+            --set-env-vars "LOG_LEVEL=$_LOG_LEVEL" \
             --timeout 300 \
             --quiet
           
@@ -116,8 +116,8 @@ steps:
             --set-env-vars "ENVIRONMENT=$_ENVIRONMENT" \
             --set-env-vars "GOOGLE_GENAI_USE_VERTEXAI=True" \
             --set-env-vars "GOOGLE_CLOUD_LOCATION=us-central1" \
-            --set-env-vars "ROUTING_STRATEGY=${_ROUTING_STRATEGY:-enhanced}" \
-            --set-env-vars "LOG_LEVEL=${_LOG_LEVEL:-INFO}" \
+            --set-env-vars "ROUTING_STRATEGY=$_ROUTING_STRATEGY" \
+            --set-env-vars "LOG_LEVEL=$_LOG_LEVEL" \
             --timeout 300 \
             --quiet
           
@@ -163,9 +163,9 @@ steps:
             --max-instances 10 \
             --set-env-vars "NODE_ENV=production" \
             --set-env-vars "NEXT_PUBLIC_API_BASE_URL=$(cat /workspace/backend_url.txt)" \
-            --set-env-vars "NEXTAUTH_SECRET=${_NEXTAUTH_SECRET:-default-secret}" \
-            --set-env-vars "GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID:-}" \
-            --set-env-vars "GOOGLE_CLIENT_SECRET=${_GOOGLE_CLIENT_SECRET:-}" \
+            --set-env-vars "NEXTAUTH_SECRET=$_NEXTAUTH_SECRET" \
+            --set-env-vars "GOOGLE_CLIENT_ID=$_GOOGLE_CLIENT_ID" \
+            --set-env-vars "GOOGLE_CLIENT_SECRET=$_GOOGLE_CLIENT_SECRET" \
             --timeout 300 \
             --quiet
           
@@ -188,9 +188,9 @@ steps:
             --max-instances 5 \
             --set-env-vars "NODE_ENV=production" \
             --set-env-vars "NEXT_PUBLIC_API_BASE_URL=$(cat /workspace/backend_url.txt)" \
-            --set-env-vars "NEXTAUTH_SECRET=${_NEXTAUTH_SECRET:-default-secret}" \
-            --set-env-vars "GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID:-}" \
-            --set-env-vars "GOOGLE_CLIENT_SECRET=${_GOOGLE_CLIENT_SECRET:-}" \
+            --set-env-vars "NEXTAUTH_SECRET=$_NEXTAUTH_SECRET" \
+            --set-env-vars "GOOGLE_CLIENT_ID=$_GOOGLE_CLIENT_ID" \
+            --set-env-vars "GOOGLE_CLIENT_SECRET=$_GOOGLE_CLIENT_SECRET" \
             --timeout 300 \
             --quiet
           
