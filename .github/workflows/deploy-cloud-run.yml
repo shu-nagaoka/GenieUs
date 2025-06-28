@@ -133,12 +133,7 @@ jobs:
           --platform managed \
           --region ${{ env.REGION }} \
           --allow-unauthenticated \
-          --set-env-vars NODE_ENV=production \
-          --set-env-vars BACKEND_API_URL=${{ env.BACKEND_URL }} \
-          --set-env-vars NEXTAUTH_URL=https://genius-frontend-${{ env.ENVIRONMENT }}.run.app \
-          --set-env-vars NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
-          --set-env-vars GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
-          --set-env-vars GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} \
+          --set-env-vars "NODE_ENV=production,BACKEND_API_URL=${{ env.BACKEND_URL }},NEXTAUTH_URL=https://genius-frontend-${{ env.ENVIRONMENT }}.run.app,NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }},GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }},GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" \
           --cpu 1 \
           --memory 1Gi \
           --min-instances ${{ env.ENVIRONMENT == 'production' && '1' || '0' }} \
