@@ -15,6 +15,11 @@ import {
   IoSunny,
 } from 'react-icons/io5'
 import { GiMagicLamp } from 'react-icons/gi'
+import { 
+  InteractiveConfirmation, 
+  InteractiveConfirmationData, 
+  parseInteractiveConfirmation 
+} from './interactive-confirmation'
 
 // グローバル重複防止機能
 const globalStreamingRequests = new Set<string>()
@@ -71,6 +76,7 @@ export function GenieStyleProgress({
   const [isStreaming, setIsStreaming] = useState(false)
   const [genieSteps, setGenieSteps] = useState<GenieStep[]>([])
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const [interactiveConfirmationData, setInteractiveConfirmationData] = useState<InteractiveConfirmationData | null>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
 
@@ -86,6 +92,13 @@ export function GenieStyleProgress({
       console.log('レスポンス全文:')
       console.log(response)
       console.log('=== 💭検索開始 ===')
+
+      // 🤝 Interactive Confirmation の検出
+      const confirmationData = parseInteractiveConfirmation(response)
+      if (confirmationData) {
+        console.log('🤝 Interactive Confirmation検出:', confirmationData)
+        setInteractiveConfirmationData(confirmationData)
+      }
 
       // 💭マークの直接検索
       const thinkingCount = (response.match(/💭/g) || []).length
@@ -177,6 +190,89 @@ export function GenieStyleProgress({
     } catch (error) {
       console.warn('フォローアップクエスチョン抽出エラー:', error)
       return { questions: [], cleanResponse: response }
+    }
+  }
+
+  // 🤝 Interactive Confirmation 応答処理
+  const handleInteractiveConfirmation = async (response: string) => {
+    if (!interactiveConfirmationData) return
+
+    try {
+      console.log('🤝 Interactive Confirmation応答送信:', {
+        confirmationId: interactiveConfirmationData.confirmation_id,
+        response,
+        userId,
+        sessionId
+      })
+
+      // バックエンドのユーザー応答処理APIを呼び出し
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+      const apiResponse = await fetch(`${API_BASE_URL}/api/streaming/process-confirmation-response`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          confirmation_id: interactiveConfirmationData.confirmation_id,
+          user_response: response,
+          user_id: userId,
+          session_id: sessionId,
+          response_metadata: {
+            timestamp: new Date().toISOString(),
+            context_data: interactiveConfirmationData.context_data
+          }
+        }),
+      })
+
+      if (!apiResponse.ok) {
+        throw new Error(`応答処理APIエラー: ${apiResponse.status}`)
+      }
+
+      const result = await apiResponse.json()
+      console.log('🤝 Interactive Confirmation応答処理結果:', result)
+
+      // 応答に基づく後続処理
+      if (result.followup_action?.action_type === 'proceed' && result.followup_action?.next_steps?.includes('execute_primary_action')) {
+        // 「はい」の場合の処理（食事管理登録など）
+        console.log('✅ ユーザー確認: 処理続行')
+        
+        // 新しいストリーミングリクエストを開始
+        const followupMessage = result.followup_action.message || '承知しました。処理を続行します。'
+        
+        // 最終応答を更新
+        const updatedResponse = `${cleanedFinalResponse}\n\n**✅ ${followupMessage}**`
+        setCleanedFinalResponse(updatedResponse)
+        
+        if (onComplete) {
+          onComplete(updatedResponse)
+        }
+      } else {
+        // 「いいえ」の場合の処理
+        console.log('❌ ユーザー確認: 処理キャンセル')
+        
+        const cancelMessage = result.followup_action?.message || '承知しました。処理をキャンセルします。'
+        const updatedResponse = `${cleanedFinalResponse}\n\n**❌ ${cancelMessage}**`
+        setCleanedFinalResponse(updatedResponse)
+        
+        if (onComplete) {
+          onComplete(updatedResponse)
+        }
+      }
+
+      // Interactive Confirmation UIを非表示
+      setInteractiveConfirmationData(null)
+
+    } catch (error) {
+      console.error('❌ Interactive Confirmation応答処理エラー:', error)
+      
+      // エラー時のフォールバック
+      const errorMessage = `応答処理中にエラーが発生しました: ${error.message}`
+      const updatedResponse = `${cleanedFinalResponse}\n\n**❌ ${errorMessage}**`
+      setCleanedFinalResponse(updatedResponse)
+      
+      if (onError) {
+        onError(errorMessage)
+      }
     }
   }
 
@@ -924,6 +1020,18 @@ export function GenieStyleProgress({
           </div>
         </CardContent>
       </Card>
+
+      {/* 🤝 Interactive Confirmation UI */}
+      {interactiveConfirmationData && (
+        <InteractiveConfirmation
+          confirmationId={interactiveConfirmationData.confirmation_id}
+          question={interactiveConfirmationData.question}
+          options={interactiveConfirmationData.options}
+          contextData={interactiveConfirmationData.context_data}
+          timeout={interactiveConfirmationData.timeout_seconds ? interactiveConfirmationData.timeout_seconds * 1000 : undefined}
+          onConfirm={handleInteractiveConfirmation}
+        />
+      )}
     </div>
   )
 }

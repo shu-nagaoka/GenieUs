@@ -39,7 +39,7 @@ const mainNavigation = [
 const recordNavigation = [
   { name: '撮影したメモリー', href: '/records', icon: FaBookOpen },
   { name: '見守った成長', href: '/tracking', icon: AiOutlineBarChart },
-  { name: '食事管理', href: '/food-management', icon: FaUtensils, badge: 'New' },
+  { name: '食事記録', href: '/meal-records', icon: FaUtensils, badge: 'New' },
   { name: '予定を立てたこと', href: '/schedule', icon: AiOutlineCalendar },
   { name: 'がんばったこと', href: '/effort-report', icon: FaHeart },
 ]

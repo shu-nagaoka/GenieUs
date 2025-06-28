@@ -84,7 +84,7 @@ class AdkRoutingStrategyAdapter(RoutingStrategy):
 
             # 🔍 **最優先**: 明示的検索フラグの検出（ADK制約回避）
             from src.agents.constants import EXPLICIT_SEARCH_FLAGS
-            
+
             # 明示的検索フラグの検出
             explicit_search_detected = False
             matched_flag = None
@@ -93,7 +93,7 @@ class AdkRoutingStrategyAdapter(RoutingStrategy):
                     explicit_search_detected = True
                     matched_flag = search_flag
                     break
-            
+
             if explicit_search_detected:
                 selected_agent = "search_specialist"
                 routing_info.update(

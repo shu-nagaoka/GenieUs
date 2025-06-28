@@ -114,9 +114,11 @@ class DatabaseMigrator:
             self._create_schedule_events_table()
             self._create_effort_reports_table()
             self._create_meal_plans_table()
+            self._create_meal_records_table()
 
             # マイグレーション記録
             self._record_migration("001_initial_schema", "基本スキーマ作成")
+            self._record_migration("002_meal_records", "食事記録テーブル作成")
 
             self.logger.info("データベース初期化完了")
 
@@ -307,6 +309,40 @@ class DatabaseMigrator:
         """
         self.sqlite_manager.execute_update(query)
         self.logger.debug("食事プランテーブル作成完了")
+
+    def _create_meal_records_table(self) -> None:
+        """食事記録テーブル作成"""
+        query = """
+        CREATE TABLE IF NOT EXISTS meal_records (
+            id TEXT PRIMARY KEY,
+            child_id TEXT NOT NULL,
+            meal_name TEXT NOT NULL,
+            meal_type TEXT NOT NULL,
+            detected_foods TEXT,  -- JSON形式
+            nutrition_info TEXT,  -- JSON形式
+            timestamp TEXT NOT NULL,
+            detection_source TEXT NOT NULL,
+            confidence REAL NOT NULL,
+            image_path TEXT,
+            notes TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+        self.sqlite_manager.execute_update(query)
+
+        # インデックス作成
+        index_queries = [
+            "CREATE INDEX IF NOT EXISTS idx_meal_records_child_id ON meal_records(child_id)",
+            "CREATE INDEX IF NOT EXISTS idx_meal_records_timestamp ON meal_records(timestamp)",
+            "CREATE INDEX IF NOT EXISTS idx_meal_records_meal_type ON meal_records(meal_type)",
+            "CREATE INDEX IF NOT EXISTS idx_meal_records_child_timestamp ON meal_records(child_id, timestamp)",
+        ]
+
+        for index_query in index_queries:
+            self.sqlite_manager.execute_update(index_query)
+
+        self.logger.debug("食事記録テーブル作成完了")
 
     def _record_migration(self, name: str, description: str) -> None:
         """マイグレーション実行記録"""

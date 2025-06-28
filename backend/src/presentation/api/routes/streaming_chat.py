@@ -220,7 +220,7 @@ class StreamingChatMessage(BaseModel):
     conversation_history: list = []
     family_info: dict = None
     web_search_enabled: bool = False  # Web検索フラグを追加
-    
+
     # 画像添付関連フィールド（フロントエンドとの整合性確保）
     message_type: str = "text"  # "text", "image", "voice", "multimodal"
     has_image: bool = False
@@ -604,7 +604,7 @@ async def streaming_chat_endpoint(
         logger.info(
             f"🔍 Web検索フラグ詳細: type={type(chat_message.web_search_enabled)}, value={chat_message.web_search_enabled!r}"
         )
-        
+
         # 画像添付情報の詳細ログ
         if chat_message.has_image or chat_message.message_type == "image":
             logger.info(

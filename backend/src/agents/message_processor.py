@@ -63,13 +63,13 @@ class MessageProcessor:
                 data_type = "ファイルパス"
             else:
                 data_type = "不明な形式"
-            
+
             image_text = f"【画像情報】\n画像タイプ: 子どもの写真が添付されています（{data_type}）\n"
             image_text += f"画像パス: {image_path}\n"
             image_text += f"分析指示: analyze_child_imageツールを使用して、上記の画像パス（{image_path}）を指定して画像を分析してください\n"
-            
+
             if multimodal_context:
-                image_description = multimodal_context.get('image_description', '')
+                image_description = multimodal_context.get("image_description", "")
                 if image_description:
                     image_text += f"画像説明: {image_description}\n"
             context_parts.append(image_text)
@@ -93,7 +93,7 @@ class MessageProcessor:
         if conversation_history:
             context_info.append(f"履歴{len(conversation_history)}件")
         if image_path:
-            context_info.append(f"画像データ({len(image_path)//1024}KB)")
+            context_info.append(f"画像データ({len(image_path) // 1024}KB)")
 
         self.logger.info(
             f"📚 コンテキスト付きメッセージ作成: {', '.join(context_info) if context_info else '基本メッセージ'}",

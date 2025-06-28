@@ -18,6 +18,7 @@ from src.presentation.api.routes.file_upload import router as file_upload_router
 from src.presentation.api.routes.growth_records import router as growth_records_router
 from src.presentation.api.routes.image_analysis import router as image_analysis_router
 from src.presentation.api.routes.meal_plans import router as meal_plans_router
+from src.presentation.api.routes.meal_records import router as meal_records_router
 from src.presentation.api.routes.memories import router as memories_router
 from src.presentation.api.routes.record_management import (
     router as record_management_router,
@@ -26,6 +27,7 @@ from src.presentation.api.routes.schedules import router as schedules_router
 from src.presentation.api.routes.search_history import router as search_history_router
 from src.presentation.api.routes.streaming_chat import router as streaming_chat_router
 from src.presentation.api.routes.voice_analysis import router as voice_analysis_router
+from src.presentation.api.routes.interactive_confirmation import router as interactive_confirmation_router
 
 
 @asynccontextmanager
@@ -34,15 +36,16 @@ async def lifespan(app: FastAPI):
     # 起動時処理
     temp_logger = logging.getLogger(__name__)
     temp_logger.info("FastAPI application starting...")
-    
+
     import time
+
     start_time = time.time()
 
     # 🎯 CompositionRoot一元初期化（アプリケーション全体で1度だけ）
     try:
         # Cloud Run用環境変数で軽量起動モードを確認
         fast_startup = os.getenv("FAST_STARTUP", "false").lower() == "true"
-        
+
         if fast_startup:
             temp_logger.info("⚡ 高速起動モード: 最小限の初期化のみ実行")
             # 最小限のダミー設定でアプリを起動可能にする
@@ -68,14 +71,14 @@ async def lifespan(app: FastAPI):
             )
             agent_manager.initialize_all_components()
             logger.info("✅ AgentManager初期化完了（Pure Composition Root + ルーティング戦略）")
-            
+
             # FastAPIアプリには必要なコンポーネントのみ注入
             app.agent_manager = agent_manager
             app.logger = logger
             app.composition_root = composition_root  # 家族管理UseCaseアクセス用
-        
+
         initialization_time = time.time() - start_time
-        current_logger = app.logger if hasattr(app, 'logger') else temp_logger
+        current_logger = app.logger if hasattr(app, "logger") else temp_logger
         current_logger.info(f"✅ FastAPIアプリ関連付け完了 - 初期化時間: {initialization_time:.2f}秒")
 
     except Exception as e:
@@ -130,6 +133,9 @@ app.add_middleware(
 # 🌊 ストリーミングチャットルーター（リアルタイム進捗表示）
 app.include_router(streaming_chat_router, tags=["streaming"])
 
+# 🤝 Interactive Confirmation ルーター（Human-in-the-Loop）
+app.include_router(interactive_confirmation_router, prefix="/api/streaming", tags=["interactive"])
+
 # 👨‍👩‍👧‍👦 家族情報管理ルーター
 app.include_router(family_router, prefix="/api", tags=["family"])
 
@@ -142,6 +148,9 @@ app.include_router(file_upload_router, tags=["files"])
 
 # 🍽️ 食事プラン管理ルーター
 app.include_router(meal_plans_router, prefix="/api", tags=["meal_plans"])
+
+# 🍽️ 食事記録管理ルーター
+app.include_router(meal_records_router, prefix="/api/v1", tags=["meal_records"])
 
 # 🔐 認証ルーター
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
@@ -171,15 +180,16 @@ async def health_check():
     """軽量ヘルスチェックエンドポイント - CompositionRoot初期化を待たない"""
     return {"status": "healthy", "service": "genius-backend"}
 
+
 # 深いヘルスチェックエンドポイント（依存関係確認）
 @app.get("/health/deep")
 async def deep_health_check(request):
     """深いヘルスチェック - 依存関係が初期化されているかチェック"""
     try:
         # CompositionRootが初期化されているかチェック
-        if not hasattr(request.app, 'composition_root'):
+        if not hasattr(request.app, "composition_root"):
             return {"status": "initializing", "service": "genius-backend", "message": "Dependencies not ready"}
-        
+
         return {"status": "ready", "service": "genius-backend", "dependencies": "initialized"}
     except Exception as e:
         return {"status": "error", "service": "genius-backend", "error": str(e)}
@@ -234,7 +244,7 @@ if __name__ == "__main__":
     # 環境変数からポート設定を取得（デフォルト: 8080でCloud Runと統一）
     port = int(os.getenv("PORT", "8080"))
     host = os.getenv("HOST", "0.0.0.0")
-    log_level = os.getenv("LOG_LEVEL", "info")
+    log_level = os.getenv("LOG_LEVEL", "info").lower()
     reload = os.getenv("RELOAD", "true").lower() == "true"
 
     print(f"🚀 Starting FastAPI server on {host}:{port}")

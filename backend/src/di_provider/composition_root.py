@@ -27,6 +27,8 @@ from src.application.usecases.search_history_usecase import SearchHistoryUseCase
 from src.application.usecases.streaming_chat_usecase import StreamingChatUseCase
 from src.application.usecases.user_management_usecase import UserManagementUseCase
 from src.application.usecases.voice_analysis_usecase import VoiceAnalysisUseCase
+from src.application.usecases.interactive_confirmation_usecase import InteractiveConfirmationUseCase
+from src.application.usecases.meal_record_usecase import MealRecordUseCase
 from src.config.settings import AppSettings, get_settings
 from src.infrastructure.adapters.file_operator import GcsFileOperator
 from src.infrastructure.adapters.gemini_image_analyzer import GeminiImageAnalyzer
@@ -47,6 +49,7 @@ from src.infrastructure.adapters.persistence.schedule_event_repository import (
     ScheduleEventRepository,
 )
 from src.infrastructure.adapters.persistence.user_repository import UserRepository
+from src.infrastructure.adapters.persistence.meal_record_repository import MealRecordRepository
 from src.infrastructure.database.data_migrator import DataMigrator
 from src.infrastructure.database.sqlite_manager import DatabaseMigrator, SQLiteManager
 from src.presentation.api.middleware.auth_middleware import (
@@ -204,6 +207,10 @@ class CompositionRoot:
             # Data Migrator (JSON → SQLite)
             data_migrator = DataMigrator(settings=self.settings, sqlite_manager=sqlite_manager, logger=self.logger)
             self._infrastructure.register("data_migrator", data_migrator)
+
+            # Meal Record Repository (SQLite版)
+            meal_record_repository = MealRecordRepository(sqlite_manager=sqlite_manager, logger=self.logger)
+            self._infrastructure.register("meal_record_repository", meal_record_repository)
         else:
             self.logger.warning(f"未サポートのデータベースタイプ: {self.settings.DATABASE_TYPE}")
 
@@ -287,6 +294,21 @@ class CompositionRoot:
             logger=self.logger,
         )
 
+        # Meal Record UseCase (食事記録機能) - 先に作成
+        if self.settings.DATABASE_TYPE == "sqlite":
+            meal_record_repository = self._infrastructure.get("meal_record_repository")
+            meal_record_usecase = MealRecordUseCase(
+                meal_record_repository=meal_record_repository,
+                logger=self.logger,
+            )
+        else:
+            meal_record_usecase = None
+
+        interactive_confirmation_usecase = InteractiveConfirmationUseCase(
+            meal_record_usecase=meal_record_usecase,
+            logger=self.logger,
+        )
+
         # UseCase登録
         self._usecases.register("image_analysis", image_analysis_usecase)
         self._usecases.register("voice_analysis", voice_analysis_usecase)
@@ -302,6 +324,11 @@ class CompositionRoot:
         self._usecases.register("agent_info", agent_info_usecase)
         self._usecases.register("streaming_chat", streaming_chat_usecase)
         self._usecases.register("search_history", search_history_usecase)
+        self._usecases.register("interactive_confirmation", interactive_confirmation_usecase)
+
+        # Meal Record UseCase 登録
+        if meal_record_usecase:
+            self._usecases.register("meal_record", meal_record_usecase)
 
         # User Management UseCase (認証統合)
         if self.settings.DATABASE_TYPE == "sqlite":
@@ -343,6 +370,18 @@ class CompositionRoot:
         # Google Search ツール
         google_search_tool = self._create_google_search_tool()
         self._tools.register("google_search", google_search_tool)
+
+        # Interactive Confirmation ツール（Human-in-the-Loop機能）
+        interactive_confirmation_tool = self._create_interactive_confirmation_tool()
+        self._tools.register("interactive_confirmation", interactive_confirmation_tool)
+
+        # Meal Management Integration ツール（食事管理統合）
+        meal_integration_tool = self._create_meal_management_integration_tool()
+        self._tools.register("meal_management_integration", meal_integration_tool)
+
+        # Meal Record ツール（食事記録CRUD）
+        meal_record_tool = self._create_meal_record_tool()
+        self._tools.register("meal_record", meal_record_tool)
 
         self.logger.info("Tool層組み立て完了")
 
@@ -391,12 +430,44 @@ class CompositionRoot:
         self.logger.info("Google Search ツールが利用可能です")
         return google_search
 
+    def _create_interactive_confirmation_tool(self) -> FunctionTool:
+        """Interactive Confirmation ツール作成（Human-in-the-Loop）"""
+        from src.tools.interactive_confirmation_tool import InteractiveConfirmationTool
+
+        tool_instance = InteractiveConfirmationTool(logger=self.logger)
+
+        # FunctionToolとしてラップ
+        return FunctionTool(func=tool_instance.ask_user_confirmation)
+
+    def _create_meal_management_integration_tool(self) -> FunctionTool:
+        """Meal Management Integration ツール作成（食事管理統合）"""
+        from src.tools.meal_management_integration_tool import create_meal_management_integration_tool
+
+        interactive_confirmation_usecase = self._usecases.get_required("interactive_confirmation")
+        return create_meal_management_integration_tool(
+            interactive_confirmation_usecase=interactive_confirmation_usecase, logger=self.logger
+        )
+
+    def _create_meal_record_tool(self) -> FunctionTool:
+        """Meal Record ツール作成（食事記録CRUD）"""
+        from src.tools.meal_record_tool import create_meal_record_tool
+
+        meal_record_usecase = self._usecases.get("meal_record")
+        if meal_record_usecase is None:
+            self.logger.warning("MealRecordUseCase が利用できません。SQLiteモードでない可能性があります。")
+            # ダミーツールを返すか、Noneを返すかの選択
+            from google.adk.tools import FunctionTool
+
+            return FunctionTool(func=lambda: {"error": "MealRecord機能が利用できません"})
+
+        return create_meal_record_tool(meal_record_usecase=meal_record_usecase, logger=self.logger)
+
     # ========== One-time Assembly API (main.py only) ==========
 
     def _build_routing_strategy(self) -> None:
         """意図ベースルーティング戦略の組み立て"""
         from src.agents.intent_based_routing_strategy import IntentBasedRoutingStrategy
-        
+
         self._routing_strategy = IntentBasedRoutingStrategy(logger=self.logger)
         self.logger.info("意図ベースルーティング戦略を使用")
 

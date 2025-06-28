@@ -229,6 +229,11 @@
       "title": "🎫 Issue管理",
       "items": [
         {
+          "title": "🎫 Issue: Human-in-the-Loop食事画像解析→食事管理登録機能",
+          "file": "issue/human-in-the-loop-meal-registration.md",
+          "description": "食事画像をアップロードして解析した後、AIエージェントがユーザーに対してインタラクティブに「レシピを食事管理に登録しますか？」と確認し、ユーザーが「Yes」と回答した場合に自動的にmeal_planシ..."
+        },
+        {
           "title": "🎫 Issue: フロントエンド速度最適化実装",
           "file": "issue/frontend-performance-optimization.md",
           "description": "GenieUsフロントエンドアプリケーションにおいて、CSRアーキテクチャを維持しながら、ユーザー体験を大幅に改善するための速度最適化を実装する。"
