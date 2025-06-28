@@ -137,6 +137,21 @@ jobs:
     - name: Setup Docker Buildx
       uses: docker/setup-buildx-action@v3
 
+    - name: Create Artifact Registry Repository
+      run: |
+        # Check if repository exists, create if not
+        if ! gcloud artifacts repositories describe genius-frontend \
+          --location=${{ env.GAR_LOCATION }} \
+          --format="value(name)" > /dev/null 2>&1; then
+          echo "Creating Artifact Registry repository..."
+          gcloud artifacts repositories create genius-frontend \
+            --repository-format=docker \
+            --location=${{ env.GAR_LOCATION }} \
+            --description="GenieUs Frontend Docker images"
+        else
+          echo "Artifact Registry repository already exists"
+        fi
+
     - name: Build and Push Frontend Image
       run: |
         cd frontend
