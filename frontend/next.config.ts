@@ -4,9 +4,7 @@ const nextConfig: NextConfig = {
   // パフォーマンス最適化を有効化
   reactStrictMode: true,
 
-  // Cloud Run用standalone出力設定
-  output: 'standalone',
-  distDir: '.next',
+  // 標準のNext.js出力（standaloneを削除）
   
   // 静的生成を無効化（Cloud Run問題回避）
   trailingSlash: false,
