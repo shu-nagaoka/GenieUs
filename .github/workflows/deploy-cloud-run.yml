@@ -169,6 +169,7 @@ jobs:
 
       - name: Deploy Frontend to Cloud Run
         run: |
+          # First deploy without NEXTAUTH_URL to get the actual URL
           gcloud run deploy genius-frontend-${{ env.ENVIRONMENT }} \
             --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/genius-frontend/app:${{ github.sha }} \
             --platform managed \
@@ -176,7 +177,6 @@ jobs:
             --allow-unauthenticated \
             --set-env-vars NODE_ENV=production \
             --set-env-vars BACKEND_API_URL=${{ env.BACKEND_URL }} \
-            --set-env-vars NEXTAUTH_URL=https://genius-frontend-${{ env.ENVIRONMENT }}.run.app \
             --set-env-vars NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
             --set-env-vars GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
             --set-env-vars GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} \
@@ -185,6 +185,17 @@ jobs:
             --min-instances ${{ env.ENVIRONMENT == 'production' && '1' || '0' }} \
             --max-instances ${{ env.ENVIRONMENT == 'production' && '10' || '5' }} \
             --port 3000
+          
+          # Get the actual frontend URL
+          FRONTEND_URL=$(gcloud run services describe genius-frontend-${{ env.ENVIRONMENT }} \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --format 'value(status.url)')
+          
+          # Update with correct NEXTAUTH_URL
+          gcloud run services update genius-frontend-${{ env.ENVIRONMENT }} \
+            --region ${{ env.REGION }} \
+            --set-env-vars NEXTAUTH_URL=$FRONTEND_URL
 
       - name: Show Build Info on Failure
         if: failure()
