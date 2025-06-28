@@ -7,7 +7,7 @@ WORKDIR /app
 
 # 依存関係ファイルのコピー
 COPY package.json package-lock.json* ./
-RUN npm ci --ignore-scripts && npm cache clean --force
+RUN npm ci
 
 # ビルド用ステージ
 FROM base AS builder
@@ -18,9 +18,6 @@ COPY . .
 # 環境変数の設定
 ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
-
-# 全ての依存関係をインストール（dev dependencies含む）
-RUN npm ci && npm cache clean --force
 
 # アプリケーションのビルド
 RUN npm run build
