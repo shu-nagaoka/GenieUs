@@ -117,6 +117,9 @@ CICD_ROLES=(
     "roles/cloudbuild.builds.builder"
     "roles/storage.admin"
     "roles/artifactregistry.admin"
+    "roles/serviceusage.serviceUsageConsumer"
+    "roles/cloudbuild.serviceAgent"
+    "roles/source.admin"
 )
 
 echo "Setting CI/CD service account permissions..."
