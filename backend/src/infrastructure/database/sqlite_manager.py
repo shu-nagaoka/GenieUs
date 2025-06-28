@@ -121,10 +121,12 @@ class DatabaseMigrator:
         self.logger.info("データベース初期化開始")
 
         try:
-            # マイグレーション管理テーブル作成
-            self._create_migration_table()
-
-            # 基本テーブル作成
+            # Cloud Run環境では簡易初期化のみ
+            if os.getenv("ENVIRONMENT") in ["production", "staging"]:
+                self.logger.info("Cloud Run環境: インメモリSQLiteのため初期化をスキップ")
+                return
+            
+            # ローカル環境のみテーブル作成
             self._create_users_table()
             self._create_family_info_table()
             self._create_child_records_table()
@@ -135,14 +137,14 @@ class DatabaseMigrator:
             self._create_meal_plans_table()
             self._create_meal_records_table()
 
-            # マイグレーション記録
-            self._record_migration("001_initial_schema", "基本スキーマ作成")
-            self._record_migration("002_meal_records", "食事記録テーブル作成")
-
             self.logger.info("データベース初期化完了")
 
         except Exception as e:
             self.logger.error(f"データベース初期化エラー: {e}")
+            # Cloud Run環境では初期化エラーを無視
+            if os.getenv("ENVIRONMENT") in ["production", "staging"]:
+                self.logger.warning("Cloud Run環境: 初期化エラーを無視して続行")
+                return
             raise
 
     def _create_migration_table(self) -> None:
@@ -349,18 +351,6 @@ class DatabaseMigrator:
         )
         """
         self.sqlite_manager.execute_update(query)
-
-        # インデックス作成
-        index_queries = [
-            "CREATE INDEX IF NOT EXISTS idx_meal_records_child_id ON meal_records(child_id)",
-            "CREATE INDEX IF NOT EXISTS idx_meal_records_timestamp ON meal_records(timestamp)",
-            "CREATE INDEX IF NOT EXISTS idx_meal_records_meal_type ON meal_records(meal_type)",
-            "CREATE INDEX IF NOT EXISTS idx_meal_records_child_timestamp ON meal_records(child_id, timestamp)",
-        ]
-
-        for index_query in index_queries:
-            self.sqlite_manager.execute_update(index_query)
-
         self.logger.debug("食事記録テーブル作成完了")
 
     def _record_migration(self, name: str, description: str) -> None:

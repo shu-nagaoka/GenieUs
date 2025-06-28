@@ -249,12 +249,12 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
         if not conversation_history:
             return "general"
         
-        # 直前のメッセージ（最新3件をチェック）を調べる
-        recent_messages = conversation_history[-3:] if len(conversation_history) >= 3 else conversation_history
+        # 🚨 **重要**: 直前のメッセージ（1件のみ）をチェック - 異なる文脈の混在を防ぐ
+        last_message = conversation_history[-1] if conversation_history else None
         
-        for message in reversed(recent_messages):
-            role = message.get("role")
-            content = message.get("content", "")
+        if last_message:
+            role = last_message.get("role")
+            content = last_message.get("content", "")
             
             # エージェントからのメッセージをチェック
             if role == "genie" or role is None or role == "":
@@ -313,15 +313,23 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
                     "いかがでしょうか"
                 ]
                 
-                # スケジュール関連キーワードが多く含まれる場合
+                # キーワード数を比較して、より多くマッチした方を優先
                 schedule_count = sum(1 for indicator in schedule_indicators if indicator in content)
                 meal_count = sum(1 for indicator in meal_indicators if indicator in content)
                 
-                if schedule_count > 0:
-                    self.logger.info(f"🔍 スケジュール確認文脈検出: {schedule_count}個のキーワード一致")
+                self.logger.info(f"🔍 確認文脈キーワード一致数: 食事={meal_count}個, スケジュール={schedule_count}個")
+                
+                if meal_count > schedule_count:
+                    self.logger.info(f"🔍 食事記録確認文脈検出: {meal_count}個のキーワード一致（直前メッセージのみ）")
+                    return "meal_record"
+                elif schedule_count > meal_count:
+                    self.logger.info(f"🔍 スケジュール確認文脈検出: {schedule_count}個のキーワード一致（直前メッセージのみ）")
+                    return "schedule_record"
+                elif schedule_count > 0:  # 同数の場合はスケジュール優先（新機能のため）
+                    self.logger.info(f"🔍 スケジュール確認文脈検出: {schedule_count}個のキーワード一致（同数につき優先）")
                     return "schedule_record"
                 elif meal_count > 0:
-                    self.logger.info(f"🔍 食事記録確認文脈検出: {meal_count}個のキーワード一致")
+                    self.logger.info(f"🔍 食事記録確認文脈検出: {meal_count}個のキーワード一致（直前メッセージのみ）")
                     return "meal_record"
         
         return "general"
