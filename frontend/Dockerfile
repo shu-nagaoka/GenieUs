@@ -1,27 +1,30 @@
-# Use official Node.js runtime as base image
-FROM node:20
+# Use Node.js 18 for better compatibility
+FROM node:18-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Install system dependencies
+RUN apk add --no-cache libc6-compat
+
+# Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
-
-# Copy the rest of application code
-COPY . .
-
-# Set environment variables before build
+# Set production environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV SKIP_ENV_VALIDATION=1
 
-# Build the application
-RUN npm run build:docker
+# Install dependencies with increased memory
+RUN npm install --verbose
 
-# Expose port 3000
+# Copy source code
+COPY . .
+
+# Build with increased memory
+RUN npm run build
+
+# Expose port
 EXPOSE 3000
 
 # Start the application
