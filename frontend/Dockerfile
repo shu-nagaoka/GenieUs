@@ -7,7 +7,7 @@ WORKDIR /app
 
 # 依存関係ファイルのコピー
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production --ignore-scripts
+RUN npm ci --ignore-scripts && npm cache clean --force
 
 # ビルド用ステージ
 FROM base AS builder
@@ -20,7 +20,7 @@ ENV NEXT_TELEMETRY_DISABLED 1
 ENV NODE_ENV production
 
 # 全ての依存関係をインストール（dev dependencies含む）
-RUN npm ci
+RUN npm ci && npm cache clean --force
 
 # アプリケーションのビルド
 RUN npm run build
@@ -43,7 +43,7 @@ COPY --from=builder /app/public ./public
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
-# Automatically leverage output traces to reduce image size
+# Automatically leverage output traces to reduce image size  
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
