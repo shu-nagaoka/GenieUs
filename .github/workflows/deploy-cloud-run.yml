@@ -114,8 +114,7 @@ jobs:
           --min-instances ${{ env.ENVIRONMENT == 'production' && '1' || '0' }} \
           --max-instances ${{ env.ENVIRONMENT == 'production' && '5' || '3' }} \
           --timeout 900 \
-          --cpu-throttling \
-          --startup-cpu-boost
+          --cpu-boost
 
     - name: Get Backend URL
       run: |
