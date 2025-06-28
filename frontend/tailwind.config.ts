@@ -10,10 +10,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'main': ['var(--font-main)', 'system-ui', 'sans-serif'],
-        'heading': ['var(--font-heading)', 'system-ui', 'sans-serif'],
-        'accent': ['var(--font-accent)', 'system-ui', 'sans-serif'],
-        'kiwi': ['var(--font-kiwi-maru)', 'system-ui', 'sans-serif'],
+        main: ['var(--font-main)', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-heading)', 'system-ui', 'sans-serif'],
+        accent: ['var(--font-accent)', 'system-ui', 'sans-serif'],
+        kiwi: ['var(--font-kiwi-maru)', 'system-ui', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',

@@ -2,7 +2,7 @@
  * エージェント情報を取得するAPIクライアント
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export interface Agent {
   id: string
@@ -31,7 +31,7 @@ const mockAgents: Agent[] = [
     icon: '🧙‍♂️',
     color: 'from-blue-500 to-cyan-500',
     capabilities: ['24時間対応', 'エージェントルーティング', '包括的サポート'],
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'nutrition_specialist',
@@ -41,7 +41,7 @@ const mockAgents: Agent[] = [
     icon: '🍎',
     color: 'from-green-500 to-emerald-500',
     capabilities: ['月齢別レシピ提案', 'アレルギー対応レシピ', '栄養バランス分析'],
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'sleep_specialist',
@@ -51,7 +51,7 @@ const mockAgents: Agent[] = [
     icon: '🌙',
     color: 'from-purple-600 to-indigo-600',
     capabilities: ['睡眠パターン分析', '個別ネントレプラン', '夜泣き原因特定'],
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'development_specialist',
@@ -61,7 +61,7 @@ const mockAgents: Agent[] = [
     icon: '🌱',
     color: 'from-teal-500 to-green-500',
     capabilities: ['発達段階チェック', '月齢別サポート', '発達促進アドバイス'],
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'health_specialist',
@@ -71,7 +71,7 @@ const mockAgents: Agent[] = [
     icon: '🏥',
     color: 'from-red-500 to-pink-500',
     capabilities: ['症状チェック', '受診タイミング', 'スケジュール管理'],
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'behavior_specialist',
@@ -81,7 +81,7 @@ const mockAgents: Agent[] = [
     icon: '🎯',
     color: 'from-purple-500 to-pink-500',
     capabilities: ['年齢別しつけ法', 'ポジティブ育児', '問題行動対策'],
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'play_learning_specialist',
@@ -91,7 +91,7 @@ const mockAgents: Agent[] = [
     icon: '🎨',
     color: 'from-orange-500 to-amber-500',
     capabilities: ['月齢別遊び提案', '室内・屋外活動', 'お出かけプラン'],
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'safety_specialist',
@@ -101,7 +101,7 @@ const mockAgents: Agent[] = [
     icon: '🛡️',
     color: 'from-blue-500 to-cyan-500',
     capabilities: ['安全チェックリスト', 'リスク評価', '対策提案'],
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'mental_care_specialist',
@@ -111,7 +111,7 @@ const mockAgents: Agent[] = [
     icon: '💆‍♀️',
     color: 'from-slate-500 to-gray-600',
     capabilities: ['ストレス診断', 'リラックス法', '感情整理'],
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'work_life_specialist',
@@ -121,17 +121,7 @@ const mockAgents: Agent[] = [
     icon: '💼',
     color: 'from-purple-600 to-indigo-600',
     capabilities: ['復帰プラン作成', '両立アドバイス', '保育園情報'],
-    status: 'active'
-  },
-  {
-    id: 'special_support_specialist',
-    name: '特別支援・療育エージェント',
-    description: '発達障害や特別な支援が必要なお子さんをサポートします',
-    specialties: ['発達障害', '療育', '特別支援', '個別対応'],
-    icon: '🤝',
-    color: 'from-emerald-500 to-teal-500',
-    capabilities: ['発達評価', '療育プラン', '支援制度案内'],
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'image_specialist',
@@ -141,7 +131,7 @@ const mockAgents: Agent[] = [
     icon: '📸',
     color: 'from-cyan-500 to-blue-500',
     capabilities: ['AI画像認識', '成長分析', '写真整理'],
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'voice_specialist',
@@ -151,7 +141,7 @@ const mockAgents: Agent[] = [
     icon: '🎤',
     color: 'from-pink-500 to-rose-500',
     capabilities: ['泣き声パターン認識', '発話分析', '感情認識'],
-    status: 'active'
+    status: 'active',
   },
   {
     id: 'record_specialist',
@@ -161,17 +151,17 @@ const mockAgents: Agent[] = [
     icon: '📊',
     color: 'from-orange-500 to-amber-500',
     capabilities: ['成長データ分析', 'グラフ作成', '発達予測'],
-    status: 'active'
+    status: 'active',
   },
   {
-    id: 'family_relationship_specialist',
-    name: '家族関係エージェント',
-    description: '家族間の関係性や育児方針の違いなど、家族全体の調和をサポートします',
-    specialties: ['夫婦関係', '育児方針調整', '家族コミュニケーション', '祖父母との関係'],
-    icon: '👨‍👩‍👧‍👦',
-    color: 'from-emerald-500 to-teal-500',
-    capabilities: ['関係性改善アドバイス', 'コミュニケーション支援', '家族調和促進'],
-    status: 'active'
+    id: 'file_specialist',
+    name: 'ファイル管理エージェント',
+    description: 'お子さんの大切な思い出や記録を安全に保存・管理します',
+    specialties: ['ファイル保存', '写真管理', '動画管理', 'データ整理'],
+    icon: '📁',
+    color: 'from-gray-500 to-slate-600',
+    capabilities: ['クラウド保存', 'ファイル検索', '思い出整理'],
+    status: 'active',
   },
   {
     id: 'search_specialist',
@@ -181,28 +171,8 @@ const mockAgents: Agent[] = [
     icon: '🔍',
     color: 'from-blue-500 to-cyan-500',
     capabilities: ['リアルタイム検索', '地域密着情報', '信頼性確認'],
-    status: 'active'
+    status: 'active',
   },
-  {
-    id: 'administration_specialist',
-    name: '窓口・申請エージェント',
-    description: '自治体の手続きや各種手当申請、公的サービスの利用方法をサポートします',
-    specialties: ['行政手続き', '各種申請', '手当・助成', '窓口案内'],
-    icon: '🏢',
-    color: 'from-slate-500 to-gray-600',
-    capabilities: ['申請書類案内', '期限管理', '窓口情報', '制度説明'],
-    status: 'active'
-  },
-  {
-    id: 'outing_event_specialist',
-    name: 'おでかけ・イベントエージェント',
-    description: '季節のイベントや親子でのお出かけ先を検索・提案します',
-    specialties: ['お出かけスポット', '季節イベント', '親子活動', '地域情報'],
-    icon: '🎪',
-    color: 'from-pink-500 to-rose-500',
-    capabilities: ['リアルタイム検索', '年齢別提案', 'アクセス情報', '安全性確認'],
-    status: 'active'
-  }
 ]
 
 /**
@@ -230,12 +200,12 @@ export async function getAgents(): Promise<ApiResponse<Agent[]>> {
     }
   }
   */
-  
+
   // ハードコーディングされたデータを直接返す
   return {
     success: true,
     data: mockAgents,
-    message: 'エージェント一覧を取得しました（ハードコーディング）'
+    message: 'エージェント一覧を取得しました（ハードコーディング）',
   }
 }
 
@@ -272,20 +242,20 @@ export async function getAgent(agentId: string): Promise<ApiResponse<Agent>> {
     }
   }
   */
-  
+
   // ハードコーディングされたデータから検索
   const agent = mockAgents.find(a => a.id === agentId)
   if (agent) {
     return {
       success: true,
       data: agent,
-      message: 'エージェント情報を取得しました（ハードコーディング）'
+      message: 'エージェント情報を取得しました（ハードコーディング）',
     }
   }
-  
+
   return {
     success: false,
-    message: 'エージェント情報の取得に失敗しました'
+    message: 'エージェント情報の取得に失敗しました',
   }
 }
 

@@ -1,0 +1,252 @@
+# GenieUs Cloud Build Configuration
+# フロントエンド・バックエンドの並行ビルド&デプロイ
+
+steps:
+  # Step 1: 環境変数とプロジェクト設定
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'setup'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "🔧 Cloud Build環境設定..."
+        gcloud config set project $_GCP_PROJECT_ID
+        echo "Project: $_GCP_PROJECT_ID"
+        echo "Environment: $_ENVIRONMENT"
+        echo "Region: $_GCP_REGION"
+
+  # Step 2: 必要なAPIを有効化
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'enable-apis'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "🔌 必要なGCP APIを有効化中..."
+        gcloud services enable run.googleapis.com
+        gcloud services enable cloudbuild.googleapis.com
+        gcloud services enable containerregistry.googleapis.com
+        gcloud services enable artifactregistry.googleapis.com
+        gcloud services enable aiplatform.googleapis.com
+        echo "✅ API有効化完了"
+
+  # Step 3: IAMサービスアカウント設定
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'setup-iam'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "👤 IAMサービスアカウント設定..."
+        
+        # サービスアカウント作成（既存の場合はスキップ）
+        if ! gcloud iam service-accounts describe genius-backend-sa@$_GCP_PROJECT_ID.iam.gserviceaccount.com &>/dev/null; then
+          echo "Creating service account..."
+          gcloud iam service-accounts create genius-backend-sa \
+            --display-name="Genius Backend Service Account" \
+            --description="Service account for Genius backend Cloud Run service"
+        else
+          echo "Service account already exists"
+        fi
+        
+        # 必要な権限付与
+        for role in "roles/aiplatform.user" "roles/storage.objectAdmin" "roles/logging.logWriter" "roles/monitoring.metricWriter"; do
+          echo "Granting role: $role"
+          gcloud projects add-iam-policy-binding $_GCP_PROJECT_ID \
+            --member="serviceAccount:genius-backend-sa@$_GCP_PROJECT_ID.iam.gserviceaccount.com" \
+            --role="$role" \
+            --quiet || true
+        done
+        
+        echo "✅ IAM設定完了"
+
+  # Step 4: バックエンドビルド・デプロイ（並行処理）
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'deploy-backend'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "🐍 バックエンドをCloud Buildでデプロイ中..."
+        
+        cd backend
+        
+        # サービス名決定
+        if [ "$_ENVIRONMENT" = "production" ]; then
+          SERVICE_NAME="genius-backend"
+          MIN_INSTANCES=1
+          MAX_INSTANCES=5
+        else
+          SERVICE_NAME="genius-backend-$_ENVIRONMENT"
+          MIN_INSTANCES=0
+          MAX_INSTANCES=3
+        fi
+        
+        echo "Service: $SERVICE_NAME"
+        
+        # Cloud Buildでデプロイ（ローカルDockerは使わない）
+        gcloud run deploy $SERVICE_NAME \
+          --source . \
+          --platform managed \
+          --region $_GCP_REGION \
+          --allow-unauthenticated \
+          --port 8000 \
+          --cpu 1 \
+          --memory 2Gi \
+          --min-instances $MIN_INSTANCES \
+          --max-instances $MAX_INSTANCES \
+          --service-account genius-backend-sa@$_GCP_PROJECT_ID.iam.gserviceaccount.com \
+          --set-env-vars "GOOGLE_CLOUD_PROJECT=$_GCP_PROJECT_ID" \
+          --set-env-vars "ENVIRONMENT=$_ENVIRONMENT" \
+          --set-env-vars "ROUTING_STRATEGY=${_ROUTING_STRATEGY:-enhanced}" \
+          --set-env-vars "LOG_LEVEL=${_LOG_LEVEL:-INFO}" \
+          --timeout 300 \
+          --quiet
+        
+        # バックエンドURL取得
+        BACKEND_URL=$(gcloud run services describe $SERVICE_NAME \
+          --platform managed \
+          --region $_GCP_REGION \
+          --format 'value(status.url)')
+        
+        echo "✅ バックエンドデプロイ完了: $BACKEND_URL"
+        echo "$BACKEND_URL" > /workspace/backend_url.txt
+
+  # Step 5: フロントエンドビルド・デプロイ（並行処理）
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'deploy-frontend'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "⚛️ フロントエンドをCloud Buildでデプロイ中..."
+        
+        cd frontend
+        
+        # バックエンドURLを取得（依存関係のため待機）
+        while [ ! -f /workspace/backend_url.txt ]; do
+          echo "Waiting for backend URL..."
+          sleep 5
+        done
+        BACKEND_URL=$(cat /workspace/backend_url.txt)
+        
+        # サービス名決定
+        if [ "$_ENVIRONMENT" = "production" ]; then
+          SERVICE_NAME="genius-frontend"
+          MIN_INSTANCES=1
+          MAX_INSTANCES=10
+        else
+          SERVICE_NAME="genius-frontend-$_ENVIRONMENT"
+          MIN_INSTANCES=0
+          MAX_INSTANCES=5
+        fi
+        
+        echo "Service: $SERVICE_NAME"
+        echo "Backend URL: $BACKEND_URL"
+        
+        # Cloud Buildでデプロイ
+        gcloud run deploy $SERVICE_NAME \
+          --source . \
+          --platform managed \
+          --region $_GCP_REGION \
+          --allow-unauthenticated \
+          --port 3000 \
+          --cpu 1 \
+          --memory 1Gi \
+          --min-instances $MIN_INSTANCES \
+          --max-instances $MAX_INSTANCES \
+          --set-env-vars "NODE_ENV=production" \
+          --set-env-vars "NEXT_PUBLIC_API_BASE_URL=$BACKEND_URL" \
+          --set-env-vars "NEXTAUTH_SECRET=${_NEXTAUTH_SECRET:-default-secret}" \
+          --set-env-vars "GOOGLE_CLIENT_ID=${_GOOGLE_CLIENT_ID:-}" \
+          --set-env-vars "GOOGLE_CLIENT_SECRET=${_GOOGLE_CLIENT_SECRET:-}" \
+          --timeout 300 \
+          --quiet
+        
+        # フロントエンドURL取得
+        FRONTEND_URL=$(gcloud run services describe $SERVICE_NAME \
+          --platform managed \
+          --region $_GCP_REGION \
+          --format 'value(status.url)')
+        
+        echo "✅ フロントエンドデプロイ完了: $FRONTEND_URL"
+        echo "$FRONTEND_URL" > /workspace/frontend_url.txt
+    waitFor: ['deploy-backend']
+
+  # Step 6: ヘルスチェック・動作確認
+  - name: 'gcr.io/cloud-builders/curl'
+    id: 'health-check'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "🏥 ヘルスチェック実行中..."
+        
+        BACKEND_URL=$(cat /workspace/backend_url.txt)
+        FRONTEND_URL=$(cat /workspace/frontend_url.txt)
+        
+        echo "Backend URL: $BACKEND_URL"
+        echo "Frontend URL: $FRONTEND_URL"
+        
+        # バックエンドヘルスチェック
+        echo "Checking backend health..."
+        if curl -f "$BACKEND_URL/health" -m 30; then
+          echo "✅ Backend health check OK"
+        else
+          echo "⚠️ Backend health check failed"
+        fi
+        
+        # フロントエンドヘルスチェック
+        echo "Checking frontend..."
+        if curl -f "$FRONTEND_URL" -m 30; then
+          echo "✅ Frontend health check OK"
+        else
+          echo "⚠️ Frontend health check failed"
+        fi
+        
+        echo ""
+        echo "🎉 デプロイ完了サマリー"
+        echo "=========================="
+        echo "Environment: $_ENVIRONMENT"
+        echo "Project: $_GCP_PROJECT_ID"
+        echo "Region: $_GCP_REGION"
+        echo ""
+        echo "Frontend URL: $FRONTEND_URL"
+        echo "Backend URL: $BACKEND_URL"
+        echo "API Docs: $BACKEND_URL/docs"
+        echo "=========================="
+    waitFor: ['deploy-frontend']
+
+# 置換変数（デフォルト値）
+substitutions:
+  _GCP_PROJECT_ID: 'your-project-id'
+  _ENVIRONMENT: 'staging'
+  _GCP_REGION: 'asia-northeast1'
+  _ROUTING_STRATEGY: 'enhanced'
+  _LOG_LEVEL: 'INFO'
+  _NEXTAUTH_SECRET: 'default-nextauth-secret'
+  _GOOGLE_CLIENT_ID: ''
+  _GOOGLE_CLIENT_SECRET: ''
+
+# ビルド設定
+options:
+  # ログ設定
+  logging: CLOUD_LOGGING_ONLY
+  
+  # マシンタイプ（並行処理のためハイスペック）
+  machineType: 'E2_HIGHCPU_8'
+  
+  # タイムアウト
+  timeout: 1200s
+  
+  # 環境変数
+  env:
+    - 'CLOUDSDK_COMPUTE_REGION=$_GCP_REGION'
+    - 'CLOUDSDK_RUN_REGION=$_GCP_REGION'
+
+# 成果物（ログ保存）
+artifacts:
+  objects:
+    location: 'gs://$_GCP_PROJECT_ID-build-artifacts'
+    paths: 
+      - '/workspace/*.txt'

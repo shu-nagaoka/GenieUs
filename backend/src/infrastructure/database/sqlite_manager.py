@@ -312,7 +312,8 @@ class DatabaseMigrator:
         """マイグレーション実行記録"""
         # 重複チェック
         existing = self.sqlite_manager.execute_query(
-            "SELECT id FROM migrations WHERE name = ?", (name,),
+            "SELECT id FROM migrations WHERE name = ?",
+            (name,),
         )
 
         if not existing:

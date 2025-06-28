@@ -4,13 +4,13 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { 
+import {
   IoLinkOutline,
   IoTimeOutline,
   IoSearchOutline,
   IoGlobeOutline,
   IoCheckmarkCircleOutline,
-  IoInformationCircleOutline
+  IoInformationCircleOutline,
 } from 'react-icons/io5'
 
 interface SearchResult {
@@ -38,16 +38,15 @@ export function SearchResultsDisplay({
   searchQuery,
   searchResults = [],
   isSearching = false,
-  className = ""
+  className = '',
 }: SearchResultsDisplayProps) {
-  
   // 検索中の場合の表示
   if (isSearching) {
     return (
-      <Card className={`bg-blue-50/80 border-blue-200 ${className}`}>
+      <Card className={`border-blue-200 bg-blue-50/80 ${className}`}>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" />
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
             <CardTitle className="text-sm font-medium text-blue-700">
               🔍 最新情報を検索中...
             </CardTitle>
@@ -72,13 +71,11 @@ export function SearchResultsDisplay({
     <div className={`space-y-3 ${className}`}>
       {/* 検索クエリ情報表示 */}
       {searchQuery && (
-        <Card className="bg-green-50/80 border-green-200">
+        <Card className="border-green-200 bg-green-50/80">
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
               <IoCheckmarkCircleOutline className="h-4 w-4 text-green-600" />
-              <CardTitle className="text-sm font-medium text-green-700">
-                検索完了
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-green-700">検索完了</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="pt-2">
@@ -98,7 +95,7 @@ export function SearchResultsDisplay({
                     month: 'short',
                     day: 'numeric',
                     hour: '2-digit',
-                    minute: '2-digit'
+                    minute: '2-digit',
                   })}
                 </span>
                 {searchQuery.results_count && (
@@ -115,14 +112,12 @@ export function SearchResultsDisplay({
 
       {/* 検索結果表示 */}
       {searchResults && searchResults.length > 0 && (
-        <Card className="bg-white/95 border-gray-200">
+        <Card className="border-gray-200 bg-white/95">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <IoGlobeOutline className="h-4 w-4 text-gray-600" />
-                <CardTitle className="text-sm font-medium text-gray-700">
-                  参照したWeb情報
-                </CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-700">参照したWeb情報</CardTitle>
               </div>
               <Badge variant="outline" className="text-xs">
                 {searchResults.length}件
@@ -134,12 +129,12 @@ export function SearchResultsDisplay({
               {searchResults.map((result, index) => (
                 <div
                   key={index}
-                  className="group p-3 rounded-lg border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 transition-all duration-200"
+                  className="group rounded-lg border border-gray-100 p-3 transition-all duration-200 hover:border-gray-200 hover:bg-gray-50/50"
                 >
                   <div className="space-y-2">
                     {/* タイトルとURL */}
                     <div className="space-y-1">
-                      <h4 className="text-sm font-medium text-gray-900 group-hover:text-blue-700 transition-colors line-clamp-2">
+                      <h4 className="line-clamp-2 text-sm font-medium text-gray-900 transition-colors group-hover:text-blue-700">
                         {result.title}
                       </h4>
                       <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -155,23 +150,23 @@ export function SearchResultsDisplay({
                         )}
                       </div>
                     </div>
-                    
+
                     {/* スニペット */}
                     {result.snippet && (
-                      <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
+                      <p className="line-clamp-2 text-xs leading-relaxed text-gray-600">
                         {result.snippet}
                       </p>
                     )}
-                    
+
                     {/* 外部リンクボタン */}
                     <div className="flex justify-end">
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-2 text-xs text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                        className="h-7 px-2 text-xs text-gray-500 hover:bg-blue-50 hover:text-blue-600"
                         onClick={() => window.open(result.url, '_blank', 'noopener,noreferrer')}
                       >
-                        <IoLinkOutline className="h-3 w-3 mr-1" />
+                        <IoLinkOutline className="mr-1 h-3 w-3" />
                         詳細を見る
                       </Button>
                     </div>
@@ -179,13 +174,13 @@ export function SearchResultsDisplay({
                 </div>
               ))}
             </div>
-            
+
             {/* 注意事項 */}
-            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
               <div className="flex items-start gap-2">
-                <IoInformationCircleOutline className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <IoInformationCircleOutline className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
                 <div className="text-xs text-amber-700">
-                  <p className="font-medium mb-1">情報の利用について</p>
+                  <p className="mb-1 font-medium">情報の利用について</p>
                   <p className="leading-relaxed">
                     上記の情報は検索時点での内容です。最新の情報については、各サイトで直接ご確認ください。
                     重要な決定や医療に関する判断は、必ず専門家にご相談ください。

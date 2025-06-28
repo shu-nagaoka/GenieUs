@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthSessionProvider } from '@/components/providers/session-provider'
+import { QueryProvider } from '@/components/providers/query-provider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -20,10 +21,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans min-h-screen antialiased`}>
-        <AuthSessionProvider>
-          {children}
-        </AuthSessionProvider>
+      <body className={`${inter.variable} min-h-screen font-sans antialiased`}>
+        <QueryProvider>
+          <AuthSessionProvider>{children}</AuthSessionProvider>
+        </QueryProvider>
       </body>
     </html>
   )

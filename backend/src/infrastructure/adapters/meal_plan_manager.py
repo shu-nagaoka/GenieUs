@@ -6,6 +6,7 @@
 - DI注入パターン
 - Infrastructure層での技術的実装のみ
 """
+
 import logging
 from datetime import datetime
 from typing import Any
@@ -15,7 +16,7 @@ from src.domain.entities import MealPlan
 
 class InMemoryMealPlanManager:
     """インメモリ食事プラン管理アダプター
-    
+
     技術的なデータ永続化操作のみを担当
     """
 
@@ -249,8 +250,7 @@ class InMemoryMealPlanManager:
             # 検索クエリフィルター
             if search_query:
                 query_lower = search_query.lower()
-                if (query_lower not in plan.title.lower() and
-                    query_lower not in plan.description.lower()):
+                if query_lower not in plan.title.lower() and query_lower not in plan.description.lower():
                     continue
 
             matching_plans.append(plan)

@@ -24,10 +24,13 @@ class UserManagementUseCase:
     async def login_with_google_oauth(self, google_user_info: dict[str, Any]) -> dict[str, Any]:
         """Google OAuth情報でログイン処理"""
         try:
-            self.logger.info("Google OAuthログイン開始", extra={
-                "email": google_user_info.get("email"),
-                "google_id": google_user_info.get("sub"),
-            })
+            self.logger.info(
+                "Google OAuthログイン開始",
+                extra={
+                    "email": google_user_info.get("email"),
+                    "google_id": google_user_info.get("sub"),
+                },
+            )
 
             # Google OAuth情報からUserエンティティ作成
             user = User.from_google_oauth(google_user_info)
@@ -41,10 +44,13 @@ class UserManagementUseCase:
             # JWTトークン生成
             access_token = self.jwt_authenticator.create_access_token(stored_user)
 
-            self.logger.info("Google OAuthログイン完了", extra={
-                "google_id": stored_user.google_id,
-                "email": stored_user.email,
-            })
+            self.logger.info(
+                "Google OAuthログイン完了",
+                extra={
+                    "google_id": stored_user.google_id,
+                    "email": stored_user.email,
+                },
+            )
 
             return {
                 "success": True,
@@ -54,10 +60,13 @@ class UserManagementUseCase:
             }
 
         except Exception as e:
-            self.logger.error("Google OAuthログインエラー", extra={
-                "error": str(e),
-                "email": google_user_info.get("email"),
-            })
+            self.logger.error(
+                "Google OAuthログインエラー",
+                extra={
+                    "error": str(e),
+                    "email": google_user_info.get("email"),
+                },
+            )
             return {
                 "success": False,
                 "error": "ログインに失敗しました",
@@ -67,24 +76,33 @@ class UserManagementUseCase:
     async def get_user_profile(self, google_id: str) -> dict[str, Any]:
         """ユーザープロフィール取得"""
         try:
-            self.logger.debug("ユーザープロフィール取得開始", extra={
-                "google_id": google_id,
-            })
+            self.logger.debug(
+                "ユーザープロフィール取得開始",
+                extra={
+                    "google_id": google_id,
+                },
+            )
 
             user = await self.user_repository.get_user_by_google_id(google_id)
 
             if not user:
-                self.logger.warning("ユーザー未存在", extra={
-                    "google_id": google_id,
-                })
+                self.logger.warning(
+                    "ユーザー未存在",
+                    extra={
+                        "google_id": google_id,
+                    },
+                )
                 return {
                     "success": False,
                     "error": "ユーザーが見つかりません",
                 }
 
-            self.logger.debug("ユーザープロフィール取得完了", extra={
-                "google_id": google_id,
-            })
+            self.logger.debug(
+                "ユーザープロフィール取得完了",
+                extra={
+                    "google_id": google_id,
+                },
+            )
 
             return {
                 "success": True,
@@ -92,10 +110,13 @@ class UserManagementUseCase:
             }
 
         except Exception as e:
-            self.logger.error("ユーザープロフィール取得エラー", extra={
-                "error": str(e),
-                "google_id": google_id,
-            })
+            self.logger.error(
+                "ユーザープロフィール取得エラー",
+                extra={
+                    "error": str(e),
+                    "google_id": google_id,
+                },
+            )
             return {
                 "success": False,
                 "error": "プロフィール取得に失敗しました",
@@ -105,17 +126,23 @@ class UserManagementUseCase:
     async def update_user_profile(self, google_id: str, profile_data: dict[str, Any]) -> dict[str, Any]:
         """ユーザープロフィール更新"""
         try:
-            self.logger.info("ユーザープロフィール更新開始", extra={
-                "google_id": google_id,
-            })
+            self.logger.info(
+                "ユーザープロフィール更新開始",
+                extra={
+                    "google_id": google_id,
+                },
+            )
 
             # 既存ユーザー取得
             user = await self.user_repository.get_user_by_google_id(google_id)
 
             if not user:
-                self.logger.warning("ユーザー未存在（更新）", extra={
-                    "google_id": google_id,
-                })
+                self.logger.warning(
+                    "ユーザー未存在（更新）",
+                    extra={
+                        "google_id": google_id,
+                    },
+                )
                 return {
                     "success": False,
                     "error": "ユーザーが見つかりません",
@@ -132,9 +159,12 @@ class UserManagementUseCase:
             # ユーザー更新
             updated_user = await self.user_repository.update_user(user)
 
-            self.logger.info("ユーザープロフィール更新完了", extra={
-                "google_id": google_id,
-            })
+            self.logger.info(
+                "ユーザープロフィール更新完了",
+                extra={
+                    "google_id": google_id,
+                },
+            )
 
             return {
                 "success": True,
@@ -142,10 +172,13 @@ class UserManagementUseCase:
             }
 
         except Exception as e:
-            self.logger.error("ユーザープロフィール更新エラー", extra={
-                "error": str(e),
-                "google_id": google_id,
-            })
+            self.logger.error(
+                "ユーザープロフィール更新エラー",
+                extra={
+                    "error": str(e),
+                    "google_id": google_id,
+                },
+            )
             return {
                 "success": False,
                 "error": "プロフィール更新に失敗しました",
@@ -155,17 +188,23 @@ class UserManagementUseCase:
     async def delete_user_account(self, google_id: str) -> dict[str, Any]:
         """ユーザーアカウント削除"""
         try:
-            self.logger.info("ユーザーアカウント削除開始", extra={
-                "google_id": google_id,
-            })
+            self.logger.info(
+                "ユーザーアカウント削除開始",
+                extra={
+                    "google_id": google_id,
+                },
+            )
 
             # ユーザー存在確認
             user = await self.user_repository.get_user_by_google_id(google_id)
 
             if not user:
-                self.logger.warning("ユーザー未存在（削除）", extra={
-                    "google_id": google_id,
-                })
+                self.logger.warning(
+                    "ユーザー未存在（削除）",
+                    extra={
+                        "google_id": google_id,
+                    },
+                )
                 return {
                     "success": False,
                     "error": "ユーザーが見つかりません",
@@ -180,10 +219,13 @@ class UserManagementUseCase:
                     "error": "削除に失敗しました",
                 }
 
-            self.logger.info("ユーザーアカウント削除完了", extra={
-                "google_id": google_id,
-                "email": user.email,
-            })
+            self.logger.info(
+                "ユーザーアカウント削除完了",
+                extra={
+                    "google_id": google_id,
+                    "email": user.email,
+                },
+            )
 
             return {
                 "success": True,
@@ -191,10 +233,13 @@ class UserManagementUseCase:
             }
 
         except Exception as e:
-            self.logger.error("ユーザーアカウント削除エラー", extra={
-                "error": str(e),
-                "google_id": google_id,
-            })
+            self.logger.error(
+                "ユーザーアカウント削除エラー",
+                extra={
+                    "error": str(e),
+                    "google_id": google_id,
+                },
+            )
             return {
                 "success": False,
                 "error": "アカウント削除に失敗しました",
@@ -220,17 +265,23 @@ class UserManagementUseCase:
             user = await self.user_repository.get_user_by_google_id(google_id)
 
             if not user:
-                self.logger.warning("トークンユーザー未存在", extra={
-                    "google_id": google_id,
-                })
+                self.logger.warning(
+                    "トークンユーザー未存在",
+                    extra={
+                        "google_id": google_id,
+                    },
+                )
                 return {
                     "success": False,
                     "error": "ユーザーが見つかりません",
                 }
 
-            self.logger.debug("トークン検証完了", extra={
-                "google_id": google_id,
-            })
+            self.logger.debug(
+                "トークン検証完了",
+                extra={
+                    "google_id": google_id,
+                },
+            )
 
             return {
                 "success": True,
@@ -239,9 +290,12 @@ class UserManagementUseCase:
             }
 
         except Exception as e:
-            self.logger.warning("トークン検証エラー", extra={
-                "error": str(e),
-            })
+            self.logger.warning(
+                "トークン検証エラー",
+                extra={
+                    "error": str(e),
+                },
+            )
             return {
                 "success": False,
                 "error": "トークン検証に失敗しました",
@@ -251,9 +305,12 @@ class UserManagementUseCase:
     async def refresh_token(self, google_id: str) -> dict[str, Any]:
         """トークンリフレッシュ"""
         try:
-            self.logger.debug("トークンリフレッシュ開始", extra={
-                "google_id": google_id,
-            })
+            self.logger.debug(
+                "トークンリフレッシュ開始",
+                extra={
+                    "google_id": google_id,
+                },
+            )
 
             # ユーザー取得
             user = await self.user_repository.get_user_by_google_id(google_id)
@@ -270,9 +327,12 @@ class UserManagementUseCase:
             # 新しいJWTトークン生成
             access_token = self.jwt_authenticator.create_access_token(user)
 
-            self.logger.debug("トークンリフレッシュ完了", extra={
-                "google_id": google_id,
-            })
+            self.logger.debug(
+                "トークンリフレッシュ完了",
+                extra={
+                    "google_id": google_id,
+                },
+            )
 
             return {
                 "success": True,
@@ -281,10 +341,13 @@ class UserManagementUseCase:
             }
 
         except Exception as e:
-            self.logger.error("トークンリフレッシュエラー", extra={
-                "error": str(e),
-                "google_id": google_id,
-            })
+            self.logger.error(
+                "トークンリフレッシュエラー",
+                extra={
+                    "error": str(e),
+                    "google_id": google_id,
+                },
+            )
             return {
                 "success": False,
                 "error": "トークンリフレッシュに失敗しました",

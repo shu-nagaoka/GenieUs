@@ -1,14 +1,26 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { 
+import {
   TrendingUp,
   Baby,
   Ruler,
@@ -25,19 +37,61 @@ import {
   Save,
   Loader2,
   Edit,
-  Trash2
+  Trash2,
 } from 'lucide-react'
-import { updateGrowthRecord, deleteGrowthRecord, GrowthRecordUpdateRequest, getChildrenForGrowthRecords, ChildInfo } from '@/libs/api/growth-records'
+import {
+  updateGrowthRecord,
+  deleteGrowthRecord,
+  GrowthRecordUpdateRequest,
+  getChildrenForGrowthRecords,
+  ChildInfo,
+} from '@/libs/api/growth-records'
 import { ImageUpload } from '@/components/features/memories/image-upload'
 
 interface GrowthRecord {
   id: string
-  child_id?: string  // 家族情報からの子どもID
+  child_id?: string // 家族情報からの子どもID
   child_name: string
   date: string
   age_in_months: number
-  type: 'body_growth' | 'language_growth' | 'skills' | 'social_skills' | 'hobbies' | 'life_skills' | 'physical' | 'emotional' | 'cognitive' | 'milestone' | 'photo'
-  category: 'height' | 'weight' | 'speech' | 'smile' | 'movement' | 'expression' | 'achievement' | 'first_words' | 'vocabulary' | 'colors' | 'numbers' | 'puzzle' | 'drawing' | 'playing_together' | 'helping' | 'sharing' | 'kindness' | 'piano' | 'swimming' | 'dancing' | 'sports' | 'toilet' | 'brushing' | 'dressing' | 'cleaning'
+  type:
+    | 'body_growth'
+    | 'language_growth'
+    | 'skills'
+    | 'social_skills'
+    | 'hobbies'
+    | 'life_skills'
+    | 'physical'
+    | 'emotional'
+    | 'cognitive'
+    | 'milestone'
+    | 'photo'
+  category:
+    | 'height'
+    | 'weight'
+    | 'speech'
+    | 'smile'
+    | 'movement'
+    | 'expression'
+    | 'achievement'
+    | 'first_words'
+    | 'vocabulary'
+    | 'colors'
+    | 'numbers'
+    | 'puzzle'
+    | 'drawing'
+    | 'playing_together'
+    | 'helping'
+    | 'sharing'
+    | 'kindness'
+    | 'piano'
+    | 'swimming'
+    | 'dancing'
+    | 'sports'
+    | 'toilet'
+    | 'brushing'
+    | 'dressing'
+    | 'cleaning'
   title: string
   description: string
   value?: string | number
@@ -57,7 +111,13 @@ interface EditGrowthRecordModalProps {
   onRecordDeleted: () => void
 }
 
-export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpdated, onRecordDeleted }: EditGrowthRecordModalProps) {
+export function EditGrowthRecordModal({
+  open,
+  onOpenChange,
+  record,
+  onRecordUpdated,
+  onRecordDeleted,
+}: EditGrowthRecordModalProps) {
   const [formData, setFormData] = useState<GrowthRecordUpdateRequest>({
     child_id: '',
     child_name: '',
@@ -67,9 +127,9 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
     category: 'movement',
     title: '',
     description: '',
-    detected_by: 'parent'
+    detected_by: 'parent',
   })
-  
+
   const [newEmotion, setNewEmotion] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -95,7 +155,7 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
         detected_by: record.detected_by,
         confidence: record.confidence,
         emotions: [...(record.emotions || [])],
-        development_stage: record.development_stage
+        development_stage: record.development_stage,
       })
       setNewEmotion('')
       setShowDeleteConfirm(false)
@@ -121,18 +181,18 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
 
   const calculateAgeInMonths = (birthDate: string): number => {
     if (!birthDate) return 0
-    
+
     const birth = new Date(birthDate)
     const today = new Date()
-    
+
     let months = (today.getFullYear() - birth.getFullYear()) * 12
     months += today.getMonth() - birth.getMonth()
-    
+
     // 日付を考慮した調整
     if (today.getDate() < birth.getDate()) {
       months--
     }
-    
+
     return Math.max(0, months)
   }
 
@@ -144,55 +204,75 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
         ...prev,
         child_id: selectedChild.child_id,
         child_name: selectedChild.name,
-        age_in_months: calculatedAge
+        age_in_months: calculatedAge,
       }))
     }
   }
 
   const typeOptions = [
-    { value: 'body_growth', label: 'からだの成長', icon: Ruler, color: 'from-blue-500 to-blue-600' },
-    { value: 'language_growth', label: 'ことばの成長', icon: MessageCircle, color: 'from-green-500 to-green-600' },
+    {
+      value: 'body_growth',
+      label: 'からだの成長',
+      icon: Ruler,
+      color: 'from-blue-500 to-blue-600',
+    },
+    {
+      value: 'language_growth',
+      label: 'ことばの成長',
+      icon: MessageCircle,
+      color: 'from-green-500 to-green-600',
+    },
     { value: 'skills', label: 'できること', icon: Star, color: 'from-purple-500 to-purple-600' },
-    { value: 'social_skills', label: 'お友達との関わり', icon: Heart, color: 'from-pink-500 to-pink-600' },
+    {
+      value: 'social_skills',
+      label: 'お友達との関わり',
+      icon: Heart,
+      color: 'from-pink-500 to-pink-600',
+    },
     { value: 'hobbies', label: '習い事・特技', icon: Award, color: 'from-amber-500 to-amber-600' },
-    { value: 'life_skills', label: '生活スキル', icon: TrendingUp, color: 'from-teal-500 to-teal-600' }
+    {
+      value: 'life_skills',
+      label: '生活スキル',
+      icon: TrendingUp,
+      color: 'from-teal-500 to-teal-600',
+    },
   ]
 
   const categoryOptions = {
     body_growth: [
       { value: 'height', label: '身長', icon: Ruler },
       { value: 'weight', label: '体重', icon: Scale },
-      { value: 'movement', label: '運動・歩行', icon: TrendingUp }
+      { value: 'movement', label: '運動・歩行', icon: TrendingUp },
     ],
     language_growth: [
       { value: 'speech', label: 'おしゃべり', icon: MessageCircle },
       { value: 'first_words', label: '初めての言葉', icon: MessageCircle },
-      { value: 'vocabulary', label: '語彙', icon: MessageCircle }
+      { value: 'vocabulary', label: '語彙', icon: MessageCircle },
     ],
     skills: [
       { value: 'colors', label: '色がわかる', icon: Star },
       { value: 'numbers', label: '数を数える', icon: Star },
       { value: 'puzzle', label: 'パズル', icon: Star },
-      { value: 'drawing', label: 'お絵描き', icon: Star }
+      { value: 'drawing', label: 'お絵描き', icon: Star },
     ],
     social_skills: [
       { value: 'playing_together', label: '一緒に遊ぶ', icon: Heart },
       { value: 'helping', label: 'お手伝い', icon: Heart },
       { value: 'sharing', label: '分け合う', icon: Heart },
-      { value: 'kindness', label: 'やさしさ', icon: Heart }
+      { value: 'kindness', label: 'やさしさ', icon: Heart },
     ],
     hobbies: [
       { value: 'piano', label: 'ピアノ', icon: Award },
       { value: 'swimming', label: '水泳', icon: Award },
       { value: 'dancing', label: 'ダンス', icon: Award },
-      { value: 'sports', label: 'スポーツ', icon: Award }
+      { value: 'sports', label: 'スポーツ', icon: Award },
     ],
     life_skills: [
       { value: 'toilet', label: 'トイレ', icon: TrendingUp },
       { value: 'brushing', label: '歯磨き', icon: TrendingUp },
       { value: 'dressing', label: 'お着替え', icon: TrendingUp },
-      { value: 'cleaning', label: 'お片付け', icon: TrendingUp }
-    ]
+      { value: 'cleaning', label: 'お片付け', icon: TrendingUp },
+    ],
   }
 
   const getCurrentCategoryOptions = () => {
@@ -201,32 +281,32 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!record) return
-    
+
     if (!formData.title?.trim()) {
       alert('タイトルを入力してください')
       return
     }
-    
+
     if (!formData.description?.trim()) {
       alert('説明を入力してください')
       return
     }
-    
+
     setIsSubmitting(true)
-    
+
     try {
       // アップロードされた画像URLがある場合は更新
       const updateData = {
         ...formData,
         ...(uploadedImageUrl && {
-          image_url: uploadedImageUrl
-        })
+          image_url: uploadedImageUrl,
+        }),
       }
-      
+
       const result = await updateGrowthRecord(record.id, updateData)
-      
+
       if (result.success) {
         onOpenChange(false)
         onRecordUpdated()
@@ -244,12 +324,12 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
 
   const handleDelete = async () => {
     if (!record) return
-    
+
     setIsDeleting(true)
-    
+
     try {
       const result = await deleteGrowthRecord(record.id)
-      
+
       if (result.success) {
         onOpenChange(false)
         onRecordDeleted()
@@ -270,7 +350,7 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
     if (newEmotion.trim() && !formData.emotions?.includes(newEmotion.trim())) {
       setFormData(prev => ({
         ...prev,
-        emotions: [...(prev.emotions || []), newEmotion.trim()]
+        emotions: [...(prev.emotions || []), newEmotion.trim()],
       }))
       setNewEmotion('')
     }
@@ -279,7 +359,7 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
   const removeEmotion = (emotionToRemove: string) => {
     setFormData(prev => ({
       ...prev,
-      emotions: prev.emotions?.filter(emotion => emotion !== emotionToRemove) || []
+      emotions: prev.emotions?.filter(emotion => emotion !== emotionToRemove) || [],
     }))
   }
 
@@ -287,15 +367,15 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
     setFormData(prev => {
       const updated = {
         ...prev,
-        [field]: value
+        [field]: value,
       }
-      
+
       // タイプが変更された場合、カテゴリをリセット
       if (field === 'type') {
         const newCategoryOptions = categoryOptions[value as keyof typeof categoryOptions] || []
         updated.category = newCategoryOptions[0]?.value || 'movement'
       }
-      
+
       return updated
     })
   }
@@ -312,7 +392,7 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold text-gray-800">
             <Edit className="h-6 w-6 text-blue-600" />
@@ -326,9 +406,9 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
         {!showDeleteConfirm ? (
           <form onSubmit={handleSubmit} className="space-y-6 pt-4">
             {/* 子どもの選択と年齢 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                   <Baby className="h-4 w-4" />
                   お子さんを選択 *
                 </Label>
@@ -343,7 +423,7 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
                       <SelectValue placeholder="お子さんを選択してください" />
                     </SelectTrigger>
                     <SelectContent>
-                      {children.map((child) => (
+                      {children.map(child => (
                         <SelectItem key={child.child_id} value={child.child_id}>
                           <div className="flex items-center gap-2">
                             <Baby className="h-4 w-4" />
@@ -354,7 +434,7 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
                     </SelectContent>
                   </Select>
                 ) : (
-                  <div className="text-sm text-amber-600 bg-amber-50 p-3 rounded-md border border-amber-200">
+                  <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-600">
                     先に家族情報でお子さんを登録してください
                   </div>
                 )}
@@ -369,15 +449,15 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
                     id="age_in_months"
                     type="number"
                     value={formData.age_in_months || 0}
-                    className="border-blue-200 focus:border-blue-400 bg-gray-50"
+                    className="border-blue-200 bg-gray-50 focus:border-blue-400"
                     readOnly
                   />
                   <div className="text-sm text-gray-500">
-                    {formData.age_in_months && formData.age_in_months > 0 ? (
-                      formData.age_in_months >= 12 ? 
-                        `${Math.floor(formData.age_in_months / 12)}歳${formData.age_in_months % 12}ヶ月` :
-                        `${formData.age_in_months}ヶ月`
-                    ) : '生年月日から自動計算'}
+                    {formData.age_in_months && formData.age_in_months > 0
+                      ? formData.age_in_months >= 12
+                        ? `${Math.floor(formData.age_in_months / 12)}歳${formData.age_in_months % 12}ヶ月`
+                        : `${formData.age_in_months}ヶ月`
+                      : '生年月日から自動計算'}
                   </div>
                 </div>
               </div>
@@ -391,7 +471,7 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
               <Input
                 id="title"
                 value={formData.title || ''}
-                onChange={(e) => handleInputChange('title', e.target.value)}
+                onChange={e => handleInputChange('title', e.target.value)}
                 placeholder="例: 初めてのつかまり立ち、新しい言葉を覚えた"
                 className="border-blue-200 focus:border-blue-400"
                 required
@@ -406,7 +486,7 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
               <Textarea
                 id="description"
                 value={formData.description || ''}
-                onChange={(e) => handleInputChange('description', e.target.value)}
+                onChange={e => handleInputChange('description', e.target.value)}
                 placeholder="この成長について詳しく説明してください..."
                 rows={3}
                 className="border-blue-200 focus:border-blue-400"
@@ -416,7 +496,10 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
 
             {/* 日付 */}
             <div className="space-y-2">
-              <Label htmlFor="date" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+              <Label
+                htmlFor="date"
+                className="flex items-center gap-2 text-sm font-medium text-gray-700"
+              >
                 <Calendar className="h-4 w-4" />
                 日付
               </Label>
@@ -424,21 +507,24 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
                 id="date"
                 type="date"
                 value={formData.date || ''}
-                onChange={(e) => handleInputChange('date', e.target.value)}
+                onChange={e => handleInputChange('date', e.target.value)}
                 className="border-blue-200 focus:border-blue-400"
               />
             </div>
 
             {/* タイプとカテゴリ */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700">発達タイプ</Label>
-                <Select value={formData.type} onValueChange={(value: any) => handleInputChange('type', value)}>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value: any) => handleInputChange('type', value)}
+                >
                   <SelectTrigger className="border-blue-200 focus:border-blue-400">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {typeOptions.map((option) => {
+                    {typeOptions.map(option => {
                       const IconComponent = option.icon
                       return (
                         <SelectItem key={option.value} value={option.value}>
@@ -455,12 +541,15 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-gray-700">カテゴリ</Label>
-                <Select value={formData.category} onValueChange={(value: any) => handleInputChange('category', value)}>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value: any) => handleInputChange('category', value)}
+                >
                   <SelectTrigger className="border-blue-200 focus:border-blue-400">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {getCurrentCategoryOptions().map((option) => {
+                    {getCurrentCategoryOptions().map(option => {
                       const IconComponent = option.icon
                       return (
                         <SelectItem key={option.value} value={option.value}>
@@ -478,7 +567,7 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
 
             {/* 測定値（身体発達の場合） */}
             {formData.type === 'physical' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="value" className="text-sm font-medium text-gray-700">
                     測定値
@@ -486,7 +575,7 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
                   <Input
                     id="value"
                     value={formData.value || ''}
-                    onChange={(e) => handleInputChange('value', e.target.value)}
+                    onChange={e => handleInputChange('value', e.target.value)}
                     placeholder="例: 67.5"
                     className="border-blue-200 focus:border-blue-400"
                   />
@@ -498,7 +587,7 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
                   <Input
                     id="unit"
                     value={formData.unit || ''}
-                    onChange={(e) => handleInputChange('unit', e.target.value)}
+                    onChange={e => handleInputChange('unit', e.target.value)}
                     placeholder="例: cm, kg"
                     className="border-blue-200 focus:border-blue-400"
                   />
@@ -517,25 +606,25 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
             {/* 感情（感情発達の場合） */}
             {(formData.type === 'emotional' || formData.type === 'photo') && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                   <Heart className="h-4 w-4" />
                   感情・表情
                 </Label>
                 <div className="flex gap-2">
                   <Input
                     value={newEmotion}
-                    onChange={(e) => setNewEmotion(e.target.value)}
+                    onChange={e => setNewEmotion(e.target.value)}
                     placeholder="感情を入力..."
                     className="flex-1 border-blue-200 focus:border-blue-400"
-                    onKeyPress={(e) => {
+                    onKeyPress={e => {
                       if (e.key === 'Enter') {
                         e.preventDefault()
                         addEmotion()
                       }
                     }}
                   />
-                  <Button 
-                    type="button" 
+                  <Button
+                    type="button"
                     onClick={addEmotion}
                     size="sm"
                     variant="outline"
@@ -544,15 +633,15 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
-                
+
                 {/* 感情表示 */}
                 {formData.emotions && formData.emotions.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="mt-2 flex flex-wrap gap-2">
                     {formData.emotions.map((emotion, index) => (
-                      <Badge 
-                        key={index} 
-                        variant="outline" 
-                        className="flex items-center gap-1 bg-blue-50 border-blue-200 text-blue-700"
+                      <Badge
+                        key={index}
+                        variant="outline"
+                        className="flex items-center gap-1 border-blue-200 bg-blue-50 text-blue-700"
                       >
                         {emotion}
                         <button
@@ -577,7 +666,7 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
               <Input
                 id="development_stage"
                 value={formData.development_stage || ''}
-                onChange={(e) => handleInputChange('development_stage', e.target.value)}
+                onChange={e => handleInputChange('development_stage', e.target.value)}
                 placeholder="例: 標準範囲、順調な発達、注意が必要"
                 className="border-blue-200 focus:border-blue-400"
               />
@@ -606,17 +695,17 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
               </Button>
               <Button
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-blue-500 to-teal-500 hover:from-blue-600 hover:to-teal-600 text-white"
+                className="flex-1 bg-gradient-to-r from-blue-500 to-teal-500 text-white hover:from-blue-600 hover:to-teal-600"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     更新中...
                   </>
                 ) : (
                   <>
-                    <Save className="h-4 w-4 mr-2" />
+                    <Save className="mr-2 h-4 w-4" />
                     更新
                   </>
                 )}
@@ -627,13 +716,11 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
           /* 削除確認画面 */
           <div className="space-y-6 pt-4">
             <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
                 <Trash2 className="h-6 w-6 text-red-600" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                成長記録を削除しますか？
-              </h3>
-              <p className="text-sm text-gray-500 mb-4">
+              <h3 className="mb-2 text-lg font-medium text-gray-900">成長記録を削除しますか？</h3>
+              <p className="mb-4 text-sm text-gray-500">
                 「{record.title}」を削除します。この操作は取り消せません。
               </p>
             </div>
@@ -657,12 +744,12 @@ export function EditGrowthRecordModal({ open, onOpenChange, record, onRecordUpda
               >
                 {isDeleting ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     削除中...
                   </>
                 ) : (
                   <>
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="mr-2 h-4 w-4" />
                     削除する
                   </>
                 )}

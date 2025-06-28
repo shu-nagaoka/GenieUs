@@ -11,11 +11,11 @@ interface MultiAgentOrchestrationFullscreenProps {
   onMinimize?: () => void
 }
 
-export function MultiAgentOrchestrationFullscreen({ 
-  isActive, 
-  userQuery, 
+export function MultiAgentOrchestrationFullscreen({
+  isActive,
+  userQuery,
   onComplete,
-  onMinimize 
+  onMinimize,
 }: MultiAgentOrchestrationFullscreenProps) {
   if (!isActive) return null
 
@@ -25,26 +25,26 @@ export function MultiAgentOrchestrationFullscreen({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
       >
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="relative max-w-4xl w-full"
+          className="relative w-full max-w-4xl"
         >
           {/* Close button */}
           {onMinimize && (
             <button
               onClick={onMinimize}
-              className="absolute -top-12 right-0 p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+              className="absolute -top-12 right-0 rounded-full bg-white/20 p-2 transition-colors hover:bg-white/30"
             >
               <X className="h-6 w-6 text-white" />
             </button>
           )}
 
           {/* Orchestration component */}
-          <div className="transform scale-110">
+          <div className="scale-110 transform">
             <MultiAgentOrchestration
               isActive={isActive}
               userQuery={userQuery}
@@ -53,8 +53,8 @@ export function MultiAgentOrchestrationFullscreen({
           </div>
 
           {/* Additional effects */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute inset-0 bg-gradient-to-t from-amber-500/20 to-transparent animate-pulse" />
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute inset-0 animate-pulse bg-gradient-to-t from-amber-500/20 to-transparent" />
           </div>
 
           {/* User query display */}
@@ -64,8 +64,8 @@ export function MultiAgentOrchestrationFullscreen({
             transition={{ delay: 0.2 }}
             className="mt-6 text-center"
           >
-            <p className="text-white/60 text-sm">あなたの質問</p>
-            <p className="text-white text-lg font-medium mt-1">&ldquo;{userQuery}&rdquo;</p>
+            <p className="text-sm text-white/60">あなたの質問</p>
+            <p className="mt-1 text-lg font-medium text-white">&ldquo;{userQuery}&rdquo;</p>
           </motion.div>
         </motion.div>
       </motion.div>

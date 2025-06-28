@@ -46,6 +46,12 @@ show_menu() {
     echo -e "  ${YELLOW}8${NC}) API テスト (curl でエンドポイント確認)"
     echo -e "  ${YELLOW}9${NC}) ログ確認"
     echo ""
+    echo -e "${GREEN}📚 ドキュメント${NC}"
+    echo -e "  ${YELLOW}26${NC}) ドキュメント自動更新 (ワンショット)"
+    echo -e "  ${YELLOW}27${NC}) ドキュメント監視モード (リアルタイム自動更新)"
+    echo -e "  ${YELLOW}28${NC}) ドキュメントサーバー起動 (Web版)"
+    echo -e "  ${YELLOW}29${NC}) ドキュメントサーバー停止"
+    echo ""
     echo -e "${BLUE}🐳 Docker環境${NC}"
     echo -e "  ${YELLOW}10${NC}) Docker開発環境起動 (./run.sh dev)"
     echo -e "  ${YELLOW}11${NC}) Docker本番環境起動 (./run.sh prod)"
@@ -53,20 +59,27 @@ show_menu() {
     echo -e "  ${YELLOW}13${NC}) Dockerクリーンアップ (./run.sh clean)"
     echo ""
     echo -e "${GREEN}☁️  Cloud Run デプロイメント${NC}"
-    echo -e "  ${YELLOW}14${NC}) Cloud Run ステージング デプロイ"
-    echo -e "  ${YELLOW}15${NC}) Cloud Run 本番 デプロイ"
-    echo -e "  ${YELLOW}16${NC}) Cloud Run サービス状態確認"
-    echo -e "  ${YELLOW}17${NC}) Cloud Run ログ確認"
-    echo -e "  ${YELLOW}18${NC}) Cloud Run 設定・環境確認"
+    echo -e "  ${YELLOW}14${NC}) 🏗️  Cloud Build デプロイ (ステージング) - ローカルDockerなし"
+    echo -e "  ${YELLOW}15${NC}) 🏗️  Cloud Build デプロイ (本番) - ローカルDockerなし"
+    echo -e "  ${YELLOW}16${NC}) 🐳 従来型デプロイ (ステージング) - ローカルDockerあり"
+    echo -e "  ${YELLOW}17${NC}) 🐳 従来型デプロイ (本番) - ローカルDockerあり"
+    echo -e "  ${YELLOW}18${NC}) Cloud Run サービス状態確認"
+    echo -e "  ${YELLOW}19${NC}) Cloud Run ログ確認"
+    echo -e "  ${YELLOW}20${NC}) Cloud Run 設定・環境確認"
     echo ""
     echo -e "${GREEN}☁️  GCP管理${NC}"
-    echo -e "  ${YELLOW}19${NC}) GCPプロジェクト切り替え"
-    echo -e "  ${YELLOW}20${NC}) GCP認証・設定確認"
-    echo -e "  ${YELLOW}21${NC}) GCP権限・API詳細調査"
+    echo -e "  ${YELLOW}21${NC}) GCPプロジェクト切り替え"
+    echo -e "  ${YELLOW}22${NC}) GCP認証・設定確認"
+    echo -e "  ${YELLOW}23${NC}) GCP権限・API詳細調査"
+    echo ""
+    echo -e "${GREEN}🔧 CI/CD セットアップ${NC}"
+    echo -e "  ${YELLOW}30${NC}) GCP CI/CD環境自動構築"
+    echo -e "  ${YELLOW}31${NC}) GitHub Secrets自動設定"
+    echo -e "  ${YELLOW}32${NC}) CI/CDパイプライン動作テスト"
     echo ""
     echo -e "${CYAN}🔗 API整合性管理${NC}"
-    echo -e "  ${YELLOW}22${NC}) API URL整合性チェック (フロント⇔バック)"
-    echo -e "  ${YELLOW}23${NC}) APIマッピング自動更新"
+    echo -e "  ${YELLOW}24${NC}) API URL整合性チェック (フロント⇔バック)"
+    echo -e "  ${YELLOW}25${NC}) APIマッピング自動更新"
     echo ""
     echo -e "${RED}🛑 その他${NC}"
     echo -e "  ${YELLOW}0${NC}) 終了"
@@ -396,16 +409,89 @@ deploy_cloud_run_staging() {
     fi
 }
 
-# 13. Cloud Run 本番 デプロイ
-deploy_cloud_run_production() {
-    echo -e "${RED}☁️  Cloud Run 本番環境にデプロイします...${NC}"
-    echo -e "${RED}⚠️  本番環境への変更には十分注意してください！${NC}"
+# 14. Cloud Build デプロイ (ステージング) - ローカルDockerなし
+deploy_cloudbuild_staging() {
+    echo -e "${GREEN}🏗️  Cloud Build ステージング環境にデプロイします...${NC}"
+    echo -e "${CYAN}✨ ローカルDockerは不要です - すべてクラウドで処理${NC}"
     echo ""
     
     # 環境変数チェック
-    check_cloud_run_prerequisites
+    if ! check_cloudbuild_prerequisites; then
+        return 1
+    fi
     
-    echo -e "${BLUE}📦 本番環境デプロイを開始します...${NC}"
+    echo -e "${BLUE}📦 Cloud Build ステージング環境デプロイを開始します...${NC}"
+    echo -e "${YELLOW}プロジェクト: ${GCP_PROJECT_ID:-'未設定'}${NC}"
+    echo -e "${YELLOW}リージョン: ${GCP_REGION:-'asia-northeast1'}${NC}"
+    echo -e "${YELLOW}方式: Cloud Build (No Local Docker)${NC}"
+    echo ""
+    
+    chmod +x ./scripts/deploy-cloudbuild.sh
+    ./scripts/deploy-cloudbuild.sh staging "${GCP_PROJECT_ID}"
+}
+
+# 15. Cloud Build デプロイ (本番) - ローカルDockerなし
+deploy_cloudbuild_production() {
+    echo -e "${RED}🏗️  Cloud Build 本番環境にデプロイします...${NC}"
+    echo -e "${RED}⚠️  本番環境への変更には十分注意してください！${NC}"
+    echo -e "${CYAN}✨ ローカルDockerは不要です - すべてクラウドで処理${NC}"
+    echo ""
+    
+    # 環境変数チェック
+    if ! check_cloudbuild_prerequisites; then
+        return 1
+    fi
+    
+    echo -e "${BLUE}📦 Cloud Build 本番環境デプロイを開始します...${NC}"
+    echo -e "${YELLOW}プロジェクト: ${GCP_PROJECT_ID:-'未設定'}${NC}"
+    echo -e "${YELLOW}リージョン: ${GCP_REGION:-'asia-northeast1'}${NC}"
+    echo -e "${YELLOW}方式: Cloud Build (No Local Docker)${NC}"
+    echo ""
+    
+    # 2重確認
+    echo -e "${RED}本当に本番環境にデプロイしますか？${NC}"
+    read -p "本番デプロイを実行する場合は 'production' と入力してください: " confirm
+    if [ "$confirm" = "production" ]; then
+        chmod +x ./scripts/deploy-cloudbuild.sh
+        ./scripts/deploy-cloudbuild.sh production "${GCP_PROJECT_ID}"
+    else
+        echo -e "${YELLOW}本番デプロイがキャンセルされました${NC}"
+    fi
+}
+
+# 16. 従来型デプロイ (ステージング) - ローカルDockerあり
+deploy_traditional_staging() {
+    echo -e "${GREEN}🐳 従来型 ステージング環境にデプロイします...${NC}"
+    echo -e "${YELLOW}⚠️  ローカルDockerが必要です${NC}"
+    echo ""
+    
+    # 環境変数チェック
+    if ! check_cloud_run_prerequisites; then
+        return 1
+    fi
+    
+    echo -e "${BLUE}📦 従来型ステージング環境デプロイを開始します...${NC}"
+    echo -e "${YELLOW}プロジェクト: ${GCP_PROJECT_ID:-'未設定'}${NC}"
+    echo -e "${YELLOW}リージョン: ${GCP_REGION:-'asia-northeast1'}${NC}"
+    echo ""
+    
+    chmod +x ./scripts/deploy-cloud-run.sh
+    ./scripts/deploy-cloud-run.sh staging
+}
+
+# 17. 従来型デプロイ (本番) - ローカルDockerあり
+deploy_traditional_production() {
+    echo -e "${RED}🐳 従来型 本番環境にデプロイします...${NC}"
+    echo -e "${RED}⚠️  本番環境への変更には十分注意してください！${NC}"
+    echo -e "${YELLOW}⚠️  ローカルDockerが必要です${NC}"
+    echo ""
+    
+    # 環境変数チェック
+    if ! check_cloud_run_prerequisites; then
+        return 1
+    fi
+    
+    echo -e "${BLUE}📦 従来型本番環境デプロイを開始します...${NC}"
     echo -e "${YELLOW}プロジェクト: ${GCP_PROJECT_ID:-'未設定'}${NC}"
     echo -e "${YELLOW}リージョン: ${GCP_REGION:-'asia-northeast1'}${NC}"
     echo ""
@@ -421,7 +507,7 @@ deploy_cloud_run_production() {
     fi
 }
 
-# 14. Cloud Run サービス状態確認
+# 18. Cloud Run サービス状態確認
 check_cloud_run_status() {
     echo -e "${CYAN}☁️  Cloud Run サービス状態を確認します...${NC}"
     echo ""
@@ -596,9 +682,71 @@ check_cloud_run_config() {
     echo "   Docker Desktopを起動してください"
 }
 
-# ヘルパー関数: Cloud Run前提条件チェック
+# ヘルパー関数: Cloud Build前提条件チェック（ローカルDockerは不要）
+check_cloudbuild_prerequisites() {
+    echo -e "${BLUE}🔍 Cloud Build デプロイ前チェック...${NC}"
+    
+    local has_error=false
+    
+    # gcloud CLIチェック
+    if ! command -v gcloud &> /dev/null; then
+        echo -e "${RED}❌ gcloud CLIがインストールされていません${NC}"
+        echo -e "${YELLOW}   https://cloud.google.com/sdk/docs/install${NC}"
+        has_error=true
+    else
+        echo -e "${GREEN}✅ gcloud CLI: インストール済み${NC}"
+    fi
+    
+    # gcloud認証チェック
+    if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q .; then
+        echo -e "${RED}❌ GCPにログインしていません${NC}"
+        echo -e "${YELLOW}   実行: gcloud auth login${NC}"
+        has_error=true
+    else
+        echo -e "${GREEN}✅ GCP認証: 認証済み${NC}"
+        local account=$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>/dev/null)
+        echo -e "${BLUE}   アカウント: ${account}${NC}"
+    fi
+    
+    # プロジェクトIDチェック
+    if [ -z "${GCP_PROJECT_ID:-}" ]; then
+        echo -e "${RED}❌ GCP_PROJECT_ID環境変数が未設定です${NC}"
+        echo -e "${YELLOW}   設定: export GCP_PROJECT_ID='your-project-id'${NC}"
+        echo -e "${YELLOW}   ヘルパー: ./scripts/setup-deploy-env.sh${NC}"
+        has_error=true
+    else
+        echo -e "${GREEN}✅ GCP Project ID: ${GCP_PROJECT_ID}${NC}"
+        
+        # プロジェクトアクセス確認
+        if gcloud projects describe "${GCP_PROJECT_ID}" &>/dev/null; then
+            echo -e "${GREEN}✅ プロジェクトアクセス: OK${NC}"
+        else
+            echo -e "${RED}❌ プロジェクト '${GCP_PROJECT_ID}' にアクセスできません${NC}"
+            echo -e "${YELLOW}   プロジェクトIDまたは権限を確認してください${NC}"
+            has_error=true
+        fi
+    fi
+    
+    # Cloud Build の利点を表示
+    echo -e "${CYAN}✨ Cloud Build の利点:${NC}"
+    echo -e "${CYAN}   🚫 ローカルDockerは不要${NC}"
+    echo -e "${CYAN}   ⚡ 並行ビルドで高速${NC}"
+    echo -e "${CYAN}   ☁️  すべてクラウドで処理${NC}"
+    
+    if [ "$has_error" = true ]; then
+        echo ""
+        echo -e "${RED}❌ 必要な前提条件が満たされていません${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}✅ Cloud Build デプロイ準備完了${NC}"
+    echo ""
+    return 0
+}
+
+# ヘルパー関数: 従来型Cloud Run前提条件チェック（ローカルDocker必要）
 check_cloud_run_prerequisites() {
-    echo -e "${BLUE}🔍 デプロイ前チェック...${NC}"
+    echo -e "${BLUE}🔍 従来型デプロイ前チェック...${NC}"
     
     local has_error=false
     
@@ -618,7 +766,7 @@ check_cloud_run_prerequisites() {
         echo -e "${RED}❌ Dockerが起動していません${NC}"
         has_error=true
     else
-        echo -e "${GREEN}✅ Docker: OK${NC}"
+        echo -e "${GREEN}✅ Docker: 起動中${NC}"
     fi
     
     # gcloud認証チェック
@@ -644,7 +792,7 @@ check_cloud_run_prerequisites() {
         return 1
     fi
     
-    echo -e "${GREEN}✅ 前提条件チェック完了${NC}"
+    echo -e "${GREEN}✅ 従来型デプロイ準備完了${NC}"
     echo ""
     return 0
 }
@@ -1689,7 +1837,7 @@ main() {
         print_logo
         show_menu
         
-        read -p "選択してください (0-23): " choice
+        read -p "選択してください (0-28): " choice
         echo ""
         
         case $choice in
@@ -1706,22 +1854,31 @@ main() {
             11) start_docker_prod ;;
             12) stop_docker ;;
             13) clean_docker ;;
-            14) deploy_cloud_run_staging ;;
-            15) deploy_cloud_run_production ;;
-            16) check_cloud_run_status ;;
-            17) show_cloud_run_logs ;;
-            18) check_cloud_run_config ;;
-            19) switch_gcp_project ;;
-            20) check_gcp_auth_config ;;
-            21) check_gcp_permissions_detailed ;;
-            22) check_api_consistency ;;
-            23) update_api_mapping ;;
+            14) deploy_cloudbuild_staging ;;
+            15) deploy_cloudbuild_production ;;
+            16) deploy_traditional_staging ;;
+            17) deploy_traditional_production ;;
+            18) check_cloud_run_status ;;
+            19) show_cloud_run_logs ;;
+            20) check_cloud_run_config ;;
+            21) switch_gcp_project ;;
+            22) check_gcp_auth_config ;;
+            23) check_gcp_permissions_detailed ;;
+            24) check_api_consistency ;;
+            25) update_api_mapping ;;
+            26) update_docs_navigation ;;
+            27) watch_docs_changes ;;
+            28) start_docs_server_advanced ;;
+            29) stop_docs_server ;;
+            30) setup_gcp_cicd ;;
+            31) setup_github_secrets ;;
+            32) test_cicd_pipeline ;;
             0) 
                 echo -e "${GREEN}👋 お疲れ様でした！${NC}"
                 exit 0
                 ;;
             *)
-                echo -e "${RED}❌ 無効な選択です。0-23の数字を入力してください。${NC}"
+                echo -e "${RED}❌ 無効な選択です。0-32の数字を入力してください。${NC}"
                 ;;
         esac
         
@@ -1912,7 +2069,7 @@ check_api_consistency() {
     echo ""
     echo -e "${BLUE}📚 その他のコマンド:${NC}"
     echo -e "   ${YELLOW}選択肢23: APIマッピング自動更新${NC}"
-    echo -e "   ${YELLOW}./check-api.sh: プロジェクトルートから直接実行${NC}"
+    echo -e "   ${YELLOW}./scripts/check-api.sh: APIスクリプト直接実行${NC}"
     
     return $exit_code
 }
@@ -1975,9 +2132,353 @@ update_api_mapping() {
     echo ""
     echo -e "${BLUE}📚 その他のコマンド:${NC}"
     echo -e "   ${YELLOW}選択肢22: API整合性チェック${NC}"
-    echo -e "   ${YELLOW}./update-api.sh: プロジェクトルートから直接実行${NC}"
+    echo -e "   ${YELLOW}./scripts/update-api.sh: APIマッピング更新スクリプト直接実行${NC}"
     
     return $exit_code
+}
+
+# 26. ドキュメントサーバー起動（高機能版）
+# 26. ドキュメント自動更新 (ワンショット)
+update_docs_navigation() {
+    echo -e "${GREEN}📝 ドキュメント自動更新を実行します...${NC}"
+    echo -e "${BLUE}🔍 docs/配下の.mdファイルをスキャンしてnavigation.jsonとindex.htmlを更新します${NC}"
+    echo ""
+    
+    if [ ! -f "scripts/generate-docs-navigation.js" ]; then
+        echo -e "${RED}❌ scripts/generate-docs-navigation.js が見つかりません${NC}"
+        return 1
+    fi
+    
+    echo -e "${YELLOW}🔄 実行中...${NC}"
+    node scripts/generate-docs-navigation.js
+    
+    echo ""
+    echo -e "${GREEN}✅ ドキュメント更新完了${NC}"
+    echo -e "${CYAN}📍 確認先:${NC}"
+    echo "   - Web版: docs/web/index.html"
+    echo "   - 簡易版: docs/index.html"
+}
+
+# 27. ドキュメント監視モード (リアルタイム自動更新)
+watch_docs_changes() {
+    echo -e "${GREEN}👀 ドキュメント監視モードを開始します...${NC}"
+    echo -e "${BLUE}📝 .mdファイルの変更を監視して自動更新します${NC}"
+    echo -e "${YELLOW}🛑 停止するには Ctrl+C を押してください${NC}"
+    echo ""
+    
+    if [ ! -f "scripts/watch-docs.js" ]; then
+        echo -e "${RED}❌ scripts/watch-docs.js が見つかりません${NC}"
+        return 1
+    fi
+    
+    echo -e "${CYAN}🚀 監視開始...${NC}"
+    node scripts/watch-docs.js
+}
+
+# 28. ドキュメントサーバー起動 (Web版)
+start_docs_server_advanced() {
+    echo -e "${GREEN}📖 ドキュメントサーバー（高機能版）を起動します...${NC}"
+    echo -e "${BLUE}🔄 自動更新機能・検索機能付きでマークダウンを表示します${NC}"
+    echo -e "${CYAN}📍 アクセス先: http://localhost:15080${NC}"
+    echo ""
+    
+    # docsディレクトリの存在確認
+    if [ ! -d "docs" ]; then
+        echo -e "${RED}❌ docsディレクトリが見つかりません${NC}"
+        return 1
+    fi
+    
+    # start-docs.shスクリプトの存在確認
+    if [ ! -f "docs/start-docs.sh" ]; then
+        echo -e "${RED}❌ docs/start-docs.sh が見つかりません${NC}"
+        return 1
+    fi
+    
+    echo -e "${YELLOW}🚀 起動中...${NC}"
+    cd docs && ./start-docs.sh
+}
+
+# 27. ドキュメントサーバー起動（シンプル版）
+start_docs_server_simple() {
+    echo -e "${GREEN}📖 ドキュメントサーバー（シンプル版）を起動します...${NC}"
+    echo -e "${BLUE}📋 軽量HTMLビューアーでマークダウンを表示します${NC}"
+    echo -e "${CYAN}📍 アクセス先: http://localhost:15080${NC}"
+    echo ""
+    
+    # docsディレクトリの存在確認
+    if [ ! -d "docs" ]; then
+        echo -e "${RED}❌ docsディレクトリが見つかりません${NC}"
+        return 1
+    fi
+    
+    # start-docs.shスクリプトの存在確認
+    if [ ! -f "docs/start-docs.sh" ]; then
+        echo -e "${RED}❌ docs/start-docs.sh が見つかりません${NC}"
+        return 1
+    fi
+    
+    echo -e "${YELLOW}🚀 起動中...${NC}"
+    cd docs && ./start-docs.sh simple
+}
+
+# 28. ドキュメントサーバー停止
+stop_docs_server() {
+    echo -e "${YELLOW}🛑 ドキュメントサーバーを停止します...${NC}"
+    echo ""
+    
+    # docsディレクトリの存在確認
+    if [ ! -d "docs" ]; then
+        echo -e "${RED}❌ docsディレクトリが見つかりません${NC}"
+        return 1
+    fi
+    
+    # start-docs.shスクリプトの存在確認
+    if [ ! -f "docs/start-docs.sh" ]; then
+        echo -e "${RED}❌ docs/start-docs.sh が見つかりません${NC}"
+        return 1
+    fi
+    
+    cd docs && ./start-docs.sh stop
+}
+
+# 29. GCP CI/CD環境自動構築
+setup_gcp_cicd() {
+    echo -e "${GREEN}🔧 GCP CI/CD環境自動構築${NC}"
+    echo "=================================="
+    echo ""
+    
+    # gcloud CLIチェック
+    if ! command -v gcloud &> /dev/null; then
+        echo -e "${RED}❌ gcloud CLIがインストールされていません${NC}"
+        echo -e "${YELLOW}   https://cloud.google.com/sdk/docs/install からインストールしてください${NC}"
+        return 1
+    fi
+    
+    # 認証チェック
+    if ! gcloud auth list --filter=status:ACTIVE --format="value(account)" | grep -q .; then
+        echo -e "${RED}❌ GCPにログインしていません${NC}"
+        echo -e "${YELLOW}   先にログインしてください: gcloud auth login${NC}"
+        return 1
+    fi
+    
+    echo -e "${BLUE}🏗️ blog-で始まるGCPプロジェクト一覧:${NC}"
+    gcloud projects list --filter="name:blog*" --format="table(projectId,name,lifecycleState)"
+    echo ""
+    
+    echo -e "${YELLOW}💡 使用するプロジェクトIDを入力してください:${NC}"
+    read -p "Project ID: " project_id
+    
+    if [ -z "$project_id" ]; then
+        echo -e "${RED}❌ プロジェクトIDが入力されていません${NC}"
+        return 1
+    fi
+    
+    echo -e "${CYAN}🚀 GCP CI/CD環境構築を開始します...${NC}"
+    echo "Project ID: $project_id"
+    echo ""
+    
+    # スクリプト実行権限確認
+    if [ ! -f "./scripts/setup-gcp-cicd.sh" ]; then
+        echo -e "${RED}❌ setup-gcp-cicd.sh が見つかりません${NC}"
+        return 1
+    fi
+    
+    chmod +x ./scripts/setup-gcp-cicd.sh
+    ./scripts/setup-gcp-cicd.sh "$project_id"
+    
+    local exit_code=$?
+    
+    if [ $exit_code -eq 0 ]; then
+        echo ""
+        echo -e "${GREEN}✅ GCP CI/CD環境構築完了！${NC}"
+        echo -e "${YELLOW}📋 次のステップ: entrypoint.sh で選択肢30を実行してください${NC}"
+    else
+        echo -e "${RED}❌ GCP CI/CD環境構築でエラーが発生しました${NC}"
+    fi
+    
+    return $exit_code
+}
+
+# 30. GitHub Secrets自動設定
+setup_github_secrets() {
+    echo -e "${GREEN}🔐 GitHub Secrets自動設定${NC}"
+    echo "=================================="
+    echo ""
+    
+    # GitHub CLIチェック
+    if ! command -v gh &> /dev/null; then
+        echo -e "${RED}❌ GitHub CLI (gh) がインストールされていません${NC}"
+        echo ""
+        echo -e "${YELLOW}📦 インストール方法:${NC}"
+        echo "macOS: brew install gh"
+        echo "Ubuntu: sudo apt install gh"
+        echo "Windows: winget install GitHub.CLI"
+        echo ""
+        echo "インストール後、以下を実行してください:"
+        echo "gh auth login"
+        return 1
+    fi
+    
+    # GitHub認証チェック
+    if ! gh auth status &>/dev/null; then
+        echo -e "${YELLOW}🔑 GitHub認証が必要です${NC}"
+        echo "以下のコマンドを実行してログインしてください:"
+        echo "gh auth login"
+        return 1
+    fi
+    
+    # 設定ファイル存在確認
+    if [ ! -f "./gcp-secrets.env" ]; then
+        echo -e "${RED}❌ gcp-secrets.env ファイルが見つかりません${NC}"
+        echo -e "${YELLOW}   先に選択肢29でGCP CI/CD環境構築を実行してください${NC}"
+        return 1
+    fi
+    
+    echo -e "${CYAN}🚀 GitHub Secrets設定を開始します...${NC}"
+    echo ""
+    
+    # スクリプト実行権限確認
+    if [ ! -f "./scripts/setup-github-secrets.sh" ]; then
+        echo -e "${RED}❌ setup-github-secrets.sh が見つかりません${NC}"
+        return 1
+    fi
+    
+    chmod +x ./scripts/setup-github-secrets.sh
+    ./scripts/setup-github-secrets.sh
+    
+    local exit_code=$?
+    
+    if [ $exit_code -eq 0 ]; then
+        echo ""
+        echo -e "${GREEN}✅ GitHub Secrets設定完了！${NC}"
+        echo -e "${YELLOW}📋 次のステップ: entrypoint.sh で選択肢31を実行してCI/CDをテストしてください${NC}"
+    else
+        echo -e "${RED}❌ GitHub Secrets設定でエラーが発生しました${NC}"
+    fi
+    
+    return $exit_code
+}
+
+# 31. CI/CDパイプライン動作テスト
+test_cicd_pipeline() {
+    echo -e "${GREEN}🧪 CI/CDパイプライン動作テスト${NC}"
+    echo "=================================="
+    echo ""
+    
+    # GitHub CLIチェック
+    if ! command -v gh &> /dev/null; then
+        echo -e "${RED}❌ GitHub CLI (gh) がインストールされていません${NC}"
+        return 1
+    fi
+    
+    # GitHub認証チェック
+    if ! gh auth status &>/dev/null; then
+        echo -e "${YELLOW}🔑 GitHub認証が必要です${NC}"
+        echo "以下のコマンドを実行してログインしてください:"
+        echo "gh auth login"
+        return 1
+    fi
+    
+    echo -e "${BLUE}🔍 現在のブランチとリポジトリ状態確認:${NC}"
+    echo ""
+    
+    local current_branch=$(git branch --show-current)
+    local repo_status=$(git status --porcelain)
+    
+    echo "現在のブランチ: $current_branch"
+    echo "変更ファイル数: $(echo "$repo_status" | wc -l)"
+    echo ""
+    
+    if [ -n "$repo_status" ]; then
+        echo -e "${YELLOW}⚠️ 未コミットの変更があります:${NC}"
+        git status --short
+        echo ""
+        echo -e "${YELLOW}先にコミットしますか？ (y/N): ${NC}"
+        read -p "" commit_choice
+        
+        if [[ $commit_choice =~ ^[Yy]$ ]]; then
+            echo ""
+            echo -e "${CYAN}📝 コミットメッセージを入力してください:${NC}"
+            read -p "Commit message: " commit_message
+            
+            if [ -n "$commit_message" ]; then
+                git add .
+                git commit -m "$commit_message"
+                echo -e "${GREEN}✅ コミット完了${NC}"
+            else
+                echo -e "${RED}❌ コミットメッセージが入力されていません${NC}"
+                return 1
+            fi
+        fi
+    fi
+    
+    echo -e "${BLUE}🚀 CI/CDテスト方法を選択してください:${NC}"
+    echo "  1) テスト用ブランチでPR作成 (推奨)"
+    echo "  2) 現在のブランチで直接プッシュ"
+    echo "  3) GitHub Actions実行状況確認のみ"
+    echo "  0) キャンセル"
+    echo ""
+    read -p "選択 (0-3): " test_choice
+    
+    case $test_choice in
+        1)
+            echo -e "${CYAN}🌿 テスト用ブランチでPRテスト${NC}"
+            local test_branch="test-cicd-$(date +%Y%m%d-%H%M%S)"
+            
+            echo "テストブランチ: $test_branch"
+            git checkout -b "$test_branch"
+            
+            # 空コミット作成
+            git commit --allow-empty -m "test: CI/CD pipeline test"
+            git push origin "$test_branch"
+            
+            echo ""
+            echo -e "${YELLOW}📝 PR作成中...${NC}"
+            gh pr create --title "Test: CI/CD Pipeline" --body "CI/CDパイプライン動作テスト用PR" || true
+            
+            echo ""
+            echo -e "${GREEN}✅ テスト用PR作成完了${NC}"
+            echo -e "${YELLOW}📋 GitHub Actionsの実行を確認してください:${NC}"
+            echo "   gh run list --repo shu-nagaoka/GenieUs"
+            ;;
+            
+        2)
+            echo -e "${CYAN}⚡ 直接プッシュテスト${NC}"
+            
+            if [ "$current_branch" = "main" ]; then
+                echo -e "${RED}⚠️ mainブランチへの直接プッシュは本番デプロイを実行します${NC}"
+                echo -e "${YELLOW}実行しますか？ (y/N): ${NC}"
+                read -p "" push_choice
+                
+                if [[ ! $push_choice =~ ^[Yy]$ ]]; then
+                    echo -e "${YELLOW}キャンセルされました${NC}"
+                    return 0
+                fi
+            fi
+            
+            git push origin "$current_branch"
+            echo -e "${GREEN}✅ プッシュ完了${NC}"
+            ;;
+            
+        3)
+            echo -e "${CYAN}👀 GitHub Actions実行状況確認${NC}"
+            ;;
+            
+        0|*)
+            echo -e "${YELLOW}キャンセルされました${NC}"
+            return 0
+            ;;
+    esac
+    
+    echo ""
+    echo -e "${BLUE}📊 GitHub Actions実行状況:${NC}"
+    gh run list --repo shu-nagaoka/GenieUs --limit 5
+    
+    echo ""
+    echo -e "${YELLOW}💡 便利なコマンド:${NC}"
+    echo "   gh run watch --repo shu-nagaoka/GenieUs  # 実行状況をリアルタイム監視"
+    echo "   gh run list --repo shu-nagaoka/GenieUs   # 実行履歴一覧"
+    echo "   gh run view --repo shu-nagaoka/GenieUs   # 最新実行の詳細"
 }
 
 # スクリプト実行

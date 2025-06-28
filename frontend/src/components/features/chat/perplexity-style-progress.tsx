@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { 
+import {
   IoSettings,
   IoSparkles,
   IoCheckmarkCircle,
@@ -14,7 +14,7 @@ import {
   IoDocumentText,
   IoTrendingUp,
   IoSearch,
-  IoFlash
+  IoFlash,
 } from 'react-icons/io5'
 import { GiMagicLamp } from 'react-icons/gi'
 
@@ -50,20 +50,22 @@ interface PerplexityStyleProgressProps {
 
 export function PerplexityStyleProgress({
   message,
-  userId = "frontend_user",
-  sessionId = "default-session",
+  userId = 'frontend_user',
+  sessionId = 'default-session',
   onComplete,
   onError,
-  className = ""
+  className = '',
 }: PerplexityStyleProgressProps) {
   const [progressUpdates, setProgressUpdates] = useState<ProgressUpdate[]>([])
   const [isComplete, setIsComplete] = useState(false)
-  const [finalResponse, setFinalResponse] = useState<string>("")
+  const [finalResponse, setFinalResponse] = useState<string>('')
   const [isStreaming, setIsStreaming] = useState(false)
-  const [currentPhase, setCurrentPhase] = useState<string>("thinking")
+  const [currentPhase, setCurrentPhase] = useState<string>('thinking')
   const [toolsUsed, setToolsUsed] = useState<string[]>([])
   const [progress, setProgress] = useState<number>(0)
-  const [animatedSteps, setAnimatedSteps] = useState<Array<{id: string, text: string, type: string, timestamp: number}>>([])
+  const [animatedSteps, setAnimatedSteps] = useState<
+    Array<{ id: string; text: string; type: string; timestamp: number }>
+  >([])
   const [searchData, setSearchData] = useState<SearchData | null>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
 
@@ -88,40 +90,40 @@ export function PerplexityStyleProgress({
   const getPhaseConfig = (phase: string) => {
     switch (phase) {
       case 'thinking':
-        return { 
-          icon: <IoSparkles className="h-5 w-5" />, 
+        return {
+          icon: <IoSparkles className="h-5 w-5" />,
           color: 'from-blue-500 to-purple-600',
-          bgColor: 'from-blue-50 to-purple-50'
+          bgColor: 'from-blue-50 to-purple-50',
         }
       case 'tools_available':
-        return { 
-          icon: <IoSettings className="h-5 w-5" />, 
+        return {
+          icon: <IoSettings className="h-5 w-5" />,
           color: 'from-purple-500 to-indigo-600',
-          bgColor: 'from-purple-50 to-indigo-50'
+          bgColor: 'from-purple-50 to-indigo-50',
         }
       case 'tool_executing':
-        return { 
-          icon: <IoFlash className="h-5 w-5" />, 
+        return {
+          icon: <IoFlash className="h-5 w-5" />,
           color: 'from-orange-500 to-red-600',
-          bgColor: 'from-orange-50 to-red-50'
+          bgColor: 'from-orange-50 to-red-50',
         }
       case 'response_generating':
-        return { 
-          icon: <GiMagicLamp className="h-5 w-5" />, 
+        return {
+          icon: <GiMagicLamp className="h-5 w-5" />,
           color: 'from-amber-500 to-orange-600',
-          bgColor: 'from-amber-50 to-orange-50'
+          bgColor: 'from-amber-50 to-orange-50',
         }
       case 'complete':
-        return { 
-          icon: <IoCheckmarkCircle className="h-5 w-5" />, 
+        return {
+          icon: <IoCheckmarkCircle className="h-5 w-5" />,
           color: 'from-green-500 to-emerald-600',
-          bgColor: 'from-green-50 to-emerald-50'
+          bgColor: 'from-green-50 to-emerald-50',
         }
       default:
-        return { 
-          icon: <IoSearch className="h-5 w-5" />, 
+        return {
+          icon: <IoSearch className="h-5 w-5" />,
           color: 'from-gray-500 to-gray-600',
-          bgColor: 'from-gray-50 to-gray-50'
+          bgColor: 'from-gray-50 to-gray-50',
         }
     }
   }
@@ -129,14 +131,14 @@ export function PerplexityStyleProgress({
   // プログレス計算
   const calculateProgress = (type: string) => {
     const progressMap: Record<string, number> = {
-      'thinking': 10,
-      'tools_available': 20,
-      'agent_start': 30,
-      'tool_detected': 40,
-      'tool_executing': 60,
-      'tool_complete': 80,
-      'response_generating': 90,
-      'complete': 100
+      thinking: 10,
+      tools_available: 20,
+      agent_start: 30,
+      tool_detected: 40,
+      tool_executing: 60,
+      tool_complete: 80,
+      response_generating: 90,
+      complete: 100,
     }
     return progressMap[type] || 0
   }
@@ -148,8 +150,8 @@ export function PerplexityStyleProgress({
     setIsStreaming(true)
     setProgressUpdates([])
     setIsComplete(false)
-    setFinalResponse("")
-    setCurrentPhase("thinking")
+    setFinalResponse('')
+    setCurrentPhase('thinking')
     setToolsUsed([])
     setProgress(0)
     setAnimatedSteps([])
@@ -165,8 +167,8 @@ export function PerplexityStyleProgress({
         body: JSON.stringify({
           message,
           user_id: userId,
-          session_id: sessionId
-        })
+          session_id: sessionId,
+        }),
       })
 
       if (!response.ok) {
@@ -182,7 +184,7 @@ export function PerplexityStyleProgress({
 
       while (true) {
         const { done, value } = await reader.read()
-        
+
         if (done) break
 
         const chunk = decoder.decode(value)
@@ -195,7 +197,7 @@ export function PerplexityStyleProgress({
               const update: ProgressUpdate = {
                 type: data.type,
                 message: data.message,
-                data: data.data || {}
+                data: data.data || {},
               }
 
               setProgressUpdates(prev => [...prev, update])
@@ -203,12 +205,15 @@ export function PerplexityStyleProgress({
               setProgress(calculateProgress(data.type))
 
               // アニメーション用ステップを追加
-              setAnimatedSteps(prev => [...prev, {
-                id: Date.now().toString() + Math.random(),
-                text: data.message,
-                type: data.type,
-                timestamp: Date.now()
-              }])
+              setAnimatedSteps(prev => [
+                ...prev,
+                {
+                  id: Date.now().toString() + Math.random(),
+                  text: data.message,
+                  type: data.type,
+                  timestamp: Date.now(),
+                },
+              ])
 
               // ツール情報を記録
               if (data.data?.tools && Array.isArray(data.data.tools)) {
@@ -222,7 +227,7 @@ export function PerplexityStyleProgress({
                   search_results: data.data?.search_results || [],
                   results_count: data.data?.results_count || 0,
                   timestamp: data.data?.timestamp,
-                  function_call_id: data.data?.function_call_id
+                  function_call_id: data.data?.function_call_id,
                 }
                 setSearchData(searchInfo)
               }
@@ -238,7 +243,7 @@ export function PerplexityStyleProgress({
                 setIsStreaming(false)
                 setProgress(100)
                 if (onComplete) {
-                  onComplete(finalResponse || data.data?.response || "", searchData)
+                  onComplete(finalResponse || data.data?.response || '', searchData)
                 }
               }
 
@@ -255,7 +260,6 @@ export function PerplexityStyleProgress({
           }
         }
       }
-
     } catch (error) {
       console.error('Streaming error:', error)
       setIsStreaming(false)
@@ -281,12 +285,16 @@ export function PerplexityStyleProgress({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* メイン進捗カード - Perplexity風 */}
-      <Card className={`bg-gradient-to-br ${phaseConfig.bgColor} border-0 shadow-lg overflow-hidden`}>
+      <Card
+        className={`bg-gradient-to-br ${phaseConfig.bgColor} overflow-hidden border-0 shadow-lg`}
+      >
         <CardContent className="p-0">
           {/* ヘッダー部分 */}
-          <div className="p-4 border-b border-white/20">
+          <div className="border-b border-white/20 p-4">
             <div className="flex items-center gap-3">
-              <div className={`h-10 w-10 rounded-full bg-gradient-to-br ${phaseConfig.color} flex items-center justify-center text-white shadow-lg`}>
+              <div
+                className={`h-10 w-10 rounded-full bg-gradient-to-br ${phaseConfig.color} flex items-center justify-center text-white shadow-lg`}
+              >
                 {phaseConfig.icon}
               </div>
               <div className="flex-1">
@@ -302,8 +310,8 @@ export function PerplexityStyleProgress({
 
           {/* プログレスバー */}
           <div className="px-4 py-2">
-            <div className="w-full bg-white/30 rounded-full h-2 overflow-hidden">
-              <div 
+            <div className="h-2 w-full overflow-hidden rounded-full bg-white/30">
+              <div
                 className={`h-full bg-gradient-to-r ${phaseConfig.color} transition-all duration-700 ease-out`}
                 style={{ width: `${progress}%` }}
               />
@@ -311,25 +319,28 @@ export function PerplexityStyleProgress({
           </div>
 
           {/* アニメーションステップ */}
-          <div className="p-4 space-y-2 max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300">
+          <div className="scrollbar-thin scrollbar-thumb-gray-300 max-h-32 space-y-2 overflow-y-auto p-4">
             {animatedSteps.slice(-4).map((step, index) => (
               <div
                 key={step.id}
-                className={`flex items-center gap-2 text-sm transform transition-all duration-500 ${
-                  index === animatedSteps.slice(-4).length - 1 
-                    ? 'scale-100 opacity-100 translate-x-0' 
+                className={`flex transform items-center gap-2 text-sm transition-all duration-500 ${
+                  index === animatedSteps.slice(-4).length - 1
+                    ? 'translate-x-0 scale-100 opacity-100'
                     : 'scale-95 opacity-70'
                 }`}
-                style={{ 
+                style={{
                   animationDelay: `${index * 100}ms`,
-                  animation: index === animatedSteps.slice(-4).length - 1 ? 'slideInRight 0.5s ease-out' : 'none'
+                  animation:
+                    index === animatedSteps.slice(-4).length - 1
+                      ? 'slideInRight 0.5s ease-out'
+                      : 'none',
                 }}
               >
-                <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${phaseConfig.color} flex-shrink-0`} />
-                <span className="text-gray-700 flex-1">{step.text}</span>
-                {step.type.includes('tool') && (
-                  <IoFlash className="h-3 w-3 text-orange-500" />
-                )}
+                <div
+                  className={`h-2 w-2 rounded-full bg-gradient-to-r ${phaseConfig.color} flex-shrink-0`}
+                />
+                <span className="flex-1 text-gray-700">{step.text}</span>
+                {step.type.includes('tool') && <IoFlash className="h-3 w-3 text-orange-500" />}
               </div>
             ))}
           </div>
@@ -337,7 +348,7 @@ export function PerplexityStyleProgress({
           {/* ツール表示 */}
           {toolsUsed.length > 0 && (
             <div className="px-4 pb-4">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="mb-2 flex items-center gap-2">
                 <IoSettings className="h-4 w-4 text-gray-600" />
                 <span className="text-sm font-medium text-gray-700">使用中のツール</span>
               </div>
@@ -345,7 +356,7 @@ export function PerplexityStyleProgress({
                 {toolsUsed.map((tool, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-1 px-3 py-1 bg-white/60 rounded-full text-xs text-gray-700 shadow-sm backdrop-blur-sm"
+                    className="flex items-center gap-1 rounded-full bg-white/60 px-3 py-1 text-xs text-gray-700 shadow-sm backdrop-blur-sm"
                   >
                     {getToolIcon(tool)}
                     <span>{tool.replace('_', ' ')}</span>
@@ -360,9 +371,17 @@ export function PerplexityStyleProgress({
             <div className="px-4 pb-4">
               <div className="flex items-center gap-2">
                 <div className="flex gap-1">
-                  <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${phaseConfig.color} animate-pulse`}></div>
-                  <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${phaseConfig.color} animate-pulse`} style={{animationDelay: '0.2s'}}></div>
-                  <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${phaseConfig.color} animate-pulse`} style={{animationDelay: '0.4s'}}></div>
+                  <div
+                    className={`h-2 w-2 rounded-full bg-gradient-to-r ${phaseConfig.color} animate-pulse`}
+                  ></div>
+                  <div
+                    className={`h-2 w-2 rounded-full bg-gradient-to-r ${phaseConfig.color} animate-pulse`}
+                    style={{ animationDelay: '0.2s' }}
+                  ></div>
+                  <div
+                    className={`h-2 w-2 rounded-full bg-gradient-to-r ${phaseConfig.color} animate-pulse`}
+                    style={{ animationDelay: '0.4s' }}
+                  ></div>
                 </div>
                 <span className="text-xs text-gray-600">処理中...</span>
               </div>
@@ -373,15 +392,15 @@ export function PerplexityStyleProgress({
 
       {/* 最終レスポンス表示 */}
       {finalResponse && isComplete && (
-        <Card className="bg-white/95 backdrop-blur-md border border-green-200 shadow-lg">
+        <Card className="border border-green-200 bg-white/95 shadow-lg backdrop-blur-md">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-6 w-6 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600">
                 <IoCheckmarkCircle className="h-3 w-3 text-white" />
               </div>
               <span className="text-sm font-medium text-green-700">回答完了</span>
             </div>
-            <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-line">
+            <div className="prose prose-sm max-w-none whitespace-pre-line text-gray-700">
               {finalResponse}
             </div>
           </CardContent>
@@ -400,15 +419,15 @@ export function PerplexityStyleProgress({
             transform: translateX(0);
           }
         }
-        
+
         .scrollbar-thin {
           scrollbar-width: thin;
         }
-        
+
         .scrollbar-thumb-gray-300::-webkit-scrollbar {
           width: 4px;
         }
-        
+
         .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
           background-color: #d1d5db;
           border-radius: 2px;

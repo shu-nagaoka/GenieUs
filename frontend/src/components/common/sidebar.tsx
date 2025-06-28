@@ -1,9 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import {
-  Sidebar,
-} from '@/components/ui/sidebar'
+import { Sidebar } from '@/components/ui/sidebar'
 import { Header } from '@/components/common/header'
 
 // 課長とメンバーの進捗確認会話履歴データ

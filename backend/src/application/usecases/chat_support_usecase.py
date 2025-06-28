@@ -13,7 +13,7 @@ from typing import Any
 
 class ChatSupportUseCase:
     """チャットサポートのビジネスロジック
-    
+
     フォローアップ質問生成、会話支援機能を提供
     """
 

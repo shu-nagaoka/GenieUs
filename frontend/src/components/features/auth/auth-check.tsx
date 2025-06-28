@@ -13,24 +13,24 @@ interface AuthCheckProps {
   requireBackendAuth?: boolean
 }
 
-export function AuthCheck({ 
-  children, 
-  requireAuth = true, 
-  requireBackendAuth = false 
+export function AuthCheck({
+  children,
+  requireAuth = true,
+  requireBackendAuth = false,
 }: AuthCheckProps) {
   const { data: session, status } = useSession()
-  const { 
-    fullyAuthenticated, 
-    backendAuthenticated, 
-    isLoading: authLoading, 
+  const {
+    fullyAuthenticated,
+    backendAuthenticated,
+    isLoading: authLoading,
     error,
-    loginToBackend 
+    loginToBackend,
   } = useAuth()
 
   // ローディング状態
   if (status === 'loading' || authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center">
         <LoadingSpinner />
       </div>
     )
@@ -39,25 +39,15 @@ export function AuthCheck({
   // フロントエンド認証が必要だが未認証
   if (requireAuth && !session) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-amber-800">
-              GenieUs
-            </CardTitle>
-            <p className="text-gray-600">
-              AI子育て支援アプリケーション
-            </p>
+            <CardTitle className="text-2xl font-bold text-amber-800">GenieUs</CardTitle>
+            <p className="text-gray-600">AI子育て支援アプリケーション</p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-center text-gray-700">
-              続行するにはログインが必要です
-            </p>
-            <Button 
-              onClick={() => signIn('google')}
-              className="w-full"
-              size="lg"
-            >
+            <p className="text-center text-gray-700">続行するにはログインが必要です</p>
+            <Button onClick={() => signIn('google')} className="w-full" size="lg">
               Googleでログイン
             </Button>
           </CardContent>
@@ -69,30 +59,20 @@ export function AuthCheck({
   // バックエンド認証が必要だが未認証
   if (requireBackendAuth && session && !backendAuthenticated) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-amber-800">
-              GenieUs
-            </CardTitle>
-            <p className="text-gray-600">
-              個人データアクセス認証
-            </p>
+            <CardTitle className="text-2xl font-bold text-amber-800">GenieUs</CardTitle>
+            <p className="text-gray-600">個人データアクセス認証</p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-center">
-              <p className="text-gray-700 mb-2">
+              <p className="mb-2 text-gray-700">
                 個人データにアクセスするためにバックエンド認証が必要です
               </p>
-              {error && (
-                <p className="text-red-600 text-sm mb-4">{error}</p>
-              )}
+              {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
             </div>
-            <Button 
-              onClick={loginToBackend}
-              className="w-full"
-              size="lg"
-            >
+            <Button onClick={loginToBackend} className="w-full" size="lg">
               バックエンド認証を実行
             </Button>
           </CardContent>
@@ -106,11 +86,11 @@ export function AuthCheck({
 
 export function UserProfile() {
   const { data: session, status } = useSession()
-  const { 
-    backendUser, 
-    backendAuthenticated, 
+  const {
+    backendUser,
+    backendAuthenticated,
     isLoading: authLoading,
-    logout: handleLogout 
+    logout: handleLogout,
   } = useAuth()
 
   if (status === 'loading' || authLoading) {
@@ -128,40 +108,33 @@ export function UserProfile() {
   // バックエンド認証済みの場合はバックエンドユーザー情報を優先表示
   const displayUser = backendAuthenticated && backendUser ? backendUser : session.user
   const displayName = backendAuthenticated && backendUser ? backendUser.name : session.user?.name
-  const displayImage = backendAuthenticated && backendUser ? backendUser.picture_url : session.user?.image
+  const displayImage =
+    backendAuthenticated && backendUser ? backendUser.picture_url : session.user?.image
 
   return (
     <div className="flex items-center gap-3">
       <div className="relative">
         {displayImage ? (
-          <img
-            src={displayImage}
-            alt={displayName || ''}
-            className="w-8 h-8 rounded-full"
-          />
+          <img src={displayImage} alt={displayName || ''} className="h-8 w-8 rounded-full" />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-            <span className="text-gray-600 text-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-300">
+            <span className="text-sm text-gray-600">
               {displayName ? displayName.charAt(0).toUpperCase() : 'U'}
             </span>
           </div>
         )}
         {/* 認証状態インジケーター */}
-        <div 
-          className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+        <div
+          className={`absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-2 border-white ${
             backendAuthenticated ? 'bg-green-500' : 'bg-yellow-500'
           }`}
           title={backendAuthenticated ? '完全認証済み' : 'フロントエンドのみ認証'}
         />
       </div>
       <div className="flex flex-col">
-        <span className="text-sm font-medium">
-          {displayName}
-        </span>
+        <span className="text-sm font-medium">{displayName}</span>
         {backendAuthenticated && (
-          <span className="text-xs text-green-600">
-            個人データアクセス可能
-          </span>
+          <span className="text-xs text-green-600">個人データアクセス可能</span>
         )}
       </div>
       <Button

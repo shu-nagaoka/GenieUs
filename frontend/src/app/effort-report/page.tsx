@@ -1,16 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { AuthCheck } from '@/components/features/auth/auth-check'
 import { EffortReportCard } from '@/components/v2/effort-affirmation/EffortReportCard'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
-import { 
-  Heart, 
+import {
+  Heart,
   Calendar,
   TrendingUp,
   Award,
@@ -26,12 +32,13 @@ import {
   Archive,
   Activity,
   LayoutGrid,
-  List
+  List,
 } from 'lucide-react'
 import { MdChildCare, MdFamilyRestroom } from 'react-icons/md'
 import { FaHeart, FaStar, FaTrophy } from 'react-icons/fa'
 import Link from 'next/link'
-import { getEffortRecords, getEffortRecordsStats, EffortRecord as ApiEffortRecord } from '@/libs/api/effort-records'
+import { useEffortRecords, useEffortStats } from '@/hooks/useEffortReports'
+import type { EffortRecord as ApiEffortRecord } from '@/libs/api/effort-records'
 
 interface HistoricalReport {
   id: string
@@ -67,51 +74,39 @@ function EffortReportPageContent() {
   const [showModal, setShowModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('card')
-  const [historicalReports, setHistoricalReports] = useState<HistoricalReport[]>([])
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ total_efforts: 27, streak_days: 21, average_score: 8.7, total_reports: 12 })
+  
+  // React Query hooks
+  const {
+    data: effortRecordsData = [],
+    isLoading: recordsLoading,
+  } = useEffortRecords('frontend_user')
+  
+  const {
+    data: stats = {
+      total_efforts: 27,
+      streak_days: 21,
+      average_score: 8.7,
+      total_reports: 12,
+    },
+    isLoading: statsLoading,
+  } = useEffortStats('frontend_user', selectedPeriod)
 
-  // APIからデータを取得
-  const loadData = async () => {
-    try {
-      setLoading(true)
-      
-      // 並行して記録一覧と統計を取得
-      const [recordsResult, statsResult] = await Promise.all([
-        getEffortRecords({ user_id: 'frontend_user' }),
-        getEffortRecordsStats('frontend_user', selectedPeriod)
-      ])
-      
-      // 記録データを設定
-      if (recordsResult.success && recordsResult.data) {
-        const convertedReports: HistoricalReport[] = recordsResult.data.map(apiRecord => ({
-          id: apiRecord.id,
-          date: apiRecord.date,
-          period: apiRecord.period,
-          effortCount: apiRecord.effort_count,
-          highlights: apiRecord.highlights,
-          score: apiRecord.score,
-          categories: apiRecord.categories,
-          summary: apiRecord.summary,
-          achievements: apiRecord.achievements
-        }))
-        setHistoricalReports(convertedReports)
-      }
-      
-      // 統計データを設定
-      if (statsResult.success && statsResult.data) {
-        setStats(statsResult.data)
-      }
-    } catch (error) {
-      console.error('データ読み込みエラー:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  // APIデータをUIフォーマットに変換（メモ化）
+  const historicalReports = useMemo(() => {
+    return effortRecordsData.map((apiRecord: ApiEffortRecord) => ({
+      id: apiRecord.id,
+      date: apiRecord.date,
+      period: apiRecord.period,
+      effortCount: apiRecord.effort_count,
+      highlights: apiRecord.highlights,
+      score: apiRecord.score,
+      categories: apiRecord.categories,
+      summary: apiRecord.summary,
+      achievements: apiRecord.achievements,
+    }))
+  }, [effortRecordsData])
 
-  useEffect(() => {
-    loadData()
-  }, [selectedPeriod])
+  const loading = recordsLoading || statsLoading
 
   const handlePeriodChange = (value: string) => {
     setSelectedPeriod(parseInt(value))
@@ -127,7 +122,6 @@ function EffortReportPageContent() {
     setShowModal(true)
   }
 
-
   const closeModal = () => {
     setSelectedReport(null)
     setShowModal(false)
@@ -136,9 +130,9 @@ function EffortReportPageContent() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-slate-50 flex items-center justify-center">
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 via-teal-50 to-slate-50">
           <div className="inline-flex items-center gap-2">
-            <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></div>
             <span className="text-gray-600">努力記録を読み込み中...</span>
           </div>
         </div>
@@ -150,11 +144,11 @@ function EffortReportPageContent() {
     <AppLayout>
       <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-slate-50">
         {/* ページヘッダー */}
-        <div className="bg-white/80 backdrop-blur-sm border-b border-emerald-100">
-          <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="border-b border-emerald-100 bg-white/80 backdrop-blur-sm">
+          <div className="mx-auto max-w-6xl px-4 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
                   <FaTrophy className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -162,46 +156,46 @@ function EffortReportPageContent() {
                   <p className="text-gray-600">あなたの愛情と努力を記録・実感します</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 <Link href="/chat">
-                  <Button className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-lime-600 hover:to-green-600 text-white shadow-lg">
-                    <Sparkles className="h-4 w-4 mr-2" />
+                  <Button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg hover:from-lime-600 hover:to-green-600">
+                    <Sparkles className="mr-2 h-4 w-4" />
                     Genieに相談
                   </Button>
                 </Link>
-                <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/60 backdrop-blur-sm rounded-lg border border-emerald-200">
+                <div className="hidden items-center gap-2 rounded-lg border border-emerald-200 bg-white/60 px-3 py-1.5 backdrop-blur-sm md:flex">
                   <Sparkles className="h-4 w-4 text-emerald-600" />
-                  <span className="text-sm text-emerald-700 font-medium">毎日自動作成</span>
+                  <span className="text-sm font-medium text-emerald-700">毎日自動作成</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto p-6 space-y-8">
+        <div className="mx-auto max-w-6xl space-y-8 p-6">
           {/* 努力サマリーカード */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <Card className="bg-gradient-to-br from-emerald-600 to-emerald-700 text-white border-0 shadow-xl">
+          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+            <Card className="border-0 bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-xl">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-emerald-100 text-sm font-medium">今週頑張ったこと</p>
-                    <p className="text-2xl font-bold mt-1">{stats.total_efforts}回</p>
-                    <p className="text-emerald-200 text-xs">Genieが記録</p>
+                    <p className="text-sm font-medium text-emerald-100">今週頑張ったこと</p>
+                    <p className="mt-1 text-2xl font-bold">{stats.total_efforts}回</p>
+                    <p className="text-xs text-emerald-200">Genieが記録</p>
                   </div>
                   <Heart className="h-8 w-8 text-emerald-200" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-teal-500 to-teal-600 text-white border-0 shadow-xl">
+            <Card className="border-0 bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-xl">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-teal-100 text-sm font-medium">平均スコア</p>
-                    <p className="text-2xl font-bold mt-1">{stats.average_score}</p>
-                    <p className="text-teal-200 text-xs">総合評価</p>
+                    <p className="text-sm font-medium text-teal-100">平均スコア</p>
+                    <p className="mt-1 text-2xl font-bold">{stats.average_score}</p>
+                    <p className="text-xs text-teal-200">総合評価</p>
                   </div>
                   <Star className="h-8 w-8 text-teal-200" />
                 </div>
@@ -210,23 +204,25 @@ function EffortReportPageContent() {
           </div>
 
           {/* 簡単な設定ボタン */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h2 className="text-2xl font-bold text-gray-800">現在の表示期間: 過去{selectedPeriod}日間</h2>
+              <h2 className="text-2xl font-bold text-gray-800">
+                現在の表示期間: 過去{selectedPeriod}日間
+              </h2>
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
               onClick={() => setShowSettingsModal(true)}
             >
-              <Target className="h-4 w-4 mr-2" />
+              <Target className="mr-2 h-4 w-4" />
               設定
             </Button>
           </div>
 
           {/* 過去のレポート一覧 */}
-          <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-t-lg">
+          <Card className="border-0 bg-white/80 shadow-xl backdrop-blur-sm">
+            <CardHeader className="rounded-t-lg bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center gap-3">
@@ -237,14 +233,14 @@ function EffortReportPageContent() {
                     これまでのあなたの努力の記録を振り返る
                   </CardDescription>
                 </div>
-                <div className="flex items-center gap-2 bg-white/20 rounded-lg p-1">
+                <div className="flex items-center gap-2 rounded-lg bg-white/20 p-1">
                   <Button
                     size="sm"
                     variant={viewMode === 'card' ? 'default' : 'ghost'}
                     onClick={() => setViewMode('card')}
                     className={`h-8 px-3 ${viewMode === 'card' ? 'bg-white text-emerald-600' : 'text-white hover:bg-white/20'}`}
                   >
-                    <LayoutGrid className="h-4 w-4 mr-1" />
+                    <LayoutGrid className="mr-1 h-4 w-4" />
                     カード
                   </Button>
                   <Button
@@ -253,7 +249,7 @@ function EffortReportPageContent() {
                     onClick={() => setViewMode('table')}
                     className={`h-8 px-3 ${viewMode === 'table' ? 'bg-white text-emerald-600' : 'text-white hover:bg-white/20'}`}
                   >
-                    <List className="h-4 w-4 mr-1" />
+                    <List className="mr-1 h-4 w-4" />
                     テーブル
                   </Button>
                 </div>
@@ -262,68 +258,76 @@ function EffortReportPageContent() {
             <CardContent className="p-6">
               {viewMode === 'card' ? (
                 // カード表示
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {historicalReports.map((report) => (
-                    <Card 
-                      key={report.id} 
-                      className="cursor-pointer hover:shadow-lg transition-all duration-200 border-0 shadow-md bg-gradient-to-br from-white to-emerald-50 hover:from-emerald-50 hover:to-teal-50"
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {historicalReports.map(report => (
+                    <Card
+                      key={report.id}
+                      className="cursor-pointer border-0 bg-gradient-to-br from-white to-emerald-50 shadow-md transition-all duration-200 hover:from-emerald-50 hover:to-teal-50 hover:shadow-lg"
                       onClick={() => openReportModal(report)}
                     >
                       <CardContent className="p-5">
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="mb-3 flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600">
                               <FileText className="h-4 w-4 text-white" />
                             </div>
                             <div>
                               <p className="text-sm font-semibold text-gray-800">{report.period}</p>
-                              <p className="text-xs text-gray-500">{new Date(report.date).toLocaleDateString('ja-JP')}</p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(report.date).toLocaleDateString('ja-JP')}
+                              </p>
                             </div>
                           </div>
                           <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
                             {report.score}/10
                           </Badge>
                         </div>
-                        
+
                         <div className="space-y-3">
                           <div>
-                            <p className="text-sm font-medium text-gray-700 mb-1">努力回数</p>
+                            <p className="mb-1 text-sm font-medium text-gray-700">努力回数</p>
                             <div className="flex items-center gap-2">
-                              <div className="flex-1 h-2 bg-gray-200 rounded-full">
-                                <div 
-                                  className="h-2 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full" 
-                                  style={{ width: `${Math.min((report.effortCount / 30) * 100, 100)}%` }}
+                              <div className="h-2 flex-1 rounded-full bg-gray-200">
+                                <div
+                                  className="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600"
+                                  style={{
+                                    width: `${Math.min((report.effortCount / 30) * 100, 100)}%`,
+                                  }}
                                 ></div>
                               </div>
-                              <span className="text-sm font-bold text-emerald-700">{report.effortCount}回</span>
+                              <span className="text-sm font-bold text-emerald-700">
+                                {report.effortCount}回
+                              </span>
                             </div>
                           </div>
-                          
+
                           <div>
-                            <p className="text-sm font-medium text-gray-700 mb-2">ハイライト</p>
+                            <p className="mb-2 text-sm font-medium text-gray-700">ハイライト</p>
                             <div className="space-y-1">
                               {report.highlights.slice(0, 2).map((highlight, index) => (
                                 <div key={index} className="flex items-center gap-2">
-                                  <Star className="h-3 w-3 text-emerald-600 flex-shrink-0" />
-                                  <p className="text-xs text-gray-600 line-clamp-1">{highlight}</p>
+                                  <Star className="h-3 w-3 flex-shrink-0 text-emerald-600" />
+                                  <p className="line-clamp-1 text-xs text-gray-600">{highlight}</p>
                                 </div>
                               ))}
                               {report.highlights.length > 2 && (
-                                <p className="text-xs text-gray-500 pl-5">+{report.highlights.length - 2}件のハイライト</p>
+                                <p className="pl-5 text-xs text-gray-500">
+                                  +{report.highlights.length - 2}件のハイライト
+                                </p>
                               )}
                             </div>
                           </div>
-                          
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="w-full border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                            onClick={(e) => {
+                            onClick={e => {
                               e.stopPropagation()
                               openReportModal(report)
                             }}
                           >
-                            <Eye className="h-3 w-3 mr-2" />
+                            <Eye className="mr-2 h-3 w-3" />
                             詳細を見る
                           </Button>
                         </div>
@@ -337,66 +341,79 @@ function EffortReportPageContent() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-emerald-200">
-                        <th className="text-left py-3 px-4 font-medium text-emerald-700">期間</th>
-                        <th className="text-left py-3 px-4 font-medium text-emerald-700">日付</th>
-                        <th className="text-center py-3 px-4 font-medium text-emerald-700">努力回数</th>
-                        <th className="text-center py-3 px-4 font-medium text-emerald-700">スコア</th>
-                        <th className="text-left py-3 px-4 font-medium text-emerald-700">主なハイライト</th>
-                        <th className="text-center py-3 px-4 font-medium text-emerald-700">詳細</th>
+                        <th className="px-4 py-3 text-left font-medium text-emerald-700">期間</th>
+                        <th className="px-4 py-3 text-left font-medium text-emerald-700">日付</th>
+                        <th className="px-4 py-3 text-center font-medium text-emerald-700">
+                          努力回数
+                        </th>
+                        <th className="px-4 py-3 text-center font-medium text-emerald-700">
+                          スコア
+                        </th>
+                        <th className="px-4 py-3 text-left font-medium text-emerald-700">
+                          主なハイライト
+                        </th>
+                        <th className="px-4 py-3 text-center font-medium text-emerald-700">詳細</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {historicalReports.map((report) => (
-                        <tr 
-                          key={report.id} 
-                          className="border-b border-gray-100 hover:bg-emerald-50/50 transition-colors cursor-pointer"
+                      {historicalReports.map(report => (
+                        <tr
+                          key={report.id}
+                          className="cursor-pointer border-b border-gray-100 transition-colors hover:bg-emerald-50/50"
                           onClick={() => openReportModal(report)}
                         >
-                          <td className="py-3 px-4">
+                          <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <div className="h-6 w-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600">
                                 <FileText className="h-3 w-3 text-white" />
                               </div>
-                              <span className="text-sm font-medium text-gray-800">{report.period}</span>
+                              <span className="text-sm font-medium text-gray-800">
+                                {report.period}
+                              </span>
                             </div>
                           </td>
-                          <td className="py-3 px-4 text-sm text-gray-600">
+                          <td className="px-4 py-3 text-sm text-gray-600">
                             {new Date(report.date).toLocaleDateString('ja-JP')}
                           </td>
-                          <td className="py-3 px-4 text-center">
-                            <Badge variant="outline" className="text-emerald-700 border-emerald-300">
+                          <td className="px-4 py-3 text-center">
+                            <Badge
+                              variant="outline"
+                              className="border-emerald-300 text-emerald-700"
+                            >
                               {report.effortCount}回
                             </Badge>
                           </td>
-                          <td className="py-3 px-4 text-center">
+                          <td className="px-4 py-3 text-center">
                             <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
                               {report.score}/10
                             </Badge>
                           </td>
-                          <td className="py-3 px-4">
+                          <td className="px-4 py-3">
                             <div className="space-y-1">
                               {report.highlights.slice(0, 2).map((highlight, index) => (
                                 <div key={index} className="flex items-center gap-2">
-                                  <Star className="h-3 w-3 text-emerald-600 flex-shrink-0" />
-                                  <p className="text-xs text-gray-600 truncate">{highlight}</p>
+                                  <Star className="h-3 w-3 flex-shrink-0 text-emerald-600" />
+                                  <p className="truncate text-xs text-gray-600">{highlight}</p>
                                 </div>
                               ))}
                               {report.highlights.length > 2 && (
-                                <p className="text-xs text-gray-500">+{report.highlights.length - 2}件</p>
+                                <p className="text-xs text-gray-500">
+                                  +{report.highlights.length - 2}件
+                                </p>
                               )}
                             </div>
                           </td>
-                          <td className="py-3 px-4 text-center">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
+                          <td className="px-4 py-3 text-center">
+                            <Button
+                              variant="outline"
+                              size="sm"
                               className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                              onClick={(e) => {
+                              onClick={e => {
                                 e.stopPropagation()
                                 openReportModal(report)
                               }}
                             >
-                              <Eye className="h-3 w-3 mr-1" />
+                              <Eye className="mr-1 h-3 w-3" />
                               詳細
                             </Button>
                           </td>
@@ -411,16 +428,12 @@ function EffortReportPageContent() {
 
           {/* メインレポート */}
           <div className="mb-8">
-            <EffortReportCard 
-              key={reportKey}
-              periodDays={selectedPeriod}
-              className="w-full"
-            />
+            <EffortReportCard key={reportKey} periodDays={selectedPeriod} className="w-full" />
           </div>
 
           {/* AIチャット連携カード */}
-          <Card className="shadow-xl border-0 bg-gradient-to-br from-lime-50 to-green-50">
-            <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-t-lg">
+          <Card className="border-0 bg-gradient-to-br from-lime-50 to-green-50 shadow-xl">
+            <CardHeader className="rounded-t-lg bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
               <CardTitle className="flex items-center gap-3">
                 <Sparkles className="h-6 w-6" />
                 Genieとの連携
@@ -430,16 +443,16 @@ function EffortReportPageContent() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="bg-white/60 p-4 rounded-lg border border-emerald-200">
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
+              <div className="rounded-lg border border-emerald-200 bg-white/60 p-4">
+                <div className="mb-4 flex items-start gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
                     <FaTrophy className="h-5 w-5 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm text-emerald-800 font-medium mb-2">
+                    <p className="mb-2 text-sm font-medium text-emerald-800">
                       💡 Genieは、あなたの努力レポートを理解して：
                     </p>
-                    <ul className="text-sm text-emerald-700 space-y-1">
+                    <ul className="space-y-1 text-sm text-emerald-700">
                       <li>• 「今日も頑張りましたね」と具体的に認めてくれます</li>
                       <li>• あなたの努力の傾向を考慮したアドバイスをします</li>
                       <li>• 成長を実感できる振り返りを一緒にしてくれます</li>
@@ -448,17 +461,17 @@ function EffortReportPageContent() {
                 </div>
                 <div className="flex gap-3">
                   <Link href="/chat" className="flex-1">
-                    <Button className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-lime-600 hover:to-green-600 text-white shadow-lg">
-                      <Sparkles className="h-4 w-4 mr-2" />
+                    <Button className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg hover:from-lime-600 hover:to-green-600">
+                      <Sparkles className="mr-2 h-4 w-4" />
                       Genieに努力を報告・相談
                     </Button>
                   </Link>
-                  <Button 
+                  <Button
                     onClick={regenerateReport}
                     variant="outline"
                     className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                   >
-                    <TrendingUp className="h-4 w-4 mr-2" />
+                    <TrendingUp className="mr-2 h-4 w-4" />
                     レポート更新
                   </Button>
                 </div>
@@ -468,27 +481,32 @@ function EffortReportPageContent() {
 
           {/* 自動作成の説明 */}
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-emerald-200">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/60 px-4 py-2 backdrop-blur-sm">
               <Clock className="h-4 w-4 text-emerald-600" />
-              <span className="text-sm text-emerald-700 font-medium">毎日21:00に自動作成されます</span>
+              <span className="text-sm font-medium text-emerald-700">
+                毎日21:00に自動作成されます
+              </span>
             </div>
           </div>
         </div>
 
         {/* レポート詳細モーダル */}
         {showModal && selectedReport && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl bg-white shadow-2xl">
               {/* モーダルヘッダー */}
-              <div className="sticky top-0 bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-6 rounded-t-xl">
+              <div className="sticky top-0 rounded-t-xl bg-gradient-to-r from-emerald-500 to-teal-600 p-6 text-white">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-2xl font-bold">努力レポート</h2>
-                    <p className="text-emerald-100">{selectedReport.period} - {new Date(selectedReport.date).toLocaleDateString('ja-JP')}</p>
+                    <p className="text-emerald-100">
+                      {selectedReport.period} -{' '}
+                      {new Date(selectedReport.date).toLocaleDateString('ja-JP')}
+                    </p>
                   </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={closeModal}
                     className="text-white hover:bg-white/20"
                   >
@@ -498,26 +516,26 @@ function EffortReportPageContent() {
               </div>
 
               {/* モーダルコンテンツ */}
-              <div className="p-6 space-y-6">
+              <div className="space-y-6 p-6">
                 {/* サマリー */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-0">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <Card className="border-0 bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
                     <CardContent className="p-4 text-center">
-                      <p className="text-emerald-100 text-sm">努力回数</p>
+                      <p className="text-sm text-emerald-100">努力回数</p>
                       <p className="text-2xl font-bold">{selectedReport.effortCount}回</p>
                     </CardContent>
                   </Card>
-                  
-                  <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-0">
+
+                  <Card className="border-0 bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
                     <CardContent className="p-4 text-center">
-                      <p className="text-blue-100 text-sm">総合スコア</p>
+                      <p className="text-sm text-blue-100">総合スコア</p>
                       <p className="text-2xl font-bold">{selectedReport.score}/10</p>
                     </CardContent>
                   </Card>
-                  
-                  <Card className="bg-gradient-to-br from-purple-500 to-pink-600 text-white border-0">
+
+                  <Card className="border-0 bg-gradient-to-br from-purple-500 to-pink-600 text-white">
                     <CardContent className="p-4 text-center">
-                      <p className="text-purple-100 text-sm">ハイライト</p>
+                      <p className="text-sm text-purple-100">ハイライト</p>
                       <p className="text-2xl font-bold">{selectedReport.highlights.length}件</p>
                     </CardContent>
                   </Card>
@@ -532,7 +550,7 @@ function EffortReportPageContent() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-700 leading-relaxed">{selectedReport.summary}</p>
+                    <p className="leading-relaxed text-gray-700">{selectedReport.summary}</p>
                   </CardContent>
                 </Card>
 
@@ -547,20 +565,37 @@ function EffortReportPageContent() {
                   <CardContent>
                     <div className="space-y-4">
                       {[
-                        { key: 'feeding', label: '食事・授乳', color: 'from-orange-500 to-red-600' },
+                        {
+                          key: 'feeding',
+                          label: '食事・授乳',
+                          color: 'from-orange-500 to-red-600',
+                        },
                         { key: 'sleep', label: '睡眠', color: 'from-blue-500 to-indigo-600' },
-                        { key: 'play', label: '遊び・学び', color: 'from-green-500 to-emerald-600' },
-                        { key: 'care', label: 'ケア・世話', color: 'from-purple-500 to-pink-600' }
+                        {
+                          key: 'play',
+                          label: '遊び・学び',
+                          color: 'from-green-500 to-emerald-600',
+                        },
+                        { key: 'care', label: 'ケア・世話', color: 'from-purple-500 to-pink-600' },
                       ].map(({ key, label, color }) => (
                         <div key={key}>
-                          <div className="flex justify-between items-center mb-2">
+                          <div className="mb-2 flex items-center justify-between">
                             <span className="text-sm font-medium text-gray-700">{label}</span>
-                            <span className="text-sm font-bold text-gray-800">{selectedReport.categories[key as keyof typeof selectedReport.categories]}%</span>
+                            <span className="text-sm font-bold text-gray-800">
+                              {
+                                selectedReport.categories[
+                                  key as keyof typeof selectedReport.categories
+                                ]
+                              }
+                              %
+                            </span>
                           </div>
-                          <div className="h-3 bg-gray-200 rounded-full">
-                            <div 
+                          <div className="h-3 rounded-full bg-gray-200">
+                            <div
                               className={`h-3 bg-gradient-to-r ${color} rounded-full transition-all duration-500`}
-                              style={{ width: `${selectedReport.categories[key as keyof typeof selectedReport.categories]}%` }}
+                              style={{
+                                width: `${selectedReport.categories[key as keyof typeof selectedReport.categories]}%`,
+                              }}
                             ></div>
                           </div>
                         </div>
@@ -580,8 +615,11 @@ function EffortReportPageContent() {
                   <CardContent>
                     <div className="space-y-3">
                       {selectedReport.highlights.map((highlight, index) => (
-                        <div key={index} className="flex items-start gap-3 p-3 bg-gradient-to-r from-lime-50 to-green-50 rounded-lg border border-emerald-200">
-                          <div className="h-6 w-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
+                        <div
+                          key={index}
+                          className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-gradient-to-r from-lime-50 to-green-50 p-3"
+                        >
+                          <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600">
                             <Star className="h-3 w-3 text-white" />
                           </div>
                           <p className="text-sm text-gray-700">{highlight}</p>
@@ -602,8 +640,11 @@ function EffortReportPageContent() {
                   <CardContent>
                     <div className="flex flex-wrap gap-2">
                       {selectedReport.achievements.map((achievement, index) => (
-                        <Badge key={index} className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-3 py-1">
-                          <Award className="h-3 w-3 mr-1" />
+                        <Badge
+                          key={index}
+                          className="bg-gradient-to-r from-emerald-500 to-teal-600 px-3 py-1 text-white"
+                        >
+                          <Award className="mr-1 h-3 w-3" />
                           {achievement}
                         </Badge>
                       ))}
@@ -617,15 +658,15 @@ function EffortReportPageContent() {
 
         {/* 設定モーダル */}
         {showSettingsModal && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
               {/* モーダルヘッダー */}
-              <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-t-xl">
+              <div className="rounded-t-xl bg-gradient-to-r from-emerald-500 to-teal-600 p-4 text-white">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-bold">レポート設定</h2>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setShowSettingsModal(false)}
                     className="text-white hover:bg-white/20"
                   >
@@ -635,9 +676,9 @@ function EffortReportPageContent() {
               </div>
 
               {/* モーダルコンテンツ */}
-              <div className="p-6 space-y-4">
+              <div className="space-y-4 p-6">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-2 block">期間設定</Label>
+                  <Label className="mb-2 block text-sm font-medium text-gray-700">期間設定</Label>
                   <Select value={selectedPeriod.toString()} onValueChange={handlePeriodChange}>
                     <SelectTrigger className="border-emerald-200 focus:border-emerald-400">
                       <SelectValue />
@@ -650,25 +691,25 @@ function EffortReportPageContent() {
                     </SelectContent>
                   </Select>
                 </div>
-                
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+
+                <div className="rounded-lg border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-4">
                   <div className="text-center">
-                    <p className="text-sm font-medium text-gray-700 mb-1">自動作成</p>
+                    <p className="mb-1 text-sm font-medium text-gray-700">自動作成</p>
                     <p className="text-lg font-bold text-green-600">毎日 21:00</p>
                     <p className="text-xs text-green-700">自動生成</p>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-r from-purple-50 to-violet-50 p-4 rounded-lg border border-purple-200">
+                <div className="rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-violet-50 p-4">
                   <div className="text-center">
-                    <p className="text-sm font-medium text-gray-700 mb-1">総レポート数</p>
+                    <p className="mb-1 text-sm font-medium text-gray-700">総レポート数</p>
                     <p className="text-lg font-bold text-purple-600">{stats.total_reports}件</p>
                     <p className="text-xs text-purple-700">生成済み</p>
                   </div>
                 </div>
 
-                <Button 
-                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-lime-600 hover:to-green-600 text-white"
+                <Button
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-lime-600 hover:to-green-600"
                   onClick={() => setShowSettingsModal(false)}
                 >
                   設定完了
@@ -677,7 +718,6 @@ function EffortReportPageContent() {
             </div>
           </div>
         )}
-
       </div>
     </AppLayout>
   )

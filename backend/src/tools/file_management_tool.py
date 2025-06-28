@@ -64,7 +64,9 @@ def create_file_management_tool(
                     files = result.get("files", [])
                     if not files:
                         return ChildcareResponseFormatter.error_response(
-                            "ファイル一覧取得", "該当するファイルが見つかりませんでした", child_id,
+                            "ファイル一覧取得",
+                            "該当するファイルが見つかりませんでした",
+                            child_id,
                         ).to_dict()
 
                     # 最初のファイル情報を使用
@@ -76,14 +78,18 @@ def create_file_management_tool(
                     ).to_dict()
                 else:
                     return ChildcareResponseFormatter.error_response(
-                        "ファイル一覧取得", result.get("error", "ファイル一覧取得に失敗"), child_id,
+                        "ファイル一覧取得",
+                        result.get("error", "ファイル一覧取得に失敗"),
+                        child_id,
                     ).to_dict()
 
             elif operation == "download":
                 # ファイルダウンロード
                 if not file_name:
                     return ChildcareResponseFormatter.error_response(
-                        "ファイルダウンロード", "ファイル名が指定されていません", child_id,
+                        "ファイルダウンロード",
+                        "ファイル名が指定されていません",
+                        child_id,
                     ).to_dict()
 
                 as_text = kwargs.get("as_text", False)
@@ -104,7 +110,9 @@ def create_file_management_tool(
                     ).to_dict()
                 else:
                     return ChildcareResponseFormatter.error_response(
-                        "ファイルダウンロード", result.get("error", "ファイルダウンロードに失敗"), child_id,
+                        "ファイルダウンロード",
+                        result.get("error", "ファイルダウンロードに失敗"),
+                        child_id,
                     ).to_dict()
 
             elif operation == "upload":
@@ -117,13 +125,17 @@ def create_file_management_tool(
 
             else:
                 return ChildcareResponseFormatter.error_response(
-                    "ファイル管理", f"サポートされていない操作です: {operation}", child_id,
+                    "ファイル管理",
+                    f"サポートされていない操作です: {operation}",
+                    child_id,
                 ).to_dict()
 
         except Exception as e:
             logger.error(f"ファイル管理ツール実行エラー: {e}")
             return ChildcareResponseFormatter.error_response(
-                "ファイル管理", f"ファイル操作中にエラーが発生しました: {e!s}", child_id,
+                "ファイル管理",
+                f"ファイル操作中にエラーが発生しました: {e!s}",
+                child_id,
             ).to_dict()
 
     def _get_file_type_summary(files: list[dict[str, Any]]) -> dict[str, int]:

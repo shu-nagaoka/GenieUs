@@ -35,9 +35,10 @@ router = APIRouter(prefix="/api/streaming", tags=["streaming"])
 # TODO: Step1完了後に削除予定
 # generate_dynamic_followup_questions は ChatSupportUseCase に移行済み
 
+
 def generate_dynamic_followup_questions_legacy(original_message: str, specialist_response: str) -> str:
     """【廃止予定】回答内容に基づく動的フォローアップクエスチョン生成
-    
+
     ChatSupportUseCase.generate_followup_questions() に移行済み
     このレガシー関数は段階的削除のため一時保持
     """
@@ -54,7 +55,11 @@ def generate_dynamic_followup_questions_legacy(original_message: str, specialist
         return "**【続けて相談したい方へ】**\n💭 具体的なやり方を教えて\n💭 うまくいかない時はどうする？\n💭 注意すべきポイントは？"
 
 
-def generate_dynamic_followup_questions(original_message: str, specialist_response: str, chat_support_usecase: ChatSupportUseCase = None) -> str:
+def generate_dynamic_followup_questions(
+    original_message: str,
+    specialist_response: str,
+    chat_support_usecase: ChatSupportUseCase = None,
+) -> str:
     """回答内容に基づく動的フォローアップクエスチョン生成（UseCase統合版）"""
     if chat_support_usecase is None:
         # フォールバック: レガシー関数使用
@@ -62,7 +67,10 @@ def generate_dynamic_followup_questions(original_message: str, specialist_respon
 
     # UseCase呼び出し
     result = chat_support_usecase.generate_followup_questions(original_message, specialist_response)
-    return result.get("formatted_message", generate_dynamic_followup_questions_legacy(original_message, specialist_response))
+    return result.get(
+        "formatted_message",
+        generate_dynamic_followup_questions_legacy(original_message, specialist_response),
+    )
 
 
 def get_specialist_info_legacy(agent_type: str) -> dict:
@@ -211,11 +219,19 @@ class StreamingChatMessage(BaseModel):
     session_id: str = "default_session"
     conversation_history: list = []
     family_info: dict = None
+    web_search_enabled: bool = False  # Web検索フラグを追加
+    
+    # 画像添付関連フィールド（フロントエンドとの整合性確保）
+    message_type: str = "text"  # "text", "image", "voice", "multimodal"
+    has_image: bool = False
+    image_path: str = None  # Base64画像データまたはパス
+    multimodal_context: dict = None  # マルチモーダルコンテキスト情報
 
 
 # ========== レガシー関数（UseCase移行済み - 削除予定） ==========
 # TODO: Step3完了後に削除予定
 # create_progress_stream は StreamingChatUseCase に移行済み
+
 
 async def create_progress_stream_legacy(
     agent_manager: AgentManager,
@@ -237,7 +253,13 @@ async def create_progress_stream_legacy(
         # 2. 進捗表示を含むAgent実行
         final_response = ""
         async for progress in execute_agent_with_progress(
-            agent_manager, message, user_id, session_id, conversation_history, family_info, logger,
+            agent_manager,
+            message,
+            user_id,
+            session_id,
+            conversation_history,
+            family_info,
+            logger,
         ):
             yield f"data: {json.dumps(progress)}\n\n"
             if progress["type"] == "final_response":
@@ -415,7 +437,12 @@ async def execute_agent_with_progress_legacy(
         # ADKのSessionServiceが会話履歴を管理するため、session_idが重要
         # ルーティング情報とフォローアップクエスチョン付きで実行
         result = await agent_manager.route_query_async_with_info(
-            message, user_id, session_id, "auto", conversation_history, family_info,
+            message,
+            user_id,
+            session_id,
+            "auto",
+            conversation_history,
+            family_info,
         )
         response = result["response"]
         agent_info = result.get("agent_info", {})
@@ -515,7 +542,7 @@ async def execute_agent_with_progress_legacy(
             search_results_data = None
             try:
                 # エージェントの実行履歴から検索結果を取得
-                if hasattr(result, 'search_metadata') and result.search_metadata:
+                if hasattr(result, "search_metadata") and result.search_metadata:
                     search_results_data = result.search_metadata
                 elif agent_info.get("search_history"):
                     # 最新の検索履歴から結果を取得
@@ -570,7 +597,24 @@ async def streaming_chat_endpoint(
 ):
     """ストリーミングチャットエンドポイント（DI注入パターン）"""
     try:
-        logger.info(f"ストリーミングチャット開始: user_id={chat_message.user_id}, message='{chat_message.message[:50]}...'")
+        # 詳細デバッグ: リクエスト受信状況を確認
+        logger.info(
+            f"🌐 ストリーミングチャット開始: user_id={chat_message.user_id}, message='{chat_message.message[:50]}...', web_search_enabled={chat_message.web_search_enabled}",
+        )
+        logger.info(
+            f"🔍 Web検索フラグ詳細: type={type(chat_message.web_search_enabled)}, value={chat_message.web_search_enabled!r}"
+        )
+        
+        # 画像添付情報の詳細ログ
+        if chat_message.has_image or chat_message.message_type == "image":
+            logger.info(
+                f"🖼️ 画像添付リクエスト受信: message_type={chat_message.message_type}, has_image={chat_message.has_image}, "
+                f"image_data_size={len(chat_message.image_path or '') // 1024 if chat_message.image_path else 0}KB"
+            )
+            if "FORCE_IMAGE_ANALYSIS_ROUTING" in chat_message.message:
+                logger.info("⚡ 強制画像分析ルーティング指示を検出")
+        else:
+            logger.info(f"📝 テキストメッセージ受信: message_type={chat_message.message_type}")
 
         async def event_stream():
             async for data in streaming_chat_usecase.create_progress_stream(
@@ -580,6 +624,12 @@ async def streaming_chat_endpoint(
                 chat_message.session_id,
                 chat_message.conversation_history or [],
                 chat_message.family_info or {},
+                chat_message.web_search_enabled,  # Web検索フラグを追加
+                # 画像・マルチモーダル対応パラメータ追加
+                chat_message.message_type,
+                chat_message.has_image,
+                chat_message.image_path,
+                chat_message.multimodal_context,
             ):
                 yield data
 
@@ -587,6 +637,7 @@ async def streaming_chat_endpoint(
 
     except Exception as e:
         logger.error(f"ストリーミングチャットエンドポイントエラー: {e}")
+
         # エラー時のストリーミングレスポンス
         async def error_stream():
             yield f"data: {json.dumps({'type': 'error', 'message': f'❌ エラーが発生しました: {e!s}', 'data': {}})}\n\n"

@@ -133,6 +133,7 @@ class ImageAnalysisUseCase:
 
         # ビジネスロジック: 子育て関連の解釈（パースされたデータをそのまま活用）
         childcare_result = {
+            "success": True,  # 成功時のフラグ
             "child_id": child_id,  # ここでビジネス概念を付与
             "detected_items": parsed_data.get("detected_items", []),
             "confidence": parsed_data.get("confidence", 0),

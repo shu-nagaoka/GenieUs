@@ -20,7 +20,7 @@ from src.application.usecases.chat_support_usecase import ChatSupportUseCase
 
 class StreamingChatUseCase:
     """ストリーミングチャットのビジネスロジック
-    
+
     マルチエージェント実行、進捗ストリーミング、エージェントルーティングを管理
     """
 
@@ -48,6 +48,12 @@ class StreamingChatUseCase:
         session_id: str,
         conversation_history: list[dict[str, Any]],
         family_info: dict[str, Any],
+        web_search_enabled: bool = False,
+        # 画像・マルチモーダル対応追加
+        message_type: str = "text",
+        has_image: bool = False,
+        image_path: str = None,
+        multimodal_context: dict = None,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """マルチエージェント実行と進捗詳細（ビジネスロジック）
 
@@ -58,13 +64,22 @@ class StreamingChatUseCase:
             session_id: セッションID
             conversation_history: 会話履歴
             family_info: 家族情報
+            web_search_enabled: Web検索フラグ
 
         Yields:
             Dict[str, Any]: 進捗情報
 
         """
         try:
-            self.logger.info(f"🚀 マルチエージェント実行開始: session_id={session_id}, message='{message[:50]}...'")
+            self.logger.info(
+                f"🚀 マルチエージェント実行開始: session_id={session_id}, message='{message[:50]}...', web_search_enabled={web_search_enabled}",
+            )
+            self.logger.info(
+                f"🎯 UseCase側Web検索フラグ詳細: type={type(web_search_enabled)}, value={web_search_enabled!r}"
+            )
+            # 画像・マルチモーダル情報ログ追加
+            if has_image:
+                self.logger.info(f"🖼️ 画像添付検出: message_type={message_type}, image_path={'あり' if image_path else 'なし'}")
 
             # ビジネスロジック: 初期状態設定
             progress_state = self._initialize_progress_state()
@@ -74,13 +89,43 @@ class StreamingChatUseCase:
                 yield progress
 
             # ビジネスロジック: 専門家予測とルーティング
-            async for progress in self._predict_and_route_specialist(agent_manager, message):
+            async for progress in self._predict_and_route_specialist(agent_manager, message, web_search_enabled):
                 yield progress
+
+            # ビジネスロジック: エージェント実行開始
+            yield {"type": "agent_executing", "message": "💫 Genieが心を込めて分析中...", "data": {}}
+            await asyncio.sleep(0.5)
 
             # ビジネスロジック: エージェント実行
             response, agent_info, routing_path = await self._execute_agent_core(
-                agent_manager, message, user_id, session_id, conversation_history, family_info,
+                agent_manager,
+                message,
+                user_id,
+                session_id,
+                conversation_history,
+                family_info,
+                web_search_enabled,
+                # 画像・マルチモーダル対応パラメータを渡す
+                message_type,
+                has_image,
+                image_path,
+                multimodal_context,
             )
+
+            # Web検索が有効で検索専門エージェントが実行された場合、progress_stateを更新
+            if web_search_enabled and agent_info.get("agent_id") == "search_specialist":
+                search_specialist_result = self.agent_info_usecase.get_specialist_info("search_specialist")
+                search_specialist_info = search_specialist_result.get(
+                    "data",
+                    {
+                        "name": "検索のジーニー",
+                        "description": "最新の子育て情報を検索してお届け",
+                    },
+                )
+                progress_state["actual_specialist_info"] = search_specialist_info
+                self.logger.info(
+                    f"🔍 Web検索モード: progress_state更新 specialist_name={search_specialist_info['name']}"
+                )
 
             # ビジネスロジック: ルーティング結果の詳細表示
             async for progress in self._display_routing_results(routing_path, progress_state):
@@ -99,7 +144,11 @@ class StreamingChatUseCase:
 
             # ビジネスロジック: 最終レスポンス構築
             final_data = self._build_final_response_data(
-                agent_info, progress_state, user_id, session_id, routing_path,
+                agent_info,
+                progress_state,
+                user_id,
+                session_id,
+                routing_path,
             )
 
             yield {
@@ -120,10 +169,13 @@ class StreamingChatUseCase:
         """進捗状態の初期化（ビジネスロジック）"""
         # 専門家情報を取得
         coordinator_result = self.agent_info_usecase.get_specialist_info("coordinator")
-        coordinator_info = coordinator_result.get("data", {
-            "name": "子育て相談のジーニー",
-            "description": "温かく寄り添う総合的な子育てサポート",
-        })
+        coordinator_info = coordinator_result.get(
+            "data",
+            {
+                "name": "子育て相談のジーニー",
+                "description": "温かく寄り添う総合的な子育てサポート",
+            },
+        )
 
         return {
             "coordinator_info": coordinator_info,
@@ -135,7 +187,10 @@ class StreamingChatUseCase:
             "specialist_messages_sent": set(),
         }
 
-    async def _analyze_conversation_history(self, conversation_history: list[dict[str, Any]]) -> AsyncGenerator[dict[str, Any], None]:
+    async def _analyze_conversation_history(
+        self,
+        conversation_history: list[dict[str, Any]],
+    ) -> AsyncGenerator[dict[str, Any], None]:
         """会話履歴分析（ビジネスロジック）"""
         yield {"type": "agent_starting", "message": "🚀 マルチエージェント分析を開始します...", "data": {}}
         await asyncio.sleep(0.3)
@@ -150,70 +205,59 @@ class StreamingChatUseCase:
         else:
             self.logger.info("📚 会話履歴なし（新規会話）")
 
-    async def _predict_and_route_specialist(self, agent_manager: AgentManager, message: str) -> AsyncGenerator[dict[str, Any], None]:
+    async def _predict_and_route_specialist(
+        self,
+        agent_manager: AgentManager,
+        message: str,
+        web_search_enabled: bool = False,
+    ) -> AsyncGenerator[dict[str, Any], None]:
         """専門家予測とルーティング（ビジネスロジック）"""
-        # 事前専門家判定とルーティング表示
-        if agent_manager.routing_strategy:
-            predicted_specialist, _ = agent_manager.routing_strategy.determine_agent(message)
+        # Web検索モード時は専用メッセージを表示
+        if web_search_enabled:
+            yield {
+                "type": "analyzing_request",
+                "message": "🔍 Web検索モードでご相談内容を分析しています...",
+                "data": {"status": "analyzing", "web_search_enabled": True},
+            }
+            await asyncio.sleep(0.8)
+
+            # 検索専門エージェントの情報を取得
+            search_specialist_result = self.agent_info_usecase.get_specialist_info("search_specialist")
+            search_specialist_info = search_specialist_result.get(
+                "data",
+                {
+                    "name": "検索のジーニー",
+                    "description": "最新の子育て情報を検索してお届け",
+                },
+            )
+
+            yield {
+                "type": "searching_specialist",
+                "message": "🌐 検索専門ジーニーに直接ルーティング中...",
+                "data": {
+                    "status": "searching",
+                    "web_search_enabled": True,
+                    "forced_agent": "search_specialist",
+                    "specialist_name": search_specialist_info["name"],
+                    "specialist_description": search_specialist_info["description"],
+                },
+            }
+            await asyncio.sleep(0.9)
         else:
-            predicted_specialist = "coordinator"
-
-        # 専門家情報取得
-        predicted_result = self.agent_info_usecase.get_specialist_info(predicted_specialist)
-        predicted_info = predicted_result.get("data", {})
-
-        # 分析・専門家検索の段階的演出
-        yield {
-            "type": "analyzing_request",
-            "message": "🤔 ご相談内容を分析しています...",
-            "data": {"status": "analyzing"},
-        }
-        await asyncio.sleep(0.8)
-
-        yield {
-            "type": "searching_specialist",
-            "message": "🔍 最適な専門ジーニーを検索中...",
-            "data": {"status": "searching"},
-        }
-        await asyncio.sleep(0.9)
-
-        # 専門家表示処理
-        if predicted_specialist != "coordinator":
+            # 通常モード：分析・専門家検索の段階的演出
             yield {
-                "type": "specialist_found",
-                "message": f"✨ {predicted_info.get('name', '専門ジーニー')}を発見しました！",
-                "data": {
-                    "predicted_specialist": predicted_specialist,
-                    "specialist_name": predicted_info.get("name", ""),
-                    "specialist_description": predicted_info.get("description", ""),
-                    "confidence": "high",
-                },
+                "type": "analyzing_request",
+                "message": "🤔 ご相談内容を分析しています...",
+                "data": {"status": "analyzing"},
             }
-            await asyncio.sleep(0.4)
+            await asyncio.sleep(0.8)
 
             yield {
-                "type": "specialist_connecting",
-                "message": f"🔄 {predicted_info.get('name', '専門ジーニー')}に接続中...",
-                "data": {
-                    "specialist_name": predicted_info.get("name", ""),
-                    "specialist_description": predicted_info.get("description", ""),
-                },
+                "type": "searching_specialist",
+                "message": "🔍 最適な専門ジーニーを検索中...",
+                "data": {"status": "searching"},
             }
-            await asyncio.sleep(0.3)
-        else:
-            # コーディネーター判定の場合
-            coordinator_result = self.agent_info_usecase.get_specialist_info("coordinator")
-            coordinator_info = coordinator_result.get("data", {})
-            yield {
-                "type": "agent_selecting",
-                "message": f"🎯 {coordinator_info.get('name', 'コーディネーター')}で総合的にサポートします",
-                "data": {
-                    "agent_type": "coordinator",
-                    "specialist_name": coordinator_info.get("name", ""),
-                    "specialist_description": coordinator_info.get("description", ""),
-                },
-            }
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(0.9)
 
     async def _execute_agent_core(
         self,
@@ -223,11 +267,31 @@ class StreamingChatUseCase:
         session_id: str,
         conversation_history: list[dict[str, Any]],
         family_info: dict[str, Any],
+        web_search_enabled: bool = False,
+        # 画像・マルチモーダル対応パラメータ追加
+        message_type: str = "text",
+        has_image: bool = False,
+        image_path: str = None,
+        multimodal_context: dict = None,
     ) -> tuple[str, dict[str, Any], list[dict[str, Any]]]:
         """エージェント実行コア処理（ビジネスロジック）"""
+        # ADKの通常ルーティング（メッセージ内容に基づく自動判定）を使用
+        # Web検索が必要な場合は、フロントエンドで検索指示をメッセージに埋め込み済み
+        agent_type = "auto"
+
         # ADKのSessionServiceが会話履歴を管理するため、session_idが重要
         result = await agent_manager.route_query_async_with_info(
-            message, user_id, session_id, "auto", conversation_history, family_info,
+            message,
+            user_id,
+            session_id,
+            agent_type,
+            conversation_history,
+            family_info,
+            # 画像・マルチモーダル対応パラメータを渡す
+            has_image,
+            message_type,
+            image_path,
+            multimodal_context,
         )
 
         response = result["response"]
@@ -236,53 +300,16 @@ class StreamingChatUseCase:
 
         return response, agent_info, routing_path
 
-    async def _display_routing_results(self, routing_path: list[dict[str, Any]], progress_state: dict[str, Any]) -> AsyncGenerator[dict[str, Any], None]:
+    async def _display_routing_results(
+        self,
+        routing_path: list[dict[str, Any]],
+        progress_state: dict[str, Any],
+    ) -> AsyncGenerator[dict[str, Any], None]:
         """ルーティング結果の詳細表示（ビジネスロジック）"""
-        if not routing_path:
-            return
-
-        for step in routing_path:
-            if step["step"] == "specialist_routing":
-                specialist_agent = step["agent"]
-
-                # 専門家情報取得
-                specialist_result = self.agent_info_usecase.get_specialist_info(specialist_agent)
-                actual_specialist_info = specialist_result.get("data", {})
-
-                # 重複防止チェック
-                calling_key = f"specialist_calling_{specialist_agent}"
-                ready_key = f"specialist_ready_{specialist_agent}"
-
-                if calling_key not in progress_state["specialist_messages_sent"]:
-                    progress_state["specialist_messages_sent"].add(calling_key)
-                    progress_state["specialist_executed"] = True
-                    progress_state["actual_specialist_info"] = actual_specialist_info
-
-                    yield {
-                        "type": "specialist_calling",
-                        "message": f"🧞‍♀️ {actual_specialist_info.get('name', '専門ジーニー')}を呼び出し中...",
-                        "data": {
-                            "specialist_agent": specialist_agent,
-                            "specialist_name": actual_specialist_info.get("name", ""),
-                            "specialist_description": actual_specialist_info.get("description", ""),
-                            "routing_step": step["step"],
-                        },
-                    }
-                    await asyncio.sleep(0.5)
-
-                    if ready_key not in progress_state["specialist_messages_sent"]:
-                        progress_state["specialist_messages_sent"].add(ready_key)
-                        yield {
-                            "type": "specialist_ready",
-                            "message": f"✨ {actual_specialist_info.get('name', '専門ジーニー')}が回答準備完了",
-                            "data": {
-                                "specialist_agent": specialist_agent,
-                                "specialist_name": actual_specialist_info.get("name", ""),
-                                "specialist_description": actual_specialist_info.get("description", ""),
-                                "tools": actual_specialist_info.get("tools", []),
-                            },
-                        }
-                        await asyncio.sleep(0.3)
+        # ルーティング後の詳細表示は無効化（最適な専門ジーニーを検索中で止める）
+        # 空のAsyncGeneratorを返すための実装
+        if False:  # pragma: no cover
+            yield
 
     async def _enhance_response_with_followup(self, message: str, response: str) -> str:
         """レスポンスにフォローアップ質問を追加（ビジネスロジック）"""
@@ -295,7 +322,11 @@ class StreamingChatUseCase:
 
         return response
 
-    async def _handle_search_agent_completion(self, agent_info: dict[str, Any], progress_state: dict[str, Any]) -> AsyncGenerator[dict[str, Any], None]:
+    async def _handle_search_agent_completion(
+        self,
+        agent_info: dict[str, Any],
+        progress_state: dict[str, Any],
+    ) -> AsyncGenerator[dict[str, Any], None]:
         """検索系エージェント完了処理（ビジネスロジック）"""
         current_agent = agent_info.get("agent_id", "coordinator")
         if current_agent in ["search_specialist", "outing_event_specialist"]:
@@ -339,6 +370,12 @@ class StreamingChatUseCase:
         session_id: str,
         conversation_history: list[dict[str, Any]],
         family_info: dict[str, Any],
+        web_search_enabled: bool = False,
+        # 画像・マルチモーダル対応パラメータ追加
+        message_type: str = "text",
+        has_image: bool = False,
+        image_path: str = None,
+        multimodal_context: dict = None,
     ) -> AsyncGenerator[str, None]:
         """進捗ストリーミング生成（ビジネスロジック統合版）
 
@@ -349,6 +386,11 @@ class StreamingChatUseCase:
             session_id: セッションID
             conversation_history: 会話履歴
             family_info: 家族情報
+            web_search_enabled: Web検索フラグ
+            message_type: メッセージタイプ ("text", "image", "voice", "multimodal")
+            has_image: 画像添付フラグ
+            image_path: 画像パス（Base64データまたはファイルパス）
+            multimodal_context: マルチモーダルコンテキスト情報
 
         Yields:
             str: ストリーミングデータ（JSON形式）
@@ -362,7 +404,18 @@ class StreamingChatUseCase:
             # 2. 進捗表示を含むAgent実行
             final_response = ""
             async for progress in self.execute_agent_with_progress(
-                agent_manager, message, user_id, session_id, conversation_history, family_info,
+                agent_manager,
+                message,
+                user_id,
+                session_id,
+                conversation_history,
+                family_info,
+                web_search_enabled,
+                # 画像・マルチモーダル対応パラメータを渡す
+                message_type,
+                has_image,
+                image_path,
+                multimodal_context,
             ):
                 yield f"data: {json.dumps(progress)}\n\n"
                 if progress["type"] == "final_response":

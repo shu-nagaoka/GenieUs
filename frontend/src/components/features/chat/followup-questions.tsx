@@ -14,15 +14,15 @@ interface FollowupQuestionsProps {
 export function FollowupQuestions({
   questions,
   onQuestionClick,
-  className = ""
+  className = '',
 }: FollowupQuestionsProps) {
   if (questions.length === 0) {
     return null
   }
 
   return (
-    <div className={`bg-gray-50/50 border border-gray-200/60 rounded-md p-2.5 ${className}`}>
-      <div className="flex items-center gap-1.5 mb-2">
+    <div className={`rounded-md border border-gray-200/60 bg-gray-50/50 p-2.5 ${className}`}>
+      <div className="mb-2 flex items-center gap-1.5">
         <IoSparkles className="h-2.5 w-2.5 text-gray-400" />
         <span className="text-xs text-gray-500">続けて相談する</span>
       </div>
@@ -32,10 +32,10 @@ export function FollowupQuestions({
             key={index}
             variant="ghost"
             size="sm"
-            className="h-auto py-2 px-3 text-sm bg-white/70 hover:bg-gray-100/80 border border-gray-200/80 hover:border-gray-300 text-gray-600 hover:text-gray-700 rounded text-left justify-start transition-all duration-150"
+            className="h-auto justify-start rounded border border-gray-200/80 bg-white/70 px-3 py-2 text-left text-sm text-gray-600 transition-all duration-150 hover:border-gray-300 hover:bg-gray-100/80 hover:text-gray-700"
             onClick={() => onQuestionClick(question)}
           >
-            <span className="text-sm leading-relaxed truncate">{question}</span>
+            <span className="truncate text-sm leading-relaxed">{question}</span>
           </Button>
         ))}
       </div>

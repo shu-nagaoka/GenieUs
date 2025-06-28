@@ -6,7 +6,12 @@
 
 import { useSession } from 'next-auth/react'
 import { useState, useEffect, useCallback } from 'react'
-import { loginToBackend, verifyBackendToken, getBackendUserProfile, BackendLoginResponse } from '@/libs/auth'
+import {
+  loginToBackend,
+  verifyBackendToken,
+  getBackendUserProfile,
+  BackendLoginResponse,
+} from '@/libs/auth'
 import { tokenManager } from '@/libs/api'
 
 /**
@@ -16,12 +21,12 @@ export interface AuthState {
   // NextAuth状態
   session: any
   sessionStatus: 'loading' | 'authenticated' | 'unauthenticated'
-  
+
   // バックエンド認証状態
   backendToken: string | null
   backendUser: any
   backendAuthenticated: boolean
-  
+
   // 統合状態
   fullyAuthenticated: boolean
   isLoading: boolean
@@ -35,11 +40,11 @@ export interface AuthActions {
   // ログイン関連
   loginToBackend: () => Promise<void>
   logout: () => void
-  
+
   // トークン管理
   refreshBackendToken: () => Promise<void>
   clearBackendAuth: () => void
-  
+
   // ユーザー情報
   refreshUserProfile: () => Promise<void>
 }
@@ -49,7 +54,7 @@ export interface AuthActions {
  */
 export function useAuth(): AuthState & AuthActions {
   const { data: session, status: sessionStatus } = useSession()
-  
+
   // バックエンド認証状態
   const [backendToken, setBackendToken] = useState<string | null>(null)
   const [backendUser, setBackendUser] = useState<any>(null)
@@ -62,19 +67,21 @@ export function useAuth(): AuthState & AuthActions {
     if (savedToken) {
       setBackendToken(savedToken)
       // トークン検証
-      verifyBackendToken(savedToken).then(({ valid, user }) => {
-        if (valid) {
-          setBackendUser(user)
-        } else {
+      verifyBackendToken(savedToken)
+        .then(({ valid, user }) => {
+          if (valid) {
+            setBackendUser(user)
+          } else {
+            tokenManager.clearToken()
+            setBackendToken(null)
+          }
+          setIsLoading(false)
+        })
+        .catch(() => {
           tokenManager.clearToken()
           setBackendToken(null)
-        }
-        setIsLoading(false)
-      }).catch(() => {
-        tokenManager.clearToken()
-        setBackendToken(null)
-        setIsLoading(false)
-      })
+          setIsLoading(false)
+        })
     } else {
       setIsLoading(false)
     }
@@ -101,12 +108,12 @@ export function useAuth(): AuthState & AuthActions {
 
     try {
       const result: BackendLoginResponse = await loginToBackend(session.user)
-      
+
       // トークンとユーザー情報を保存
       setBackendToken(result.access_token)
       setBackendUser(result.user)
       tokenManager.setToken(result.access_token)
-      
+
       console.log('バックエンド認証成功:', result.user.name)
     } catch (error) {
       console.error('Backend login failed:', error)
@@ -195,7 +202,7 @@ export function useAuth(): AuthState & AuthActions {
  */
 export function useRequireAuth(): AuthState & AuthActions {
   const auth = useAuth()
-  
+
   useEffect(() => {
     if (!auth.isLoading && !auth.fullyAuthenticated) {
       // 認証が必要だが未認証の場合の処理
@@ -209,12 +216,15 @@ export function useRequireAuth(): AuthState & AuthActions {
 /**
  * 認証状態のみを返すライトウェイトフック
  */
-export function useAuthStatus(): Pick<AuthState, 'fullyAuthenticated' | 'isLoading' | 'backendAuthenticated'> {
+export function useAuthStatus(): Pick<
+  AuthState,
+  'fullyAuthenticated' | 'isLoading' | 'backendAuthenticated'
+> {
   const { fullyAuthenticated, isLoading, backendAuthenticated } = useAuth()
-  
+
   return {
     fullyAuthenticated,
     isLoading,
-    backendAuthenticated
+    backendAuthenticated,
   }
 }

@@ -14,6 +14,7 @@ from src.presentation.api.dependencies import (
 
 # ========== Request/Response Models ==========
 
+
 class GoogleLoginRequest(BaseModel):
     """Google OAuth ログインリクエスト"""
 
@@ -74,6 +75,7 @@ router = APIRouter()
 
 
 # ========== 認証エンドポイント ==========
+
 
 @router.post("/login/google", response_model=LoginResponse)
 async def google_login(
@@ -148,10 +150,7 @@ async def update_profile(
     """ユーザープロフィール更新"""
     try:
         # リクエストデータを辞書に変換（Noneは除外）
-        profile_data = {
-            k: v for k, v in request.dict().items()
-            if v is not None
-        }
+        profile_data = {k: v for k, v in request.dict().items() if v is not None}
 
         result = await user_management_usecase.update_user_profile(
             current_user["user_id"],

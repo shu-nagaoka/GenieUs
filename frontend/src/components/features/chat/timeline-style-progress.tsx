@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { 
+import {
   IoSettings,
   IoSparkles,
   IoCheckmarkCircle,
@@ -15,7 +15,7 @@ import {
   IoTrendingUp,
   IoSearch,
   IoFlash,
-  IoEllipsisHorizontal
+  IoEllipsisHorizontal,
 } from 'react-icons/io5'
 import { GiMagicLamp } from 'react-icons/gi'
 
@@ -46,15 +46,15 @@ interface TimelineStyleProgressProps {
 
 export function TimelineStyleProgress({
   message,
-  userId = "frontend_user",
-  sessionId = "default-session",
+  userId = 'frontend_user',
+  sessionId = 'default-session',
   onComplete,
   onError,
-  className = ""
+  className = '',
 }: TimelineStyleProgressProps) {
   const [progressUpdates, setProgressUpdates] = useState<ProgressUpdate[]>([])
   const [isComplete, setIsComplete] = useState(false)
-  const [finalResponse, setFinalResponse] = useState<string>("")
+  const [finalResponse, setFinalResponse] = useState<string>('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [timelineSteps, setTimelineSteps] = useState<TimelineStep[]>([])
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
@@ -132,7 +132,7 @@ export function TimelineStyleProgress({
     setIsStreaming(true)
     setProgressUpdates([])
     setIsComplete(false)
-    setFinalResponse("")
+    setFinalResponse('')
     setTimelineSteps([])
     setCurrentStepIndex(0)
 
@@ -158,7 +158,7 @@ export function TimelineStyleProgress({
       const requestBody: any = {
         message: actualMessage,
         user_id: actualUserId,
-        session_id: actualSessionId
+        session_id: actualSessionId,
       }
 
       // 会話履歴があれば追加
@@ -172,7 +172,7 @@ export function TimelineStyleProgress({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       })
 
       if (!response.ok) {
@@ -188,7 +188,7 @@ export function TimelineStyleProgress({
 
       while (true) {
         const { done, value } = await reader.read()
-        
+
         if (done) break
 
         const chunk = decoder.decode(value)
@@ -201,7 +201,7 @@ export function TimelineStyleProgress({
               const update: ProgressUpdate = {
                 type: data.type,
                 message: data.message,
-                data: data.data || {}
+                data: data.data || {},
               }
 
               setProgressUpdates(prev => [...prev, update])
@@ -214,14 +214,14 @@ export function TimelineStyleProgress({
                 timestamp: Date.now(),
                 status: 'active',
                 icon: getStepIcon(data.type),
-                tools: data.data?.tools || undefined
+                tools: data.data?.tools || undefined,
               }
 
               setTimelineSteps(prev => {
                 // 前のステップを完了状態に
                 const updated = prev.map(step => ({
                   ...step,
-                  status: 'completed' as const
+                  status: 'completed' as const,
                 }))
                 return [...updated, newStep]
               })
@@ -237,17 +237,17 @@ export function TimelineStyleProgress({
               if (data.type === 'complete') {
                 setIsComplete(true)
                 setIsStreaming(false)
-                
+
                 // 最後のステップも完了状態に
-                setTimelineSteps(prev => 
+                setTimelineSteps(prev =>
                   prev.map(step => ({
                     ...step,
-                    status: 'completed' as const
+                    status: 'completed' as const,
                   }))
                 )
-                
+
                 if (onComplete) {
-                  onComplete(finalResponse || data.data?.response || "")
+                  onComplete(finalResponse || data.data?.response || '')
                 }
               }
 
@@ -264,7 +264,6 @@ export function TimelineStyleProgress({
           }
         }
       }
-
     } catch (error) {
       console.error('Streaming error:', error)
       setIsStreaming(false)
@@ -288,12 +287,12 @@ export function TimelineStyleProgress({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* タイムライン表示 */}
-      <Card className="bg-white/95 backdrop-blur-sm border border-gray-200 shadow-lg overflow-hidden">
+      <Card className="overflow-hidden border border-gray-200 bg-white/95 shadow-lg backdrop-blur-sm">
         <CardContent className="p-0">
           {/* ヘッダー */}
-          <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50 p-4">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600">
                 <GiMagicLamp className="h-4 w-4 text-white" />
               </div>
               <div>
@@ -303,9 +302,15 @@ export function TimelineStyleProgress({
               {isStreaming && (
                 <div className="ml-auto flex items-center gap-2">
                   <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                    <div className="h-2 w-2 animate-pulse rounded-full bg-blue-500"></div>
+                    <div
+                      className="h-2 w-2 animate-pulse rounded-full bg-blue-500"
+                      style={{ animationDelay: '0.2s' }}
+                    ></div>
+                    <div
+                      className="h-2 w-2 animate-pulse rounded-full bg-blue-500"
+                      style={{ animationDelay: '0.4s' }}
+                    ></div>
                   </div>
                   <span className="text-xs text-gray-500">処理中</span>
                 </div>
@@ -314,7 +319,7 @@ export function TimelineStyleProgress({
           </div>
 
           {/* タイムライン */}
-          <div className="p-4 max-h-80 overflow-y-auto">
+          <div className="max-h-80 overflow-y-auto p-4">
             <div className="space-y-4">
               {timelineSteps.map((step, index) => (
                 <div
@@ -325,40 +330,48 @@ export function TimelineStyleProgress({
                 >
                   {/* タイムラインライン */}
                   <div className="flex flex-col items-center">
-                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
-                      getStepColor(step.type, step.status)
-                    }`}>
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all duration-300 ${getStepColor(
+                        step.type,
+                        step.status
+                      )}`}
+                    >
                       {step.status === 'active' && step.type === 'tool_executing' ? (
-                        <div className="animate-spin">
-                          {step.icon}
-                        </div>
+                        <div className="animate-spin">{step.icon}</div>
                       ) : (
                         step.icon
                       )}
                     </div>
                     {index < timelineSteps.length - 1 && (
-                      <div className={`w-0.5 h-8 mt-2 transition-all duration-500 ${
-                        step.status === 'completed' ? 'bg-green-300' : 'bg-gray-200'
-                      }`} />
+                      <div
+                        className={`mt-2 h-8 w-0.5 transition-all duration-500 ${
+                          step.status === 'completed' ? 'bg-green-300' : 'bg-gray-200'
+                        }`}
+                      />
                     )}
                   </div>
 
                   {/* ステップ内容 */}
                   <div className="flex-1 pb-4">
-                    <div className={`font-medium text-sm transition-all duration-300 ${
-                      step.status === 'completed' ? 'text-gray-700' : 
-                      step.status === 'active' ? 'text-gray-900' : 'text-gray-500'
-                    }`}>
+                    <div
+                      className={`text-sm font-medium transition-all duration-300 ${
+                        step.status === 'completed'
+                          ? 'text-gray-700'
+                          : step.status === 'active'
+                            ? 'text-gray-900'
+                            : 'text-gray-500'
+                      }`}
+                    >
                       {step.message}
                     </div>
-                    
+
                     {/* ツール表示 */}
                     {step.tools && step.tools.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
+                      <div className="mt-2 flex flex-wrap gap-1">
                         {step.tools.map((tool, toolIndex) => (
                           <div
                             key={toolIndex}
-                            className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-xs text-gray-600"
+                            className="flex items-center gap-1 rounded bg-gray-100 px-2 py-1 text-xs text-gray-600"
                           >
                             {getToolIcon(tool)}
                             <span>{tool.replace('_', ' ')}</span>
@@ -366,12 +379,12 @@ export function TimelineStyleProgress({
                         ))}
                       </div>
                     )}
-                    
-                    <div className="text-xs text-gray-400 mt-1">
-                      {new Date(step.timestamp).toLocaleTimeString('ja-JP', { 
-                        hour: '2-digit', 
+
+                    <div className="mt-1 text-xs text-gray-400">
+                      {new Date(step.timestamp).toLocaleTimeString('ja-JP', {
+                        hour: '2-digit',
                         minute: '2-digit',
-                        second: '2-digit'
+                        second: '2-digit',
                       })}
                     </div>
                   </div>
@@ -384,15 +397,15 @@ export function TimelineStyleProgress({
 
       {/* 最終レスポンス表示 */}
       {finalResponse && isComplete && (
-        <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 shadow-lg">
+        <Card className="border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-6 w-6 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600">
                 <IoCheckmarkCircle className="h-3 w-3 text-white" />
               </div>
               <span className="text-sm font-medium text-green-700">回答完了</span>
             </div>
-            <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-line">
+            <div className="prose prose-sm max-w-none whitespace-pre-line text-gray-700">
               {finalResponse}
             </div>
           </CardContent>

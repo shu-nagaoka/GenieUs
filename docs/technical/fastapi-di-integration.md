@@ -1,50 +1,61 @@
-# FastAPI DI統合ガイド
+# FastAPI DI 統合ガイド
 
-GenieUsプロジェクトにおけるFastAPI DependsとComposition Root統合実装ガイド
+GenieUs プロジェクトにおける FastAPI Depends と Composition Root 統合実装ガイド
 
 ## 🎯 概要
 
-**⚠️ 重要**: GenieUsは現在**Composition Root**パターンを採用しています。dependency-injectorは廃止され、main.pyでの中央集約組み立てにより依存関係を管理します。
+**✅ 現在の実装**: GenieUs は**Composition Root + FastAPI Request 経由**パターンを採用しています。dependency-injector ライブラリは使用せず、Pure Composition Root パターンで依存関係を管理します。
 
 ## 🏗️ アーキテクチャ概要
 
-### 現行パターン（Composition Root）
+### 現行パターン（Composition Root + Request 経由）
+
 ```
 FastAPI Application
     ↓
 CompositionRootFactory.create()  ← main.pyで中央集約組み立て
     ↓
-@inject + Depends(Provide[])  ← エンドポイント依存関係注入
-    ↓ 
+app.composition_root = composition_root  ← FastAPIアプリに注入
+    ↓
+request.app.composition_root  ← エンドポイントでCompositionRoot取得
+    ↓
+Depends(get_xxx_usecase)  ← 依存関数でUseCase取得
+    ↓
 ビジネスロジック実行
 ```
 
-### 従来の問題点 vs 新パターン（Composition Root）
+### アーキテクチャの特徴
 
-| 項目 | 従来（グローバル変数） | 新パターン（Composition Root） |
-|------|-------------------|--------------------------|
-| **初期化** | `setup_routes(container, agent)` | `CompositionRootFactory.create()` |
-| **依存関係取得** | `_container.service()` | `composition_root.get_service()` |
-| **テスタビリティ** | グローバル状態で困難 | 明示的注入で容易 |
-| **型安全性** | 実行時エラーリスク | コンパイル時チェック |
-| **集約場所** | 各モジュールで分散 | main.pyで中央集約 |
+| 項目               | GenieUs 実装パターン                | 利点                   |
+| ------------------ | ----------------------------------- | ---------------------- |
+| **DI ライブラリ**  | Pure Composition Root               | 外部依存なし、軽量     |
+| **初期化場所**     | `main.py`で中央集約                 | 依存関係が明確         |
+| **依存関係取得**   | `request.app.composition_root`      | FastAPI ネイティブ統合 |
+| **テスタビリティ** | CompositionRoot モック化容易        | 高いテスト容易性       |
+| **型安全性**       | TypeScript 風型安全 ServiceRegistry | コンパイル時チェック   |
 
 ## 📝 実装手順
 
-### 1. Composition Root設計
+### 1. Composition Root 設計
 
 ```python
 # src/di_provider/composition_root.py
 import logging
+from typing import Any
+
 from google.adk.tools import FunctionTool
 from src.config.settings import AppSettings, get_settings
 from src.share.logger import setup_logger
+from src.share.service_registry import ServiceRegistry
 
 class CompositionRootFactory:
     """CompositionRoot作成ファクトリー - Pure依存性組み立て"""
 
     @staticmethod
-    def create(settings: AppSettings | None = None, logger: logging.Logger | None = None) -> "CompositionRoot":
+    def create(
+        settings: AppSettings | None = None,
+        logger: logging.Logger | None = None
+    ) -> "CompositionRoot":
         """CompositionRoot作成（本番・テスト統一）"""
         settings = settings or get_settings()
         logger = logger or setup_logger(name=settings.APP_NAME, env=settings.ENVIRONMENT)
@@ -58,7 +69,7 @@ class CompositionRoot:
         self.settings = settings
         self.logger = logger
 
-        # Service registries
+        # Service registries - 型安全な管理
         self._usecases = ServiceRegistry[Any]()
         self._tools = ServiceRegistry[FunctionTool]()
         self._infrastructure = ServiceRegistry[Any]()
@@ -67,325 +78,349 @@ class CompositionRoot:
         self._build_infrastructure_layer()
         self._build_application_layer()
         self._build_tool_layer()
+
+    def get_all_tools(self) -> dict[str, FunctionTool]:
+        """全ツールを取得"""
+        return self._tools.get_all()
 ```
 
-### 2. main.pyのComposition Root統合
+### 2. main.py での Composition Root 統合
 
 ```python
 # src/main.py
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.di_provider.composition_root import CompositionRootFactory
 
-# ⭐ Composition Root - アプリケーション状態管理
-composition_root = None
+from src.di_provider.composition_root import CompositionRootFactory
+from src.agents.agent_manager import AgentManager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """アプリケーションライフサイクル管理"""
-    global composition_root
-    
     try:
         # ⭐ 重要: Composition Root作成（中央集約組み立て）
         composition_root = CompositionRootFactory.create()
-        
+
+        # ⭐ 重要: FastAPIアプリケーションにCompositionRootを注入
+        app.composition_root = composition_root
+        app.logger = composition_root.logger
+
         # エージェント初期化
-        all_tools = composition_root.get_all_tools()
-        agent_manager = AgentManager(tools=all_tools, logger=composition_root.logger)
+        agent_manager = AgentManager(
+            tools=composition_root.get_all_tools(),
+            logger=composition_root.logger,
+            settings=composition_root.settings
+        )
         agent_manager.initialize_all_components()
-        
+
         composition_root.logger.info("✅ アプリケーション初期化完了")
         yield
-        
+
     except Exception as e:
-        if composition_root:
-            composition_root.logger.error(f"❌ アプリケーション初期化失敗: {e}")
+        print(f"❌ アプリケーション初期化失敗: {e}")
         raise
     finally:
-        if composition_root:
-            composition_root.logger.info("🔄 アプリケーション終了処理完了")
+        composition_root.logger.info("🛑 アプリケーション終了")
 
+# FastAPIアプリケーション作成
 app = FastAPI(
-    title="GenieUs API v2.0",
-    description="Google ADK powered 次世代子育て支援 API", 
-    version="2.0.0",
-    lifespan=lifespan,
+    title="GenieUs API",
+    lifespan=lifespan
 )
 
-# CORS設定
-app.add_middleware(CORSMiddleware, ...)
+# ルート登録
+from src.presentation.api.routes import (
+    auth, chat_support, family, growth_records, meal_plans,
+    memories, schedules, streaming_chat, effort_reports
+)
 
-# ルーター登録
-app.include_router(health_router, prefix="/api/v1", tags=["health"])
-app.include_router(chat_router, prefix="/api/v1", tags=["chat"])
-app.include_router(family_router, prefix="/api/v1", tags=["family"])
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(chat_support.router, prefix="/api/v1")
+app.include_router(family.router, prefix="/api/v1")
+# ... 他のルート追加
 ```
 
-### 3. API層のComposition Root統合
+### 3. FastAPI Dependencies 実装
 
 ```python
-# src/presentation/api/routes/chat.py
-from fastapi import APIRouter, HTTPException
-from src.presentation.api.dependencies import get_composition_root
-
-router = APIRouter()
-
-# ❌ 削除：グローバル変数
-# _container = None
-# _childcare_agent = None
-
-@router.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(
-    request: ChatRequest,
-    # ⭐ Composition Root経由で依存関係取得
-    composition_root = Depends(get_composition_root),
-):
-    """チャットエンドポイント（Composition Root統合版）"""
-    logger = composition_root.logger
-    
-    logger.info(
-        "チャット要求受信",
-        extra={
-            "user_id": request.user_id,
-            "session_id": request.session_id,
-            "message_length": len(request.message)
-        }
-    )
-    
-    try:
-        # エージェントマネージャー取得
-        agent_manager = composition_root.get_agent_manager()
-        
-        # チャット処理実行
-        response = await agent_manager.process_chat(
-            message=request.message,
-            user_id=request.user_id,
-            session_id=request.session_id
-        )
-        
-        logger.info("チャット処理完了", extra={"session_id": request.session_id})
-        
-        return ChatResponse(
-            response=response.text,
-            status="success",
-            session_id=request.session_id,
-            follow_up_questions=response.follow_up_questions
-        )
-            
-    except Exception as e:
-        logger.error(
-            "チャット処理エラー",
-            extra={
-                "error": str(e),
-                "session_id": request.session_id
-            }
-        )
-        raise HTTPException(
-            status_code=500,
-            detail="申し訳ございません。一時的な問題が発生しました。"
-        )
-
 # src/presentation/api/dependencies.py
-from fastapi import Depends
-from src.di_provider.composition_root import CompositionRoot
+import logging
+from typing import Any
 
-def get_composition_root() -> CompositionRoot:
-    """Composition Root取得（FastAPI Depends）"""
-    from src.main import composition_root
-    
-    if composition_root is None:
-        raise RuntimeError("Composition Root not initialized")
-    
-    return composition_root
+from fastapi import Depends, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from src.application.usecases.family_management_usecase import FamilyManagementUseCase
+from src.application.usecases.chat_support_usecase import ChatSupportUseCase
+# ... 他のUseCaseインポート
+
+# セキュリティ設定
+security = HTTPBearer()
+
+# ⭐ 重要: CompositionRoot経由でのDI注入パターン
+
+def get_family_management_usecase(request: Request) -> FamilyManagementUseCase:
+    """家族管理UseCaseを取得（CompositionRoot経由）"""
+    composition_root = request.app.composition_root
+    return composition_root._usecases.get_required("family_management")
+
+def get_chat_support_usecase(request: Request) -> ChatSupportUseCase:
+    """チャットサポートUseCaseを取得（CompositionRoot経由）"""
+    composition_root = request.app.composition_root
+    return composition_root._usecases.get_required("chat_support")
+
+def get_logger(request: Request) -> logging.Logger:
+    """ロガーを取得（DI注入パターン）"""
+    return request.app.composition_root.logger
+
+# 認証関連
+def get_user_id_optional(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> str | None:
+    """オプショナルユーザーID取得"""
+    if not credentials:
+        return None
+    # JWTトークン検証ロジック
+    return extract_user_id_from_token(credentials.credentials)
+
+def get_user_id_required(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> str:
+    """必須ユーザーID取得"""
+    user_id = get_user_id_optional(credentials)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="認証が必要です")
+    return user_id
 ```
 
-### 4. ツール層のComposition Root統合
+### 4. ルート実装での使用例
 
 ```python
-# src/tools/growth_record_tool.py
-from google.adk.tools import FunctionTool
-import logging
+# src/presentation/api/routes/family.py
+from fastapi import APIRouter, Depends, HTTPException
+from src.application.usecases.family_management_usecase import FamilyManagementUseCase
+from src.presentation.api.dependencies import (
+    get_family_management_usecase,
+    get_user_id_optional
+)
 
-class GrowthRecordTool:
-    """成長記録管理ツール（Composition Root統合版）"""
+router = APIRouter(tags=["family"])
 
-    def __init__(self, growth_record_usecase, logger: logging.Logger):
-        self.growth_record_usecase = growth_record_usecase
-        self.logger = logger  # ⭐ Composition Rootから注入されたロガー
+@router.post("/family/register")
+async def register_family_info(
+    request: FamilyRegistrationRequest,
+    # ⭐ 重要: Depends経由でのDI注入
+    user_id: str = Depends(get_user_id_optional),
+    family_usecase: FamilyManagementUseCase = Depends(get_family_management_usecase),
+) -> dict[str, Any]:
+    """家族情報を登録"""
+    try:
+        # ⭐ UseCaseはDI注入済み、直接使用可能
+        result = await family_usecase.register_family_info(
+            user_id=user_id,
+            family_data=request.dict()
+        )
+        return {"success": True, "data": result}
 
-    def create_growth_record(self, child_id: str, record_data: dict) -> dict:
-        """成長記録作成"""
-        try:
-            self.logger.info("成長記録作成開始", extra={"child_id": child_id})
-            
-            result = self.growth_record_usecase.create_record(
-                child_id=child_id,
-                record_data=record_data
-            )
-            
-            self.logger.info("成長記録作成完了", extra={"child_id": child_id})
-            return {"success": True, "record_id": result.id}
-            
-        except Exception as e:
-            self.logger.error(
-                "成長記録作成エラー",
-                extra={
-                    "error": str(e),
-                    "child_id": child_id
-                }
-            )
-            return {"success": False, "error": str(e)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="内部サーバーエラー")
 
-    def get_function_declarations(self) -> list:
-        """ADK FunctionTool用の関数定義取得"""
-        return [
-            {
-                "name": "create_growth_record",
-                "description": "子どもの成長記録を作成します",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "child_id": {"type": "string", "description": "子どもID"},
-                        "record_data": {"type": "object", "description": "記録データ"}
-                    },
-                    "required": ["child_id", "record_data"]
-                }
-            }
-        ]
+@router.get("/family/{family_id}")
+async def get_family_info(
+    family_id: str,
+    user_id: str = Depends(get_user_id_required),
+    family_usecase: FamilyManagementUseCase = Depends(get_family_management_usecase),
+) -> dict[str, Any]:
+    """家族情報を取得"""
+    try:
+        family_info = await family_usecase.get_family_info(
+            family_id=family_id,
+            requesting_user_id=user_id
+        )
+        return {"success": True, "data": family_info}
 
-# Composition Root統合（composition_root.py内）
-def _create_growth_record_tool(self, usecase) -> FunctionTool:
-    """成長記録管理ツール作成"""
-    growth_record_tool = GrowthRecordTool(
-        growth_record_usecase=usecase,
-        logger=self.logger  # ⭐ Composition Rootのロガー注入
-    )
-    
-    return FunctionTool(
-        function_declarations=growth_record_tool.get_function_declarations()
-    )
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="アクセス権限がありません")
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 ```
+
+## ⚡ DI 統合の重要原則
+
+### ✅ 推奨パターン
+
+1. **CompositionRoot 中央集約**
+
+   ```python
+   # main.pyで一元的に組み立て
+   composition_root = CompositionRootFactory.create()
+   app.composition_root = composition_root
+   ```
+
+2. **Request 経由の DI 注入**
+
+   ```python
+   def get_usecase(request: Request) -> SomeUseCase:
+       return request.app.composition_root._usecases.get_required("some_usecase")
+   ```
+
+3. **型安全な ServiceRegistry**
+
+   ```python
+   self._usecases = ServiceRegistry[Any]()  # 型安全な管理
+   ```
+
+4. **宣言的依存関係**
+   ```python
+   async def endpoint(
+       usecase: SomeUseCase = Depends(get_usecase),  # 宣言的
+   ):
+   ```
+
+### ❌ 避けるべきパターン
+
+1. **グローバル変数の使用**
+
+   ```python
+   # ❌ 避ける
+   _container = None  # グローバル状態
+   ```
+
+2. **setup_routes 関数**
+
+   ```python
+   # ❌ 非推奨パターン
+   def setup_routes(container, agent):
+   ```
+
+3. **個別ロガー初期化**
+
+   ```python
+   # ❌ 避ける
+   logger = setup_logger(__name__)  # 個別初期化
+   ```
+
+4. **dependency-injector ライブラリ**
+   ```python
+   # ❌ 使用しない
+   @inject
+   def endpoint(usecase = Depends(Provide[Container.usecase])):
+   ```
 
 ## 🧪 テスト統合
 
-### Composition Rootモック化
+### テスト用 CompositionRoot
 
 ```python
-# tests/test_chat_api.py
+# tests/conftest.py
 import pytest
 from unittest.mock import Mock
-from fastapi.testclient import TestClient
-from src.main import app
 from src.di_provider.composition_root import CompositionRoot
 
 @pytest.fixture
 def mock_composition_root():
-    """テスト用Composition Rootモック"""
+    """テスト用CompositionRoot"""
     mock_root = Mock(spec=CompositionRoot)
-    mock_root.logger = Mock()
-    mock_agent_manager = Mock()
-    mock_agent_manager.process_chat.return_value = Mock(
-        text="テスト応答",
-        follow_up_questions=["フォローアップ質問"]
-    )
-    mock_root.get_agent_manager.return_value = mock_agent_manager
+
+    # モックUseCase作成
+    mock_usecase = Mock()
+    mock_root._usecases.get_required.return_value = mock_usecase
+
     return mock_root
 
 @pytest.fixture
-def app_with_mock(mock_composition_root):
-    """モック化されたアプリケーション"""
-    # ⭐ テスト用にComposition Rootをオーバーライド
-    with patch("src.main.composition_root", mock_composition_root):
-        yield app
+def test_app(mock_composition_root):
+    """テスト用FastAPIアプリ"""
+    from src.main import app
 
-def test_chat_endpoint_success(app_with_mock, mock_composition_root):
-    with TestClient(app_with_mock) as client:
-        response = client.post("/api/v1/chat", json={
-            "message": "テストメッセージ",
-            "user_id": "test_user",
-            "session_id": "test_session"
-        })
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert data["response"] == "テスト応答"
-        assert data["status"] == "success"
-        
-        # モック呼び出し確認
-        mock_composition_root.get_agent_manager.assert_called_once()
+    # テスト用CompositionRootを注入
+    app.composition_root = mock_composition_root
+    app.logger = Mock()
+
+    return app
 ```
 
-## 🔧 マイグレーション手順
+### エンドポイントテスト
 
-### Phase 1: Composition Root構築
-1. `CompositionRootFactory.create()`実装
-2. Infrastructure/Application/Tool層の組み立てロジック実装
-3. 全依存関係の中央集約化
+```python
+# tests/test_family_routes.py
+import pytest
+from fastapi.testclient import TestClient
 
-### Phase 2: main.py統合
-1. lifespanでComposition Root初期化
-2. エージェント初期化処理統合
-3. グローバル変数elimination
+def test_register_family_info(test_app, mock_composition_root):
+    """家族情報登録APIテスト"""
+    client = TestClient(test_app)
 
-### Phase 3: API層更新
-1. `get_composition_root()` dependencies作成
-2. 各エンドポイントでComposition Root経由の依存関係取得
-3. グローバル変数（_container, _agent）削除
+    # モックUseCase設定
+    mock_usecase = mock_composition_root._usecases.get_required.return_value
+    mock_usecase.register_family_info.return_value = {"family_id": "test_id"}
 
-### Phase 4: ツール層統合
-1. ツールクラスにlogger注入
-2. Composition Root内でのツール作成メソッド実装
-3. FunctionTool統合
+    # APIテスト実行
+    response = client.post(
+        "/api/v1/family/register",
+        json={"name": "田中家", "children": []}
+    )
 
-### Phase 5: 検証
-1. 既存エンドポイント正常動作確認
-2. テストコードでComposition Rootモック化
-3. ログ出力統一確認
+    assert response.status_code == 200
+    assert response.json()["success"] is True
+    mock_usecase.register_family_info.assert_called_once()
+```
 
-## 🎯 メリット
+## 📊 パフォーマンス最適化
 
-### 1. 中央集約管理
-- main.pyでの一元的な依存関係組み立て
-- 設定変更時の影響範囲が明確
+### 1. ServiceRegistry 最適化
 
-### 2. テスタビリティ向上
-- Composition Rootモック化でテスト簡潔化
-- 依存関係が明示的でテストケース作成が容易
+```python
+# 型安全かつ高速なServiceRegistry
+class ServiceRegistry[T]:
+    def __init__(self) -> None:
+        self._services: dict[str, T] = {}
 
-### 3. 型安全性
-- 完全な型アノテーション対応
-- IDEでの自動補完とコンパイル時チェック
+    def register(self, name: str, service: T) -> None:
+        self._services[name] = service
 
-### 4. スケーラビリティ
-- 新機能追加時の一貫したパターン
-- レイヤー間責務の明確な分離
+    def get_required(self, name: str) -> T:
+        if name not in self._services:
+            raise KeyError(f"Service '{name}' not found")
+        return self._services[name]
+```
 
-### 5. 保守性
-- グローバル変数完全排除
-- 依存関係フローの可視化
+### 2. 遅延初期化
 
-## 📋 チェックリスト
+```python
+class CompositionRoot:
+    def get_usecase_lazy(self, name: str):
+        """遅延初期化でパフォーマンス向上"""
+        if not hasattr(self, f"_{name}_usecase"):
+            usecase = self._create_usecase(name)
+            setattr(self, f"_{name}_usecase", usecase)
+        return getattr(self, f"_{name}_usecase")
+```
 
-### 実装完了確認
-- [ ] CompositionRootFactory.create()実装完了
-- [ ] main.pyでのlifespan統合完了
-- [ ] get_composition_root() dependencies実装
-- [ ] API層でComposition Root経由の依存関係取得
-- [ ] グローバル変数（_container, _agent）完全削除
-- [ ] 全ツールクラスでlogger注入対応
+## 🎯 まとめ
 
-### 動作確認
-- [ ] 既存APIエンドポイント正常動作
-- [ ] ログ出力が統一フォーマットで記録
-- [ ] テストコードでComposition Rootモック化動作
-- [ ] IDEでの型チェックパス
-- [ ] エージェント初期化正常完了
+GenieUs の FastAPI DI 統合は、以下の特徴を持つ実用的なアーキテクチャです：
 
-### アーキテクチャ検証
-- [ ] dependency-injector完全削除
-- [ ] Pure Composition Pattern実装
-- [ ] レイヤー責務の明確な分離
-- [ ] 中央集約組み立ての実現
+### **核心価値**
 
-この統合により、GenieUsプロジェクトはComposition Rootパターンによる堅牢なDI管理を実現し、保守性・テスタビリティ・型安全性が大幅に向上します。
+1. **Pure Composition Root**: 外部ライブラリ依存なし
+2. **FastAPI ネイティブ統合**: Request 経由の自然な注入
+3. **型安全**: TypeScript 風 ServiceRegistry
+4. **テスト容易性**: CompositionRoot モック化
+5. **中央集約**: main.py での依存関係組み立て
+
+### **実装パターン**
+
+```
+CompositionRoot作成 → FastAPIアプリ注入 → Request経由取得 → Depends統合
+```
+
+この統合アーキテクチャにより、GenieUs は保守しやすく、テストしやすく、拡張しやすい DI 統合を実現しています。
+
+---
+
+**最終更新**: 2025-06-28  
+**対応バージョン**: Composition Root + FastAPI Request 経由統合

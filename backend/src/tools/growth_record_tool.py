@@ -14,7 +14,7 @@ from src.application.usecases.growth_record_usecase import GrowthRecordUseCase
 
 class GrowthRecordTool:
     """成長記録管理ツール
-    
+
     Genius Agentsが成長記録の作成、編集、削除、分析を行うためのツール
     """
 
@@ -44,7 +44,16 @@ class GrowthRecordTool:
                         "type": Schema(
                             type=Type.STRING,
                             description="成長記録のタイプ",
-                            enum=["body_growth", "language_growth", "skills", "social_skills", "hobbies", "life_skills", "milestone", "photo"],
+                            enum=[
+                                "body_growth",
+                                "language_growth",
+                                "skills",
+                                "social_skills",
+                                "hobbies",
+                                "life_skills",
+                                "milestone",
+                                "photo",
+                            ],
                         ),
                         "category": Schema(type=Type.STRING, description="詳細カテゴリ（任意）"),
                         "value": Schema(type=Type.STRING, description="測定値（身長・体重など、任意）"),
@@ -58,7 +67,6 @@ class GrowthRecordTool:
                     required=["user_id", "child_name", "title", "description", "type"],
                 ),
             ),
-
             # 成長記録一覧取得
             FunctionDeclaration(
                 name="get_growth_records",
@@ -71,7 +79,17 @@ class GrowthRecordTool:
                         "type": Schema(
                             type=Type.STRING,
                             description="記録タイプでフィルタ（任意）",
-                            enum=["all", "body_growth", "language_growth", "skills", "social_skills", "hobbies", "life_skills", "milestone", "photo"],
+                            enum=[
+                                "all",
+                                "body_growth",
+                                "language_growth",
+                                "skills",
+                                "social_skills",
+                                "hobbies",
+                                "life_skills",
+                                "milestone",
+                                "photo",
+                            ],
                         ),
                         "category": Schema(type=Type.STRING, description="カテゴリでフィルタ（任意）"),
                         "limit": Schema(type=Type.NUMBER, description="取得件数上限（デフォルト10件）"),
@@ -79,7 +97,6 @@ class GrowthRecordTool:
                     required=["user_id"],
                 ),
             ),
-
             # 特定の成長記録取得
             FunctionDeclaration(
                 name="get_growth_record",
@@ -93,7 +110,6 @@ class GrowthRecordTool:
                     required=["user_id", "record_id"],
                 ),
             ),
-
             # 成長記録更新
             FunctionDeclaration(
                 name="update_growth_record",
@@ -109,7 +125,16 @@ class GrowthRecordTool:
                         "type": Schema(
                             type=Type.STRING,
                             description="新しい記録タイプ（任意）",
-                            enum=["body_growth", "language_growth", "skills", "social_skills", "hobbies", "life_skills", "milestone", "photo"],
+                            enum=[
+                                "body_growth",
+                                "language_growth",
+                                "skills",
+                                "social_skills",
+                                "hobbies",
+                                "life_skills",
+                                "milestone",
+                                "photo",
+                            ],
                         ),
                         "category": Schema(type=Type.STRING, description="新しいカテゴリ（任意）"),
                         "value": Schema(type=Type.STRING, description="新しい測定値（任意）"),
@@ -118,7 +143,6 @@ class GrowthRecordTool:
                     required=["user_id", "record_id"],
                 ),
             ),
-
             # 成長記録削除
             FunctionDeclaration(
                 name="delete_growth_record",
@@ -132,7 +156,6 @@ class GrowthRecordTool:
                     required=["user_id", "record_id"],
                 ),
             ),
-
             # 成長分析
             FunctionDeclaration(
                 name="analyze_growth_progress",

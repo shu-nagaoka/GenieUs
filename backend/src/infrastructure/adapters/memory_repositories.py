@@ -14,6 +14,7 @@ from src.domain.entities import (
     ImageRecordingData,
     PredictionResult,
     PredictionType,
+    SearchHistoryEntry,
     VoiceRecordingData,
 )
 from src.domain.repositories import (
@@ -23,6 +24,7 @@ from src.domain.repositories import (
     FamilyContextRepository,
     ImageRecordingRepository,
     PredictionRepository,
+    SearchHistoryRepository,
     VoiceRecordingRepository,
 )
 
@@ -504,6 +506,99 @@ class MemoryFamilyContextRepository(FamilyContextRepository):
         return correlations
 
 
+class MemorySearchHistoryRepository(SearchHistoryRepository):
+    """検索履歴メモリリポジトリ"""
+
+    def __init__(self):
+        self._entries: dict[str, SearchHistoryEntry] = {}
+        self._user_index: dict[str, list[str]] = defaultdict(list)
+
+    async def save(self, entry: SearchHistoryEntry) -> SearchHistoryEntry:
+        """検索履歴保存"""
+        self._entries[entry.id] = entry
+
+        # インデックス更新
+        if entry.id not in self._user_index[entry.user_id]:
+            self._user_index[entry.user_id].append(entry.id)
+
+        return entry
+
+    async def find_by_user_id(
+        self,
+        user_id: str,
+        search_type: str | None = None,
+        start_date: datetime | None = None,
+        limit: int = 100,
+    ) -> list[SearchHistoryEntry]:
+        """ユーザーIDで検索履歴取得"""
+        entry_ids = self._user_index.get(user_id, [])
+        entries = []
+
+        for entry_id in entry_ids:
+            entry = self._entries.get(entry_id)
+            if not entry:
+                continue
+
+            # 条件フィルタリング
+            if search_type and entry.search_type != search_type:
+                continue
+            if start_date and entry.timestamp < start_date:
+                continue
+
+            entries.append(entry)
+
+        # 日付順ソート（新しい順）
+        entries.sort(key=lambda x: x.timestamp, reverse=True)
+        return entries[:limit]
+
+    async def get_popular_queries(
+        self,
+        start_date: datetime | None = None,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        """人気クエリ取得"""
+        query_counts: dict[str, int] = defaultdict(int)
+
+        for entry in self._entries.values():
+            # 期間フィルタリング
+            if start_date and entry.timestamp < start_date:
+                continue
+
+            query_counts[entry.query] += 1
+
+        # カウント順ソート
+        sorted_queries = sorted(query_counts.items(), key=lambda x: x[1], reverse=True)
+
+        return [{"query": query, "count": count} for query, count in sorted_queries[:limit]]
+
+    async def delete_by_id(self, history_id: str, user_id: str) -> int:
+        """特定履歴削除"""
+        entry = self._entries.get(history_id)
+        if not entry or entry.user_id != user_id:
+            return 0
+
+        # インデックスからも削除
+        if history_id in self._user_index[user_id]:
+            self._user_index[user_id].remove(history_id)
+
+        del self._entries[history_id]
+        return 1
+
+    async def delete_by_user_id(self, user_id: str) -> int:
+        """ユーザーの全履歴削除"""
+        entry_ids = self._user_index.get(user_id, [])
+        deleted_count = 0
+
+        for entry_id in entry_ids[:]:  # コピーを作って安全に削除
+            if entry_id in self._entries:
+                del self._entries[entry_id]
+                deleted_count += 1
+
+        # インデックスをクリア
+        self._user_index[user_id] = []
+        return deleted_count
+
+
 # リポジトリファクトリ（DI用）
 class MemoryRepositoryFactory:
     """メモリリポジトリファクトリ"""
@@ -517,6 +612,7 @@ class MemoryRepositoryFactory:
         self._voice_recording_repo = MemoryVoiceRecordingRepository()
         self._image_recording_repo = MemoryImageRecordingRepository()
         self._family_context_repo = MemoryFamilyContextRepository(self._child_record_repo)
+        self._search_history_repo = MemorySearchHistoryRepository()
 
     def get_child_record_repository(self) -> ChildRecordRepository:
         return self._child_record_repo
@@ -538,3 +634,6 @@ class MemoryRepositoryFactory:
 
     def get_family_context_repository(self) -> FamilyContextRepository:
         return self._family_context_repo
+
+    def get_search_history_repository(self) -> SearchHistoryRepository:
+        return self._search_history_repo

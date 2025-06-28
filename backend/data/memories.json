@@ -56,53 +56,5 @@
     "favorited": false,
     "created_at": "2025-06-24T13:28:23.523675",
     "updated_at": "2025-06-24T13:28:47.426320"
-  },
-  "fcacaf35-98c1-4fac-a091-e70fb9b67d77": {
-    "id": "fcacaf35-98c1-4fac-a091-e70fb9b67d77",
-    "user_id": "frontend_user",
-    "title": "モデル赤ちゃん",
-    "description": "ddd",
-    "date": "2025-06-24",
-    "type": "photo",
-    "category": "daily",
-    "media_url": "/api/v1/files/images/2b38b640-be11-465c-8dec-4c1c79fa869d.jpeg",
-    "thumbnail_url": "/api/v1/files/images/2b38b640-be11-465c-8dec-4c1c79fa869d.jpeg",
-    "location": "",
-    "tags": [],
-    "favorited": false,
-    "created_at": "2025-06-24T13:44:05.020484",
-    "updated_at": "2025-06-24T18:02:30.460845"
-  },
-  "8087d259-86c5-4f76-87fa-a5fab4c8ac5d": {
-    "id": "8087d259-86c5-4f76-87fa-a5fab4c8ac5d",
-    "user_id": "frontend_user",
-    "title": "string",
-    "description": "string",
-    "date": "string",
-    "type": "string",
-    "category": "string",
-    "media_url": "string",
-    "thumbnail_url": "string",
-    "location": "string",
-    "tags": [],
-    "favorited": false,
-    "created_at": "2025-06-26T23:27:05.649528",
-    "updated_at": "2025-06-26T23:27:05.650091"
-  },
-  "449e27bb-ad7d-4c4a-a631-5131c3d835d8": {
-    "id": "449e27bb-ad7d-4c4a-a631-5131c3d835d8",
-    "user_id": "frontend_user",
-    "title": "ddd",
-    "description": "dd",
-    "date": "2025-06-27",
-    "type": "photo",
-    "category": "daily",
-    "media_url": null,
-    "thumbnail_url": null,
-    "location": "",
-    "tags": [],
-    "favorited": false,
-    "created_at": "2025-06-27T10:01:09.375163",
-    "updated_at": "2025-06-27T10:01:09.375458"
   }
 }

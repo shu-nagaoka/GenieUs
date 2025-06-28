@@ -65,9 +65,9 @@ export async function getScheduleEvents(params?: {
     const searchParams = new URLSearchParams()
     if (params?.user_id) searchParams.append('user_id', params.user_id)
     if (params?.status) searchParams.append('status', params.status)
-    
+
     const url = `${API_BASE_URL}/api/schedules/list${searchParams.toString() ? `?${searchParams.toString()}` : ''}`
-    
+
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -85,7 +85,7 @@ export async function getScheduleEvents(params?: {
     console.error('スケジュールイベント取得エラー:', error)
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'スケジュールイベントの取得に失敗しました'
+      message: error instanceof Error ? error.message : 'スケジュールイベントの取得に失敗しました',
     }
   }
 }
@@ -94,16 +94,19 @@ export async function getScheduleEvents(params?: {
  * 特定のスケジュールイベントを取得
  */
 export async function getScheduleEvent(
-  eventId: string, 
+  eventId: string,
   userId: string = 'frontend_user'
 ): Promise<ApiResponse<ScheduleEvent>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/schedules/detail/${eventId}?user_id=${userId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    const response = await fetch(
+      `${API_BASE_URL}/api/schedules/detail/${eventId}?user_id=${userId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
@@ -115,7 +118,7 @@ export async function getScheduleEvent(
     console.error('スケジュールイベント詳細取得エラー:', error)
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'スケジュールイベントの取得に失敗しました'
+      message: error instanceof Error ? error.message : 'スケジュールイベントの取得に失敗しました',
     }
   }
 }
@@ -134,7 +137,7 @@ export async function createScheduleEvent(
       },
       body: JSON.stringify({
         ...eventData,
-        user_id: eventData.user_id || 'frontend_user'
+        user_id: eventData.user_id || 'frontend_user',
       }),
     })
 
@@ -148,7 +151,7 @@ export async function createScheduleEvent(
     console.error('スケジュールイベント作成エラー:', error)
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'スケジュールイベントの作成に失敗しました'
+      message: error instanceof Error ? error.message : 'スケジュールイベントの作成に失敗しました',
     }
   }
 }
@@ -168,7 +171,7 @@ export async function updateScheduleEvent(
       },
       body: JSON.stringify({
         ...eventData,
-        user_id: eventData.user_id || 'frontend_user'
+        user_id: eventData.user_id || 'frontend_user',
       }),
     })
 
@@ -182,7 +185,7 @@ export async function updateScheduleEvent(
     console.error('スケジュールイベント更新エラー:', error)
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'スケジュールイベントの更新に失敗しました'
+      message: error instanceof Error ? error.message : 'スケジュールイベントの更新に失敗しました',
     }
   }
 }
@@ -195,12 +198,15 @@ export async function deleteScheduleEvent(
   userId: string = 'frontend_user'
 ): Promise<ApiResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/schedules/delete/${eventId}?user_id=${userId}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
+    const response = await fetch(
+      `${API_BASE_URL}/api/schedules/delete/${eventId}?user_id=${userId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
@@ -212,7 +218,7 @@ export async function deleteScheduleEvent(
     console.error('スケジュールイベント削除エラー:', error)
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'スケジュールイベントの削除に失敗しました'
+      message: error instanceof Error ? error.message : 'スケジュールイベントの削除に失敗しました',
     }
   }
 }
@@ -226,13 +232,16 @@ export async function updateScheduleEventStatus(
   userId: string = 'frontend_user'
 ): Promise<ApiResponse<ScheduleEvent>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/schedules/status/${eventId}?user_id=${userId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ status }),
-    })
+    const response = await fetch(
+      `${API_BASE_URL}/api/schedules/status/${eventId}?user_id=${userId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      }
+    )
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
@@ -244,7 +253,7 @@ export async function updateScheduleEventStatus(
     console.error('スケジュールイベントステータス更新エラー:', error)
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'ステータスの更新に失敗しました'
+      message: error instanceof Error ? error.message : 'ステータスの更新に失敗しました',
     }
   }
 }

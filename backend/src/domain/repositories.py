@@ -14,6 +14,7 @@ from src.domain.entities import (
     ImageRecordingData,
     PredictionResult,
     PredictionType,
+    SearchHistoryEntry,
     VoiceRecordingData,
 )
 
@@ -325,4 +326,43 @@ class EffortAnalyticsRepository(ABC):
         comparison_period_days: int = 7,
     ) -> dict[str, Any]:
         """期間比較分析"""
+        pass
+
+
+class SearchHistoryRepository(ABC):
+    """検索履歴リポジトリインターフェース"""
+
+    @abstractmethod
+    async def save(self, entry: SearchHistoryEntry) -> SearchHistoryEntry:
+        """検索履歴保存"""
+        pass
+
+    @abstractmethod
+    async def find_by_user_id(
+        self,
+        user_id: str,
+        search_type: str | None = None,
+        start_date: datetime | None = None,
+        limit: int = 100,
+    ) -> list[SearchHistoryEntry]:
+        """ユーザーIDで検索履歴取得"""
+        pass
+
+    @abstractmethod
+    async def get_popular_queries(
+        self,
+        start_date: datetime | None = None,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        """人気クエリ取得"""
+        pass
+
+    @abstractmethod
+    async def delete_by_id(self, history_id: str, user_id: str) -> int:
+        """特定履歴削除"""
+        pass
+
+    @abstractmethod
+    async def delete_by_user_id(self, user_id: str) -> int:
+        """ユーザーの全履歴削除"""
         pass

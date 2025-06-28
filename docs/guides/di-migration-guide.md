@@ -1,452 +1,431 @@
-# DI 統合マイグレーションガイド
+# DI統合マイグレーションガイド
 
-GenieUs プロジェクトの既存コードをロガー DI 化 + FastAPI Depends 統合に移行するための実践ガイド
+GenieUsプロジェクトの既存コードをComposition Root + FastAPI Depends統合に移行するための実践ガイド
 
 ## 🎯 マイグレーション概要
 
 ### 移行前の問題
 
 - **混在するロガー初期化**: 各ファイルで`setup_logger(__name__)`を個別呼び出し
-- **グローバル変数依存**: `_container`、`_childcare_agent`による API 設計
+- **グローバル変数依存**: `_container`、`_childcare_agent`によるAPI設計
 - **テスト困難**: グローバル状態とハードコーディングされた依存関係
 
-### 移行後の改善
+### 移行後の改善（現在の実装）
 
-- **統一ロガー管理**: DI コンテナからの一元的な注入
-- **FastAPI Depends 統合**: `@inject` + `Depends(Provide[])`による宣言的 DI
-- **テスタビリティ向上**: `container.override()`による簡単なモック注入
+- **統一ロガー管理**: CompositionRootからの一元的な注入
+- **FastAPI Depends統合**: `request.app.composition_root`による宣言的DI
+- **テスタビリティ向上**: CompositionRootモック化による簡単なテスト
 
 ## 📋 マイグレーション手順
 
-### Phase 1: DI コンテナ準備
+### Phase 1: Composition Root準備
 
-#### 1.1 container.py の更新
-
-```python
-# src/di_provider/container.py
-class DIContainer(containers.DeclarativeContainer):
-    # 既存の設定...
-
-    # ⭐ 追加: ロガー統一管理
-    logger: providers.Provider[logging.Logger] = providers.Singleton(
-        setup_logger,
-        name=config.provided.APP_NAME,
-        env=config.provided.ENVIRONMENT,
-    )
-
-    # ⭐ 更新: ツールにロガー注入
-    childcare_consultation_tool: providers.Provider[FunctionTool] = providers.Factory(
-        create_childcare_consultation_tool,
-        usecase=pure_childcare_usecase,
-        logger=logger,  # 追加
-    )
-```
-
-#### 1.2 ツール層の更新
+#### 1.1 CompositionRootの設計
 
 ```python
-# src/tools/childcare_consultation_tool.py
+# src/di_provider/composition_root.py
+import logging
+from typing import Any
 
-# ❌ 削除: 個別ロガー初期化
-# logger = logging.getLogger(__name__)
+from google.adk.tools import FunctionTool
+from src.config.settings import AppSettings, get_settings
+from src.share.logger import setup_logger
+from src.share.service_registry import ServiceRegistry
 
-# ✅ 更新: ロガー注入版
-def create_childcare_consultation_tool(
-    usecase: PureChildcareUseCase,
-    logger: logging.Logger  # 追加
-) -> FunctionTool:
-    """子育て相談FunctionToolを作成（ロガー注入版）"""
+class CompositionRootFactory:
+    """CompositionRoot作成ファクトリー"""
 
-    def childcare_consultation_function(...) -> dict[str, Any]:
-        try:
-            logger.info("相談処理開始", extra={"session_id": session_id})
-            # 既存処理...
-            logger.info("相談処理完了", extra={"session_id": session_id})
-            return response
-        except Exception as e:
-            # ❌ 削除: 局所ロガー生成
-            # logger = logging.getLogger(__name__)
+    @staticmethod
+    def create(
+        settings: AppSettings | None = None,
+        logger: logging.Logger | None = None
+    ) -> "CompositionRoot":
+        """CompositionRoot作成（本番・テスト統一）"""
+        settings = settings or get_settings()
+        logger = logger or setup_logger(name=settings.APP_NAME, env=settings.ENVIRONMENT)
+        return CompositionRoot(settings=settings, logger=logger)
 
-            # ✅ 使用: 注入されたロガー
-            logger.error(
-                "子育て相談ツールでエラー",
-                extra={
-                    "error": str(e),
-                    "session_id": session_id,
-                    "user_id": user_id
-                }
-            )
-            return fallback_response
+class CompositionRoot:
+    """アプリケーション全体の依存関係組み立て"""
 
-    return FunctionTool(func=childcare_consultation_function)
-```
+    def __init__(self, settings: AppSettings, logger: logging.Logger) -> None:
+        # Core components
+        self.settings = settings
+        self.logger = logger
 
-#### 1.3 エージェント層の更新
+        # Service registries
+        self._usecases = ServiceRegistry[Any]()
+        self._tools = ServiceRegistry[FunctionTool]()
+        self._infrastructure = ServiceRegistry[Any]()
 
-```python
-# src/agents/di_based_childcare_agent.py
+        # Build dependency tree
+        self._build_infrastructure_layer()
+        self._build_application_layer()
+        self._build_tool_layer()
 
-# ❌ 削除: 個別ロガー初期化
-# logger = setup_logger(__name__)
-
-# ✅ 更新: ロガー注入版
-def create_childcare_agent(
-    childcare_tool: FunctionTool,
-    logger: logging.Logger  # 追加
-) -> Agent:
-    """注入されたツールとロガーを使用する子育て相談エージェント"""
-    logger.info("子育て相談エージェント作成開始")
-
-    try:
-        agent = Agent(
-            model="gemini-2.5-flash-preview-05-20",
-            name="GenieChildcareConsultant",
-            # 既存設定...
+    def _build_infrastructure_layer(self) -> None:
+        """インフラストラクチャ層組み立て"""
+        # データベース接続
+        from src.infrastructure.database.sqlite_manager import SQLiteManager
+        db_manager = SQLiteManager(
+            db_path=self.settings.DATABASE_PATH,
+            logger=self.logger
         )
-        logger.info("子育て相談エージェント作成完了")
-        return agent
+        self._infrastructure.register("db_manager", db_manager)
+
+        # リポジトリ層
+        from src.infrastructure.adapters.persistence.user_repository import UserRepository
+        user_repo = UserRepository(
+            db_manager=db_manager,
+            logger=self.logger
+        )
+        self._infrastructure.register("user_repository", user_repo)
+
+    def _build_application_layer(self) -> None:
+        """アプリケーション層組み立て"""
+        # UseCase層
+        from src.application.usecases.user_management_usecase import UserManagementUseCase
+        user_usecase = UserManagementUseCase(
+            user_repository=self._infrastructure.get_required("user_repository"),
+            logger=self.logger
+        )
+        self._usecases.register("user_management", user_usecase)
+
+    def _build_tool_layer(self) -> None:
+        """ツール層組み立て"""
+        # FunctionTool層
+        from src.tools.search_history_tool import SearchHistoryTool
+        search_tool = SearchHistoryTool(
+            search_usecase=self._usecases.get_required("search_history"),
+            logger=self.logger
+        )
+        self._tools.register("search_history", search_tool)
+```
+
+#### 1.2 ServiceRegistry実装
+
+```python
+# src/share/service_registry.py
+from typing import TypeVar, Generic, Dict
+
+T = TypeVar('T')
+
+class ServiceRegistry(Generic[T]):
+    """型安全なサービスレジストリ"""
+
+    def __init__(self) -> None:
+        self._services: Dict[str, T] = {}
+
+    def register(self, name: str, service: T) -> None:
+        """サービス登録"""
+        self._services[name] = service
+
+    def get_required(self, name: str) -> T:
+        """必須サービス取得"""
+        if name not in self._services:
+            raise KeyError(f"Service '{name}' not found")
+        return self._services[name]
+
+    def get_optional(self, name: str) -> T | None:
+        """オプショナルサービス取得"""
+        return self._services.get(name)
+
+    def get_all(self) -> Dict[str, T]:
+        """全サービス取得"""
+        return self._services.copy()
+```
+
+### Phase 2: main.py統合
+
+#### 2.1 FastAPIアプリケーション統合
+
+```python
+# src/main.py
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+
+from src.di_provider.composition_root import CompositionRootFactory
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """アプリケーションライフサイクル管理"""
+    try:
+        # ⭐ 重要: Composition Root作成
+        composition_root = CompositionRootFactory.create()
+        
+        # ⭐ 重要: FastAPIアプリに注入
+        app.composition_root = composition_root
+        app.logger = composition_root.logger
+        
+        composition_root.logger.info("✅ アプリケーション初期化完了")
+        yield
+        
     except Exception as e:
-        logger.error(f"子育て相談エージェント作成エラー: {e}")
+        print(f"❌ 初期化失敗: {e}")
         raise
+    finally:
+        app.logger.info("🛑 アプリケーション終了")
 
-# 他のヘルパー関数も同様に更新
-def get_childcare_agent(
-    agent_type: str,
-    childcare_tool: FunctionTool,
-    logger: logging.Logger  # 追加
-) -> Agent:
-    if agent_type == "advanced":
-        return create_childcare_agent(childcare_tool, logger)
-    elif agent_type == "simple":
-        return create_simple_childcare_agent(childcare_tool, logger)
-    else:
-        logger.warning(f"未対応のエージェントタイプ: {agent_type}, simpleを使用")
-        return create_simple_childcare_agent(childcare_tool, logger)
+# FastAPIアプリケーション作成
+app = FastAPI(
+    title="GenieUs API",
+    lifespan=lifespan
+)
 ```
 
-### Phase 2: main.py アプリケーションファクトリー化
+### Phase 3: Dependencies実装
 
-#### 2.1 現在の main.py パターン
+#### 3.1 依存関数の作成
 
 ```python
-# ❌ 現在の実装（削除対象）
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    logger.info("FastAPI application starting...")
-    container = get_container()
-    childcare_tool = container.childcare_consultation_tool()
-    childcare_agent = get_childcare_agent("simple", childcare_tool)
-    setup_routes(container, childcare_agent)  # グローバル変数設定
-    yield
-    logger.info("FastAPI application shutting down...")
+# src/presentation/api/dependencies.py
+import logging
+from fastapi import Request
+from src.application.usecases.user_management_usecase import UserManagementUseCase
 
-app = FastAPI(lifespan=lifespan)
-logger = setup_logger(__name__)  # 個別初期化
+def get_user_management_usecase(request: Request) -> UserManagementUseCase:
+    """ユーザー管理UseCaseを取得"""
+    composition_root = request.app.composition_root
+    return composition_root._usecases.get_required("user_management")
+
+def get_logger(request: Request) -> logging.Logger:
+    """ロガーを取得"""
+    return request.app.composition_root.logger
 ```
 
-#### 2.2 新しいファクトリーパターン
+### Phase 4: 既存コードのマイグレーション
+
+#### 4.1 ロガー初期化削除
 
 ```python
-# ✅ 新しい実装
-from dependency_injector.wiring import inject, Provide
+# ❌ 移行前
+import logging
+from src.share.logger import setup_logger
 
-def create_app() -> FastAPI:
-    """FastAPIアプリケーションファクトリー"""
-    container = DIContainer()
-
-    app = FastAPI(
-        title="GenieUs API v2.0",
-        description="Google ADK powered 次世代子育て支援 API",
-        version="2.0.0",
-        lifespan=lifespan,
-    )
-
-    # アプリケーションにコンテナを関連付け
-    app.container = container
-
-    # ⭐ 重要: wiringでFastAPI Dependsと統合
-    container.wire(modules=[
-        "src.presentation.api.routes.chat",
-        "src.presentation.api.routes.health",
-    ])
-
-    # 設定...
-    app.add_middleware(CORSMiddleware, ...)
-    app.include_router(health_router, prefix="/api/v1")
-    app.include_router(chat_router, prefix="/api/v1")
-
-    return app
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """アプリケーションライフサイクル管理（DI統合版）"""
-    # 起動時処理
-    # ログも含めてすべてDIから取得可能
-    yield
-    # 終了時処理
-
-# アプリケーション作成
-app = create_app()
-
-# ❌ 削除: 個別ロガー初期化
-# logger = setup_logger(__name__)
-```
-
-### Phase 3: API 層の Depends 化
-
-#### 3.1 現在の chat.py パターン
-
-```python
-# ❌ 現在の実装（削除対象）
 logger = setup_logger(__name__)  # 個別初期化
 
-# グローバル変数
+class SomeUseCase:
+    def __init__(self):
+        self.logger = logger  # グローバルロガー使用
+
+# ✅ 移行後
+import logging
+
+class SomeUseCase:
+    def __init__(self, logger: logging.Logger):  # DI注入
+        self.logger = logger
+```
+
+#### 4.2 グローバル変数の削除
+
+```python
+# ❌ 移行前
 _container = None
 _childcare_agent = None
 
-def setup_routes(container, childcare_agent):
-    """グローバル変数設定（非推奨パターン）"""
+def setup_routes(container, agent):
     global _container, _childcare_agent
     _container = container
-    _childcare_agent = childcare_agent
+    _childcare_agent = agent
 
-@router.post("/chat")
-async def chat_endpoint(request: ChatRequest):
-    logger.info("チャット要求受信")
-    # グローバル変数に依存
-    tool = _container.childcare_consultation_tool()
-    # 処理...
-```
+@router.post("/api/childcare/chat")
+async def childcare_chat(request: ChildcareChatRequest):
+    tool = _container.childcare_consultation_tool()  # グローバル変数使用
 
-#### 3.2 新しい Depends パターン
-
-```python
-# ✅ 新しい実装
-from dependency_injector.wiring import inject, Provide
+# ✅ 移行後
 from fastapi import Depends
+from src.presentation.api.dependencies import get_childcare_tool
 
-router = APIRouter()
-
-# ❌ 削除: グローバル変数
-# _container = None
-# _childcare_agent = None
-# logger = setup_logger(__name__)
-
-# ❌ 削除: setup_routes関数
-# def setup_routes(container, childcare_agent): ...
-
-@router.post("/chat", response_model=ChatResponse)
-@inject  # DI注入を有効化
-async def chat_endpoint(
-    request: ChatRequest,
-    # FastAPI Depends + DI統合
-    tool = Depends(Provide[DIContainer.childcare_consultation_tool]),
-    logger = Depends(Provide[DIContainer.logger]),
+@router.post("/api/childcare/chat")
+async def childcare_chat(
+    request: ChildcareChatRequest,
+    tool: ChildcareConsultationTool = Depends(get_childcare_tool),  # DI注入
 ):
-    """チャットエンドポイント（DI完全統合版）"""
-    logger.info(
-        "チャット要求受信",
-        extra={
-            "user_id": request.user_id,
-            "session_id": request.session_id,
-            "message_length": len(request.message)
-        }
-    )
-
-    try:
-        # ツール使用（DIから注入済み）
-        tool_result = tool.func(
-            message=request.message,
-            user_id=request.user_id,
-            session_id=request.session_id
-        )
-
-        if tool_result.get("success"):
-            response_text = remove_follow_up_section(tool_result["response"])
-            logger.info("チャット処理完了", extra={"session_id": request.session_id})
-
-            return ChatResponse(
-                response=response_text,
-                status="success",
-                session_id=request.session_id,
-                follow_up_questions=extract_follow_up_questions(tool_result["response"])
-            )
-        else:
-            raise HTTPException(status_code=500, detail="ツール実行エラー")
-
-    except Exception as e:
-        logger.error(
-            "チャット処理エラー",
-            extra={
-                "error": str(e),
-                "session_id": request.session_id
-            }
-        )
-        raise HTTPException(
-            status_code=500,
-            detail="申し訳ございません。一時的な問題が発生しました。"
-        )
+    result = await tool.execute(request.message)
 ```
 
-### Phase 4: テスト更新
-
-#### 4.1 新しいテストパターン
+#### 4.3 ルート関数の更新
 
 ```python
-# tests/test_chat_api.py
+# ❌ 移行前
+@router.post("/api/users")
+async def create_user(request: CreateUserRequest):
+    usecase = _container.user_management_usecase()  # グローバル変数
+    result = await usecase.create_user(request.user_data)
+
+# ✅ 移行後
+@router.post("/api/users")
+async def create_user(
+    request: CreateUserRequest,
+    usecase: UserManagementUseCase = Depends(get_user_management_usecase),  # DI注入
+    logger: logging.Logger = Depends(get_logger),  # ロガーDI注入
+):
+    logger.info(f"ユーザー作成開始: {request.user_data.get('email')}")
+    result = await usecase.create_user(request.user_data)
+    logger.info(f"ユーザー作成完了: {result.user_id}")
+```
+
+### Phase 5: テストコードの更新
+
+#### 5.1 テスト用CompositionRoot
+
+```python
+# tests/conftest.py
 import pytest
 from unittest.mock import Mock
-from fastapi.testclient import TestClient
-from src.main import create_app
+from src.di_provider.composition_root import CompositionRoot
 
 @pytest.fixture
-def app_with_mock():
-    """DIコンテナをモックで上書きしたアプリケーション"""
-    app = create_app()
-
-    # モックツール作成
-    mock_tool = Mock()
-    mock_tool.func.return_value = {
-        "success": True,
-        "response": "テスト応答",
-        "metadata": {"test": True}
-    }
-
-    # モックロガー作成
+def mock_composition_root():
+    """テスト用CompositionRoot"""
+    mock_root = Mock(spec=CompositionRoot)
+    
+    # モックサービス設定
+    mock_usecase = Mock()
+    mock_root._usecases.get_required.return_value = mock_usecase
+    
     mock_logger = Mock()
+    mock_root.logger = mock_logger
+    
+    return mock_root
 
-    # ⭐ DIコンテナをオーバーライド
-    with app.container.childcare_consultation_tool.override(mock_tool):
-        with app.container.logger.override(mock_logger):
-            yield app, mock_tool, mock_logger
-
-def test_chat_endpoint_success(app_with_mock):
-    """チャットエンドポイント正常系テスト"""
-    app, mock_tool, mock_logger = app_with_mock
-
-    with TestClient(app) as client:
-        response = client.post("/api/v1/chat", json={
-            "message": "テストメッセージ",
-            "user_id": "test_user",
-            "session_id": "test_session"
-        })
-
-        assert response.status_code == 200
-        data = response.json()
-        assert data["response"] == "テスト応答"
-        assert data["status"] == "success"
-
-        # モック呼び出し確認
-        mock_tool.func.assert_called_once()
-        mock_logger.info.assert_called()
+@pytest.fixture
+def test_app(mock_composition_root):
+    """テスト用FastAPIアプリ"""
+    from src.main import app
+    
+    # テスト用CompositionRootを注入
+    app.composition_root = mock_composition_root
+    app.logger = mock_composition_root.logger
+    
+    return app
 ```
 
-## 🔧 マイグレーション実行
+#### 5.2 エンドポイントテスト
 
-### ステップ 1: バックアップ
+```python
+# tests/test_user_routes.py
+import pytest
+from fastapi.testclient import TestClient
 
-```bash
-# 現在の実装をバックアップ
-cp -r backend/src backend/src.backup.$(date +%Y%m%d)
+def test_create_user(test_app, mock_composition_root):
+    """ユーザー作成APIテスト"""
+    client = TestClient(test_app)
+    
+    # モックUseCase設定
+    mock_usecase = mock_composition_root._usecases.get_required.return_value
+    mock_usecase.create_user.return_value = {"user_id": "test_id"}
+    
+    # APIテスト実行
+    response = client.post(
+        "/api/users",
+        json={"email": "test@example.com", "name": "Test User"}
+    )
+    
+    assert response.status_code == 200
+    assert response.json()["user_id"] == "test_id"
+    mock_usecase.create_user.assert_called_once()
 ```
 
-### ステップ 2: Phase 順実行
+## 📋 マイグレーションチェックリスト
 
-```bash
-# Phase 1: DIコンテナ準備
-# 1. container.pyの更新
-# 2. ツール・エージェント層のロガー注入対応
+### ✅ Phase 1: 基盤準備
+- [ ] CompositionRootFactory実装
+- [ ] CompositionRoot実装  
+- [ ] ServiceRegistry実装
+- [ ] 依存関係組み立てロジック実装
 
-# Phase 2: main.pyファクトリー化
-# 3. create_app()関数作成
-# 4. container.wire()設定
+### ✅ Phase 2: FastAPI統合
+- [ ] main.py lifespan実装
+- [ ] app.composition_root注入
+- [ ] app.logger注入
 
-# Phase 3: API層Depends化
-# 5. chat.pyのグローバル変数削除
-# 6. @inject + Depends(Provide[])導入
+### ✅ Phase 3: Dependencies実装
+- [ ] get_xxx_usecase関数実装
+- [ ] get_logger関数実装
+- [ ] 認証関連依存関数実装
 
-# Phase 4: テスト更新
-# 7. container.override()を使ったテストケース作成
-```
-
-### ステップ 3: 動作確認
-
-```bash
-# サーバー起動確認
-./scripts/start-dev.sh
-
-# エンドポイント動作確認
-curl -X POST http://localhost:8000/api/v1/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "テスト", "user_id": "test", "session_id": "test"}'
-
-# テスト実行確認
-cd backend && uv run pytest
-```
-
-## 📋 完了チェックリスト
-
-### Phase 1: DI コンテナ準備
-
-- [ ] container.py に logger providers 追加
-- [ ] ツール作成関数に logger 引数追加
-- [ ] エージェント作成関数に logger 引数追加
-- [ ] 個別 setup_logger 呼び出し削除
-
-### Phase 2: main.py ファクトリー化
-
-- [ ] create_app()関数実装
-- [ ] container.wire()設定
+### ✅ Phase 4: 既存コード移行
 - [ ] 個別ロガー初期化削除
-- [ ] lifespan 関数適応
-
-### Phase 3: API 層 Depends 化
-
-- [ ] @inject デコレータ追加
-- [ ] Depends(Provide[])パターン実装
 - [ ] グローバル変数削除
-- [ ] setup_routes 関数削除
+- [ ] setup_routes関数削除
+- [ ] 全ルート関数のDepends追加
 
-### Phase 4: テスト更新
+### ✅ Phase 5: テスト更新
+- [ ] テスト用CompositionRoot実装
+- [ ] 既存テストのモック更新
+- [ ] 新しいDI統合テスト追加
 
-- [ ] container.override()を使ったテストケース作成
-- [ ] モックロガー・ツールの動作確認
-- [ ] 既存テストの更新
+## ⚡ 移行のコツ
 
-### 動作確認
+### 1. 段階的移行
 
-- [ ] 開発サーバー正常起動
-- [ ] チャットエンドポイント正常動作
-- [ ] ログ出力が統一フォーマット
-- [ ] テストケース正常実行
-- [ ] 型チェックパス
+```python
+# 1段階目: 依存関数のみ作成（既存コードは残す）
+def get_user_usecase(request: Request) -> UserManagementUseCase:
+    # 新しい実装
 
-## 🔍 トラブルシューティング
+# 2段階目: 一部ルートで使用開始
+@router.post("/api/users/new")  # 新エンドポイント
+async def create_user_new(usecase = Depends(get_user_usecase)):
 
-### よくある問題
-
-#### 1. wiring エラー
-
-```
-ERROR: Module 'src.presentation.api.routes.chat' not found
-```
-
-**解決**: モジュールパスの確認、import 可能性の検証
-
-#### 2. Provide エラー
-
-```
-ERROR: Provider 'DIContainer.logger' not found
+# 3段階目: 既存ルートを順次移行
+@router.post("/api/users")  # 既存エンドポイント更新
+async def create_user(usecase = Depends(get_user_usecase)):
 ```
 
-**解決**: container.py の providers 設定確認
+### 2. テスト駆動移行
 
-#### 3. 循環 import
+```python
+# まずテストから移行
+def test_create_user_with_di():
+    # 新しいDI統合でテスト作成
+    pass
 
+# テストが通ったら実装を移行
+@router.post("/api/users")
+async def create_user(usecase = Depends(get_user_usecase)):
+    # DI統合実装
 ```
-ERROR: Circular import detected
+
+### 3. ロギングの段階的移行
+
+```python
+# 1段階目: 並行実行（検証）
+class SomeUseCase:
+    def __init__(self, logger: logging.Logger):
+        self.di_logger = logger  # DI注入ロガー
+        self.old_logger = setup_logger(__name__)  # 既存ロガー
+        
+    def some_method(self):
+        self.di_logger.info("DI注入ロガー")
+        self.old_logger.info("既存ロガー")  # 比較用
+
+# 2段階目: DI注入のみ使用
+class SomeUseCase:
+    def __init__(self, logger: logging.Logger):
+        self.logger = logger  # DI注入のみ
 ```
 
-**解決**: import 順序の調整、遅延 import の活用
+## 🎯 まとめ
 
-この段階的なマイグレーションにより、GenieUs プロジェクトは現代的な DI 統合パターンに移行し、保守性・テスタビリティが大幅に向上します。
+GenieUsのDI統合マイグレーションは、以下の特徴を持つ実用的なアプローチです：
+
+### **移行の核心価値**
+1. **Pure Composition Root**: 外部ライブラリ依存なし
+2. **段階的移行**: 既存機能を壊さない安全な移行
+3. **テスト容易性**: CompositionRootモック化
+4. **型安全**: ServiceRegistryによる型安全な管理
+5. **FastAPIネイティブ**: Request経由の自然な統合
+
+### **移行パターン**
+```
+グローバル変数 → CompositionRoot作成 → FastAPI統合 → Depends移行 → テスト更新
+```
+
+この段階的アプローチにより、GenieUsは安全かつ効率的にDI統合への移行を完了しています。
+
+---
+
+**最終更新**: 2025-06-28  
+**対応バージョン**: Composition Root + FastAPI Request経由統合

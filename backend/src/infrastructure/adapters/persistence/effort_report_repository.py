@@ -70,7 +70,9 @@ class EffortReportRepository:
             raise
 
     async def get_effort_reports(
-        self, user_id: str, filters: dict[str, Any] | None = None,
+        self,
+        user_id: str,
+        filters: dict[str, Any] | None = None,
     ) -> list[EffortReportRecord]:
         """努力レポート一覧を取得
 

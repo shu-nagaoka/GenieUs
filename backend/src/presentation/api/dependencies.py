@@ -19,11 +19,15 @@ from src.application.usecases.chat_support_usecase import ChatSupportUseCase
 from src.application.usecases.effort_report_usecase import EffortReportUseCase
 from src.application.usecases.family_management_usecase import FamilyManagementUseCase
 from src.application.usecases.growth_record_usecase import GrowthRecordUseCase
+from src.application.usecases.image_analysis_usecase import ImageAnalysisUseCase
 from src.application.usecases.meal_plan_management_usecase import MealPlanManagementUseCase
 from src.application.usecases.memory_record_usecase import MemoryRecordUseCase
+from src.application.usecases.record_management_usecase import RecordManagementUseCase
 from src.application.usecases.schedule_event_usecase import ScheduleEventUseCase
+from src.application.usecases.search_history_usecase import SearchHistoryUseCase
 from src.application.usecases.streaming_chat_usecase import StreamingChatUseCase
 from src.application.usecases.user_management_usecase import UserManagementUseCase
+from src.application.usecases.voice_analysis_usecase import VoiceAnalysisUseCase
 
 
 def get_family_management_usecase(request: Request) -> FamilyManagementUseCase:
@@ -86,7 +90,32 @@ def get_user_management_usecase(request: Request) -> UserManagementUseCase:
     return composition_root._usecases.get_required("user_management")
 
 
+def get_image_analysis_usecase(request: Request) -> ImageAnalysisUseCase:
+    """画像解析UseCaseを取得"""
+    composition_root = request.app.composition_root
+    return composition_root._usecases.get_required("image_analysis")
+
+
+def get_voice_analysis_usecase(request: Request) -> VoiceAnalysisUseCase:
+    """音声解析UseCaseを取得"""
+    composition_root = request.app.composition_root
+    return composition_root._usecases.get_required("voice_analysis")
+
+
+def get_record_management_usecase(request: Request) -> RecordManagementUseCase:
+    """記録管理UseCaseを取得"""
+    composition_root = request.app.composition_root
+    return composition_root._usecases.get_required("record_management")
+
+
+def get_search_history_usecase(request: Request) -> SearchHistoryUseCase:
+    """検索履歴UseCaseを取得"""
+    composition_root = request.app.composition_root
+    return composition_root._usecases.get_required("search_history")
+
+
 # ========== AgentManager & Logger DI Functions ==========
+
 
 def get_agent_manager(request: Request) -> AgentManager:
     """AgentManagerを取得（DI注入パターン）"""
@@ -99,6 +128,7 @@ def get_logger(request: Request) -> logging.Logger:
 
 
 # ========== Generic UseCase Getter ==========
+
 
 def get_usecase(request: Request, usecase_name: str) -> Any:
     """指定されたUseCaseを取得"""
