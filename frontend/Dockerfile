@@ -1,39 +1,23 @@
-# Use Node.js 20 Alpine for smallest image size
-FROM node:20-alpine
+# Use official Node.js runtime as base image
+FROM node:20
 
-# Install dependencies and build app
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apk add --no-cache libc6-compat
-
-# Copy package files
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install all dependencies (including dev dependencies for build)
-RUN npm ci
+# Install dependencies
+RUN npm install
 
-# Copy source code
+# Copy the rest of application code
 COPY . .
-
-# Set environment variables
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the application
 RUN npm run build
 
-# Remove dev dependencies after build
-RUN npm prune --production
-
-# Expose port
+# Expose port 3000
 EXPOSE 3000
-
-# Set proper permissions
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-RUN chown -R nextjs:nodejs /app
-USER nextjs
 
 # Start the application
 CMD ["npm", "start"]
