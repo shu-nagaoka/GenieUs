@@ -103,6 +103,7 @@ class RoutingExecutor:
             self.logger.info(
                 f"🎯 ルーティング決定: {selected_agent_type} (判定時間: {routing_duration:.3f}s)",
             )
+            self.logger.info(f"🔍 デバッグ: selected_agent_type='{selected_agent_type}', type={type(selected_agent_type)}")
 
             # ルーティング妥当性チェック
             if not self._validate_routing_decision(message, selected_agent_type):
@@ -111,6 +112,8 @@ class RoutingExecutor:
                 if corrected_agent != selected_agent_type:
                     self.logger.info(f"🔧 ルーティング自動修正: {selected_agent_type} → {corrected_agent}")
                     selected_agent_type = corrected_agent
+                else:
+                    self.logger.info(f"✅ ルーティング自動修正不要: {selected_agent_type} をそのまま使用")
 
             # 🍽️ **特別処理**: meal_record_api の場合は直接API実行
             if selected_agent_type == "meal_record_api":
@@ -122,10 +125,12 @@ class RoutingExecutor:
             
             # 📅 **特別処理**: schedule_record_api の場合は直接API実行
             if selected_agent_type == "schedule_record_api":
-                self.logger.info(f"🎯 schedule_record_api実行: 会話履歴からスケジュール記録作成")
+                self.logger.info(f"🎯 schedule_record_api実行開始: 会話履歴からスケジュール記録作成")
+                self.logger.info(f"🔍 selected_agent_type確認: {selected_agent_type}")
                 api_response = await self._execute_schedule_record_api(
                     conversation_history, user_id, session_id, family_info
                 )
+                self.logger.info(f"✅ schedule_record_api実行完了: {len(api_response) if api_response else 0}文字")
                 return api_response, {"agent_id": "schedule_record_api", "agent_name": "スケジュール記録API", "display_name": "スケジュール記録作成"}, routing_path
 
             # Runner取得
