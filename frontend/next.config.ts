@@ -4,9 +4,8 @@ const nextConfig: NextConfig = {
   // パフォーマンス最適化を有効化
   reactStrictMode: true,
 
-  // 標準のNext.js出力（standaloneを削除）
-  
-  // 静的生成を無効化（Cloud Run問題回避）
+  // Cloud Run用の設定
+  output: 'standalone',
   trailingSlash: false,
 
   // 画像最適化
@@ -48,8 +47,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true   // TypeScriptエラーも一時的に無視
   },
   
-  // ビルド最適化
-  swcMinify: true,
+  // Next.js 15では swcMinify はデフォルトで有効なので削除
 }
 
 export default nextConfig
