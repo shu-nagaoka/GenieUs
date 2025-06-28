@@ -3,7 +3,7 @@ import os
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -44,16 +44,18 @@ async def lifespan(app: FastAPI):
     # 🎯 CompositionRoot一元初期化（アプリケーション全体で1度だけ）
     try:
         # Cloud Run用環境変数で軽量起動モードを確認
-        fast_startup = os.getenv("FAST_STARTUP", "false").lower() == "true"
-
-        if fast_startup:
-            temp_logger.info("⚡ 高速起動モード: 最小限の初期化のみ実行")
-            # 最小限のダミー設定でアプリを起動可能にする
+        # Cloud Run環境では常に軽量起動（起動後に遅延初期化）
+        is_production = os.getenv("ENVIRONMENT") == "production"
+        
+        if is_production:
+            temp_logger.info("🚀 Cloud Run本番環境: 軽量起動モード")
+            # 軽量起動で8080ポートでリッスン開始
             app.agent_manager = None
             app.logger = temp_logger
             app.composition_root = None
+            app._initialization_started = False
         else:
-            temp_logger.info("CompositionRoot初期化開始...")
+            temp_logger.info("💻 ローカル環境: 完全初期化モード")
             try:
                 composition_root = CompositionRootFactory.create()
                 temp_logger.info("✅ CompositionRootFactory.create() 完了")
@@ -145,6 +147,54 @@ def get_cors_origins():
 
     return list(set(origins))  # 重複除去
 
+
+# 本番環境での遅延初期化ミドルウェア
+@app.middleware("http")
+async def lazy_initialization_middleware(request: Request, call_next):
+    """本番環境でのみ動作する遅延初期化ミドルウェア"""
+    if (os.getenv("ENVIRONMENT") == "production" and 
+        hasattr(request.app, "_initialization_started") and 
+        not request.app._initialization_started and
+        request.url.path not in ["/health", "/", "/docs", "/openapi.json"]):
+        
+        temp_logger = logging.getLogger(__name__)
+        temp_logger.info("🔄 本番環境: 遅延初期化開始...")
+        
+        try:
+            composition_root = CompositionRootFactory.create()
+            logger = composition_root.logger
+            logger.info("✅ 遅延CompositionRoot初期化完了")
+
+            # AgentManager初期化
+            all_tools = composition_root.get_all_tools()
+            routing_strategy = composition_root.get_routing_strategy()
+            agent_registry = composition_root.get_agent_registry()
+            
+            agent_manager = AgentManager(
+                tools=all_tools,
+                logger=logger,
+                settings=composition_root.settings,
+                routing_strategy=routing_strategy,
+                agent_registry=agent_registry,
+                composition_root=composition_root,
+            )
+            agent_manager.initialize_all_components()
+            
+            # FastAPIアプリに注入
+            request.app.agent_manager = agent_manager
+            request.app.logger = logger
+            request.app.composition_root = composition_root
+            request.app._initialization_started = True
+            
+            logger.info("✅ 遅延初期化完了")
+            
+        except Exception as e:
+            temp_logger.error(f"❌ 遅延初期化失敗: {e}")
+            # 初期化に失敗してもヘルスチェックは通す
+            pass
+    
+    response = await call_next(request)
+    return response
 
 app.add_middleware(
     CORSMiddleware,
