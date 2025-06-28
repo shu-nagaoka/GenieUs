@@ -73,19 +73,19 @@ steps:
         
         # サービス名決定
         if [ "$_ENVIRONMENT" = "production" ]; then
-          SERVICE_NAME="genius-backend"
+          BACKEND_SERVICE_NAME="genius-backend"
           MIN_INSTANCES=1
           MAX_INSTANCES=5
         else
-          SERVICE_NAME="genius-backend-$_ENVIRONMENT"
+          BACKEND_SERVICE_NAME="genius-backend-$_ENVIRONMENT"
           MIN_INSTANCES=0
           MAX_INSTANCES=3
         fi
         
-        echo "Service: $SERVICE_NAME"
+        echo "Service: $BACKEND_SERVICE_NAME"
         
         # Cloud Buildでデプロイ（ローカルDockerは使わない）
-        gcloud run deploy "$SERVICE_NAME" \
+        gcloud run deploy "$BACKEND_SERVICE_NAME" \
           --source . \
           --platform managed \
           --region $_GCP_REGION \
@@ -106,7 +106,7 @@ steps:
           --quiet
         
         # バックエンドURL取得
-        BACKEND_URL=$(gcloud run services describe "$SERVICE_NAME" \
+        BACKEND_URL=$(gcloud run services describe "$BACKEND_SERVICE_NAME" \
           --platform managed \
           --region $_GCP_REGION \
           --format 'value(status.url)')
@@ -134,20 +134,20 @@ steps:
         
         # サービス名決定
         if [ "$_ENVIRONMENT" = "production" ]; then
-          SERVICE_NAME="genius-frontend"
+          FRONTEND_SERVICE_NAME="genius-frontend"
           MIN_INSTANCES=1
           MAX_INSTANCES=10
         else
-          SERVICE_NAME="genius-frontend-$_ENVIRONMENT"
+          FRONTEND_SERVICE_NAME="genius-frontend-$_ENVIRONMENT"
           MIN_INSTANCES=0
           MAX_INSTANCES=5
         fi
         
-        echo "Service: $SERVICE_NAME"
+        echo "Service: $FRONTEND_SERVICE_NAME"
         echo "Backend URL: $BACKEND_URL"
         
         # Cloud Buildでデプロイ
-        gcloud run deploy "$SERVICE_NAME" \
+        gcloud run deploy "$FRONTEND_SERVICE_NAME" \
           --source . \
           --platform managed \
           --region $_GCP_REGION \
@@ -166,7 +166,7 @@ steps:
           --quiet
         
         # フロントエンドURL取得
-        FRONTEND_URL=$(gcloud run services describe "$SERVICE_NAME" \
+        FRONTEND_URL=$(gcloud run services describe "$FRONTEND_SERVICE_NAME" \
           --platform managed \
           --region $_GCP_REGION \
           --format 'value(status.url)')
