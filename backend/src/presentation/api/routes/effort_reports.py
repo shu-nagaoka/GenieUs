@@ -92,7 +92,9 @@ async def update_effort_report(
         user_id = request_data.get("user_id", "frontend_user")
 
         result = await effort_report_usecase.update_effort_report(
-            user_id=user_id, report_id=report_id, update_data=request_data,
+            user_id=user_id,
+            report_id=report_id,
+            update_data=request_data,
         )
         return result
     except Exception as e:

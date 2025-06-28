@@ -9,8 +9,7 @@ from typing import Any, Generic, TypeVar
 
 from google.adk.tools import FunctionTool
 
-from src.agents.constants import AGENT_KEYWORDS, AGENT_PRIORITY, FORCE_ROUTING_KEYWORDS
-from src.agents.routing_strategy import KeywordRoutingStrategy, RoutingStrategy
+from src.agents.routing_strategy import RoutingStrategy
 from src.application.usecases.agent_info_usecase import AgentInfoUseCase
 from src.application.usecases.chat_support_usecase import ChatSupportUseCase
 from src.application.usecases.effort_report_usecase import EffortReportUseCase
@@ -24,6 +23,7 @@ from src.application.usecases.meal_plan_management_usecase import (
 from src.application.usecases.memory_record_usecase import MemoryRecordUseCase
 from src.application.usecases.record_management_usecase import RecordManagementUseCase
 from src.application.usecases.schedule_event_usecase import ScheduleEventUseCase
+from src.application.usecases.search_history_usecase import SearchHistoryUseCase
 from src.application.usecases.streaming_chat_usecase import StreamingChatUseCase
 from src.application.usecases.user_management_usecase import UserManagementUseCase
 from src.application.usecases.voice_analysis_usecase import VoiceAnalysisUseCase
@@ -122,6 +122,7 @@ class CompositionRoot:
         self._build_infrastructure_layer()
         self._build_application_layer()
         self._build_tool_layer()
+        self._build_agent_registry()  # ルーティング戦略より先に初期化
         self._build_routing_strategy()
 
         self.logger.info("✅ CompositionRoot初期化完了: 全依存関係組み立て成功")
@@ -281,6 +282,11 @@ class CompositionRoot:
             logger=self.logger,
         )
 
+        search_history_usecase = SearchHistoryUseCase(
+            search_history_repository=repository_factory.get_search_history_repository(),
+            logger=self.logger,
+        )
+
         # UseCase登録
         self._usecases.register("image_analysis", image_analysis_usecase)
         self._usecases.register("voice_analysis", voice_analysis_usecase)
@@ -295,6 +301,7 @@ class CompositionRoot:
         self._usecases.register("chat_support", chat_support_usecase)
         self._usecases.register("agent_info", agent_info_usecase)
         self._usecases.register("streaming_chat", streaming_chat_usecase)
+        self._usecases.register("search_history", search_history_usecase)
 
         # User Management UseCase (認証統合)
         if self.settings.DATABASE_TYPE == "sqlite":
@@ -333,12 +340,25 @@ class CompositionRoot:
         record_tool = self._create_record_management_tool(record_usecase)
         self._tools.register("record_management", record_tool)
 
-
         # Google Search ツール
         google_search_tool = self._create_google_search_tool()
         self._tools.register("google_search", google_search_tool)
 
         self.logger.info("Tool層組み立て完了")
+
+    def _build_agent_registry(self) -> None:
+        """Agent Registry組み立て（ADKルーティング統合用）"""
+        self.logger.info("Agent Registry組み立て開始...")
+
+        from src.agents.agent_registry import AgentRegistry
+
+        # AgentRegistryを初期化（ツール群を渡す）
+        self._registry = AgentRegistry(self.get_all_tools(), self.logger)
+
+        # エージェントを事前初期化（ADKルーティングで専門エージェントが必要）
+        self._registry.initialize_all_agents()
+
+        self.logger.info("Agent Registry組み立て完了")
 
     def _create_image_analysis_tool(self, usecase: ImageAnalysisUseCase) -> FunctionTool:
         """画像分析ツール作成"""
@@ -364,7 +384,6 @@ class CompositionRoot:
 
         return create_record_management_tool(record_management_usecase=usecase, logger=self.logger)
 
-
     def _create_google_search_tool(self):
         """Google Search ツール作成"""
         from google.adk.tools import google_search
@@ -375,34 +394,11 @@ class CompositionRoot:
     # ========== One-time Assembly API (main.py only) ==========
 
     def _build_routing_strategy(self) -> None:
-        """ルーティング戦略の組み立て"""
-        self.logger.info("ルーティング戦略組み立て開始...")
-
-        # 環境変数でルーティング戦略を切り替え
-        strategy_type = self.settings.ROUTING_STRATEGY.lower()
-
-        if strategy_type == "enhanced":
-            self.logger.info("Enhanced Routing Strategy を使用")
-            from src.agents.enhanced_routing import EnhancedRoutingStrategy
-
-            self._routing_strategy = EnhancedRoutingStrategy(
-                logger=self.logger,
-                agent_keywords=AGENT_KEYWORDS,
-                force_routing_keywords=FORCE_ROUTING_KEYWORDS,
-                agent_priority=AGENT_PRIORITY,
-                keyword_weight=self.settings.HYBRID_KEYWORD_WEIGHT,
-                llm_weight=self.settings.HYBRID_LLM_WEIGHT,
-            )
-        else:  # default: keyword
-            self.logger.info("Keyword Routing Strategy を使用")
-            self._routing_strategy = KeywordRoutingStrategy(
-                logger=self.logger,
-                agent_keywords=AGENT_KEYWORDS,
-                force_routing_keywords=FORCE_ROUTING_KEYWORDS,
-                agent_priority=AGENT_PRIORITY,
-            )
-
-        self.logger.info(f"ルーティング戦略組み立て完了: {self._routing_strategy.get_strategy_name()}")
+        """意図ベースルーティング戦略の組み立て"""
+        from src.agents.intent_based_routing_strategy import IntentBasedRoutingStrategy
+        
+        self._routing_strategy = IntentBasedRoutingStrategy(logger=self.logger)
+        self.logger.info("意図ベースルーティング戦略を使用")
 
     def get_all_tools(self) -> dict[str, FunctionTool]:
         """全ツール取得（main.pyでの一回限りの組み立て用）"""
@@ -441,3 +437,11 @@ class CompositionRoot:
     def get_data_migrator(self) -> DataMigrator:
         """データマイグレーター取得"""
         return self._infrastructure.get("data_migrator")
+
+    # ========== Agent Registry API ==========
+
+    def get_agent_registry(self):
+        """AgentRegistry取得"""
+        if not hasattr(self, "_registry") or not self._registry:
+            raise ValueError("AgentRegistryが初期化されていません")
+        return self._registry

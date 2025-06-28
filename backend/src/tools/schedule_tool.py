@@ -18,7 +18,7 @@ from src.application.usecases.schedule_management_usecase import (
 
 class ScheduleTool:
     """予定管理ツール
-    
+
     Genius Agentsが予定の作成、編集、削除、リマインダーを行うためのツール
     """
 
@@ -57,7 +57,6 @@ class ScheduleTool:
                     required=["user_id", "title", "start_datetime", "event_type"],
                 ),
             ),
-
             # 予定取得
             FunctionDeclaration(
                 name="get_schedules",
@@ -77,7 +76,6 @@ class ScheduleTool:
                     required=["user_id"],
                 ),
             ),
-
             # 予定更新
             FunctionDeclaration(
                 name="update_schedule",
@@ -102,7 +100,6 @@ class ScheduleTool:
                     required=["user_id", "schedule_id"],
                 ),
             ),
-
             # 予定削除
             FunctionDeclaration(
                 name="delete_schedule",
@@ -116,7 +113,6 @@ class ScheduleTool:
                     required=["user_id", "schedule_id"],
                 ),
             ),
-
             # 今日の予定確認
             FunctionDeclaration(
                 name="get_today_schedules",
@@ -129,7 +125,6 @@ class ScheduleTool:
                     required=["user_id"],
                 ),
             ),
-
             # 予定提案
             FunctionDeclaration(
                 name="suggest_schedule",
@@ -332,92 +327,104 @@ class ScheduleTool:
 
         # 月齢に応じた予定提案
         if child_age_months < 6:
-            suggestions.extend([
-                {
-                    "title": "1ヶ月健診",
-                    "description": "成長チェックと予防接種の相談",
-                    "event_type": "medical",
-                    "frequency": "monthly",
-                    "importance": "high",
-                },
-                {
-                    "title": "ベビーマッサージ教室",
-                    "description": "親子のスキンシップとリラクゼーション",
-                    "event_type": "other",
-                    "frequency": "weekly",
-                    "importance": "medium",
-                },
-            ])
+            suggestions.extend(
+                [
+                    {
+                        "title": "1ヶ月健診",
+                        "description": "成長チェックと予防接種の相談",
+                        "event_type": "medical",
+                        "frequency": "monthly",
+                        "importance": "high",
+                    },
+                    {
+                        "title": "ベビーマッサージ教室",
+                        "description": "親子のスキンシップとリラクゼーション",
+                        "event_type": "other",
+                        "frequency": "weekly",
+                        "importance": "medium",
+                    },
+                ],
+            )
         elif child_age_months < 12:
-            suggestions.extend([
-                {
-                    "title": "離乳食教室",
-                    "description": "月齢に応じた離乳食の作り方を学ぶ",
-                    "event_type": "other",
-                    "frequency": "monthly",
-                    "importance": "high",
-                },
-                {
-                    "title": "児童館でのふれあい遊び",
-                    "description": "同年代のお友達との交流",
-                    "event_type": "outing",
-                    "frequency": "weekly",
-                    "importance": "medium",
-                },
-            ])
+            suggestions.extend(
+                [
+                    {
+                        "title": "離乳食教室",
+                        "description": "月齢に応じた離乳食の作り方を学ぶ",
+                        "event_type": "other",
+                        "frequency": "monthly",
+                        "importance": "high",
+                    },
+                    {
+                        "title": "児童館でのふれあい遊び",
+                        "description": "同年代のお友達との交流",
+                        "event_type": "outing",
+                        "frequency": "weekly",
+                        "importance": "medium",
+                    },
+                ],
+            )
         elif child_age_months < 24:
-            suggestions.extend([
-                {
-                    "title": "1歳6ヶ月健診",
-                    "description": "言葉の発達チェック",
-                    "event_type": "medical",
-                    "frequency": "once",
-                    "importance": "high",
-                },
-                {
-                    "title": "公園での外遊び",
-                    "description": "運動能力の発達と自然との触れ合い",
-                    "event_type": "outing",
-                    "frequency": "daily",
-                    "importance": "high",
-                },
-            ])
+            suggestions.extend(
+                [
+                    {
+                        "title": "1歳6ヶ月健診",
+                        "description": "言葉の発達チェック",
+                        "event_type": "medical",
+                        "frequency": "once",
+                        "importance": "high",
+                    },
+                    {
+                        "title": "公園での外遊び",
+                        "description": "運動能力の発達と自然との触れ合い",
+                        "event_type": "outing",
+                        "frequency": "daily",
+                        "importance": "high",
+                    },
+                ],
+            )
         else:
-            suggestions.extend([
+            suggestions.extend(
+                [
+                    {
+                        "title": "幼児教室・習い事体験",
+                        "description": "音楽、運動、アートなどの習い事",
+                        "event_type": "school",
+                        "frequency": "weekly",
+                        "importance": "medium",
+                    },
+                    {
+                        "title": "図書館での読み聞かせ",
+                        "description": "言語発達と読書習慣の形成",
+                        "event_type": "outing",
+                        "frequency": "weekly",
+                        "importance": "medium",
+                    },
+                ],
+            )
+
+        # 興味に応じた追加提案
+        if "音楽" in interests:
+            suggestions.append(
                 {
-                    "title": "幼児教室・習い事体験",
-                    "description": "音楽、運動、アートなどの習い事",
+                    "title": "リトミック教室",
+                    "description": "音楽に合わせた体動かし",
                     "event_type": "school",
                     "frequency": "weekly",
                     "importance": "medium",
                 },
+            )
+
+        if "スポーツ" in interests:
+            suggestions.append(
                 {
-                    "title": "図書館での読み聞かせ",
-                    "description": "言語発達と読書習慣の形成",
-                    "event_type": "outing",
+                    "title": "ベビースイミング",
+                    "description": "水に慣れ親しむ運動",
+                    "event_type": "school",
                     "frequency": "weekly",
                     "importance": "medium",
                 },
-            ])
-
-        # 興味に応じた追加提案
-        if "音楽" in interests:
-            suggestions.append({
-                "title": "リトミック教室",
-                "description": "音楽に合わせた体動かし",
-                "event_type": "school",
-                "frequency": "weekly",
-                "importance": "medium",
-            })
-
-        if "スポーツ" in interests:
-            suggestions.append({
-                "title": "ベビースイミング",
-                "description": "水に慣れ親しむ運動",
-                "event_type": "school",
-                "frequency": "weekly",
-                "importance": "medium",
-            })
+            )
 
         return {
             "success": True,

@@ -6,6 +6,7 @@
 - DI注入パターン
 - 段階的エラーハンドリング
 """
+
 import logging
 from dataclasses import dataclass
 from typing import Any
@@ -74,7 +75,7 @@ class MealPlanListResponse:
 
 class MealPlanManagementUseCase:
     """食事プラン管理UseCase
-    
+
     Agent中心アーキテクチャに準拠した技術的UseCase
     """
 

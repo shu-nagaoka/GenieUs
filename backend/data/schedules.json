@@ -12,5 +12,33 @@
     "created_by": "genie",
     "created_at": "2025-06-24T13:13:42.468837",
     "updated_at": "2025-06-24T13:13:42.468920"
+  },
+  "86aa5d26-ab11-4578-9dcf-1194cc9dc2c0": {
+    "id": "86aa5d26-ab11-4578-9dcf-1194cc9dc2c0",
+    "user_id": "frontend_user",
+    "title": "動物園デビュー",
+    "date": "2025-06-27",
+    "time": "10:00",
+    "type": "medical",
+    "location": "上野動物園",
+    "description": "サンプル",
+    "status": "upcoming",
+    "created_by": "user",
+    "created_at": "2025-06-27T13:31:25.842628",
+    "updated_at": "2025-06-27T13:31:25.842840"
+  },
+  "43c12f58-4752-41ca-978b-c51e7cdc03ed": {
+    "id": "43c12f58-4752-41ca-978b-c51e7cdc03ed",
+    "user_id": "frontend_user",
+    "title": "初めてのイヤイヤ期",
+    "date": "2025-06-27",
+    "time": "10:00",
+    "type": "other",
+    "location": "",
+    "description": "",
+    "status": "upcoming",
+    "created_by": "user",
+    "created_at": "2025-06-28T08:07:04.159141",
+    "updated_at": "2025-06-28T08:07:04.160158"
   }
 }

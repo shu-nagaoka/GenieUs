@@ -17,7 +17,7 @@ from src.agents.routing_strategy import RoutingStrategy
 
 class AgentManager:
     """軽量化されたAgentManager - 統合インターフェース
-    
+
     3つのコンポーネントを統合して単一のインターフェースを提供
     """
 
@@ -27,14 +27,16 @@ class AgentManager:
         logger: logging.Logger,
         settings,
         routing_strategy: RoutingStrategy | None = None,
+        agent_registry: AgentRegistry | None = None,
     ):
         """AgentManager初期化
-        
+
         Args:
             tools: エージェントが使用するツール群
             logger: DIコンテナから注入されるロガー
             settings: アプリケーション設定
             routing_strategy: ルーティング戦略
+            agent_registry: 既存のAgentRegistry（CompositionRootから注入）
 
         """
         self.logger = logger
@@ -42,7 +44,17 @@ class AgentManager:
         self.routing_strategy = routing_strategy
 
         # コンポーネント初期化
-        self._registry = AgentRegistry(tools, logger)
+        if agent_registry is not None:
+            # CompositionRootからAgentRegistryが注入された場合はそれを使用
+            self._registry = agent_registry
+            self._registry_injected = True
+            self.logger.info("✅ AgentRegistry注入: CompositionRootからの共有インスタンスを使用")
+        else:
+            # フォールバック: 新しいAgentRegistryを作成
+            self._registry = AgentRegistry(tools, logger)
+            self._registry_injected = False
+            self.logger.warning("⚠️ AgentRegistry新規作成: ADKコーディネーター共有なし")
+
         self._message_processor = MessageProcessor(logger)
         self._routing_executor = RoutingExecutor(logger, routing_strategy, self._message_processor)
 
@@ -53,7 +65,11 @@ class AgentManager:
 
     def initialize_all_components(self) -> None:
         """全コンポーネント初期化"""
-        self._registry.initialize_all_agents()
+        # CompositionRootから注入されたAgentRegistryの場合、既に初期化済み
+        if not self._registry_injected:
+            self._registry.initialize_all_agents()
+        else:
+            self.logger.info("📋 AgentRegistry既に初期化済み、スキップ")
 
     async def route_query_async(
         self,
@@ -68,7 +84,9 @@ class AgentManager:
         try:
             # メッセージ整形
             enhanced_message = self._message_processor.create_message_with_context(
-                message, conversation_history, family_info,
+                message,
+                conversation_history,
+                family_info,
             )
 
             # ルーティング実行
@@ -115,12 +133,21 @@ class AgentManager:
         agent_type: str = "auto",
         conversation_history: list | None = None,
         family_info: dict | None = None,
+        # 画像・マルチモーダル対応パラメータ追加
+        has_image: bool = False,
+        message_type: str = "text",
+        image_path: str = None,
+        multimodal_context: dict = None,
     ) -> dict:
         """ルーティング情報付きマルチエージェント対応クエリ実行"""
         try:
             # メッセージ整形
             enhanced_message = self._message_processor.create_message_with_context(
-                message, conversation_history, family_info,
+                message,
+                conversation_history,
+                family_info,
+                image_path,
+                multimodal_context,
             )
 
             # ルーティング実行
@@ -134,6 +161,11 @@ class AgentManager:
                 conversation_history=conversation_history,
                 family_info=family_info,
                 agent_type=agent_type,
+                # 画像・マルチモーダル対応パラメータを渡す
+                has_image=has_image,
+                message_type=message_type,
+                image_path=image_path,
+                multimodal_context=multimodal_context,
             )
 
             # フォローアップ質問生成

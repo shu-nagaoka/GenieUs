@@ -14,7 +14,7 @@ from google.genai.types import Content, Part
 
 class MessageProcessor:
     """メッセージ処理システム
-    
+
     責務:
     - 会話履歴と家族情報を含むコンテキスト管理
     - メッセージ整形
@@ -24,7 +24,7 @@ class MessageProcessor:
 
     def __init__(self, logger: logging.Logger):
         """MessageProcessor初期化
-        
+
         Args:
             logger: DIコンテナから注入されるロガー
 
@@ -36,8 +36,10 @@ class MessageProcessor:
         message: str,
         conversation_history: list[dict] | None = None,
         family_info: dict | None = None,
+        image_path: str = None,
+        multimodal_context: dict = None,
     ) -> str:
-        """会話履歴と家族情報を含めたメッセージを作成"""
+        """会話履歴と家族情報、画像情報を含めたメッセージを作成"""
         context_parts = []
 
         # 家族情報セクション
@@ -50,6 +52,16 @@ class MessageProcessor:
         if conversation_history and len(conversation_history) > 0:
             history_text = self._format_conversation_history(conversation_history)
             context_parts.append(history_text)
+
+        # 画像情報セクション（画像がある場合）
+        if image_path:
+            self.logger.info(f"🖼️ 画像添付を検出: {len(image_path) if image_path else 0}文字のBase64データ")
+            image_text = f"【画像情報】\n画像タイプ: 子どもの写真が添付されています\n分析指示: analyze_child_imageツールを使用して画像を分析してください\n"
+            if multimodal_context:
+                image_description = multimodal_context.get('image_description', '')
+                if image_description:
+                    image_text += f"画像説明: {image_description}\n"
+            context_parts.append(image_text)
 
         # 現在のメッセージ
         current_message = f"【現在のメッセージ】\n親御さん: {message}\n"
@@ -69,10 +81,11 @@ class MessageProcessor:
             context_info.append(f"家族情報(子{children_count}人)")
         if conversation_history:
             context_info.append(f"履歴{len(conversation_history)}件")
+        if image_path:
+            context_info.append(f"画像データ({len(image_path)//1024}KB)")
 
         self.logger.info(
-            f"📚 コンテキスト付きメッセージ作成: "
-            f"{', '.join(context_info) if context_info else '基本メッセージ'}",
+            f"📚 コンテキスト付きメッセージ作成: {', '.join(context_info) if context_info else '基本メッセージ'}",
         )
 
         return enhanced_message
@@ -190,8 +203,7 @@ class MessageProcessor:
         if family_info and family_info.get("parent_name"):
             parent_name = family_info["parent_name"]
             greeting_instruction = (
-                f"\n\n**重要**: 回答の冒頭で必ず「こんにちは！{parent_name}さん！」"
-                f"と親しみやすく挨拶してください。"
+                f"\n\n**重要**: 回答の冒頭で必ず「こんにちは！{parent_name}さん！」と親しみやすく挨拶してください。"
             )
 
         instruction = (
@@ -220,7 +232,7 @@ class MessageProcessor:
         original_message: str,
         specialist_response: str,
         followup_runner: Runner | None = None,
-        session_service = None,
+        session_service=None,
     ) -> str:
         """専門家回答に基づくフォローアップクエスチョン生成"""
         try:
@@ -406,11 +418,27 @@ class MessageProcessor:
         response_lower = response.lower()
 
         routing_keywords = [
-            "専門家", "専門医", "栄養士", "睡眠専門", "発達専門",
-            "健康管理", "行動専門", "遊び専門", "安全専門", "心理専門",
-            "仕事両立", "特別支援", "詳しく相談", "専門的なアドバイス",
-            "より詳しく", "専門家に相談", "ジーニーが心を込めて",
-            "ジーニーが", "お答えします", "回答します", "サポートします",
+            "専門家",
+            "専門医",
+            "栄養士",
+            "睡眠専門",
+            "発達専門",
+            "健康管理",
+            "行動専門",
+            "遊び専門",
+            "安全専門",
+            "心理専門",
+            "仕事両立",
+            "特別支援",
+            "詳しく相談",
+            "専門的なアドバイス",
+            "より詳しく",
+            "専門家に相談",
+            "ジーニーが心を込めて",
+            "ジーニーが",
+            "お答えします",
+            "回答します",
+            "サポートします",
             "アドバイスします",
         ]
 

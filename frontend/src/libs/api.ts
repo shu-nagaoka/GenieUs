@@ -90,15 +90,15 @@ export async function apiCall<T = any>(
         error: {
           error: 'authentication_required',
           message: '認証が必要です',
-          status: 401
-        }
+          status: 401,
+        },
       }
     }
 
     // ヘッダー構築
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
-      ...fetchOptions.headers
+      ...fetchOptions.headers,
     }
 
     // 認証ヘッダー追加
@@ -109,7 +109,7 @@ export async function apiCall<T = any>(
     // API呼び出し実行
     const response = await fetch(`${baseUrl}${endpoint}`, {
       ...fetchOptions,
-      headers
+      headers,
     })
 
     // レスポンス処理
@@ -121,16 +121,15 @@ export async function apiCall<T = any>(
         error: {
           error: responseData.error || 'api_error',
           message: responseData.message || 'API呼び出しに失敗しました',
-          status: response.status
-        }
+          status: response.status,
+        },
       }
     }
 
     return {
       success: true,
-      data: responseData
+      data: responseData,
     }
-
   } catch (error) {
     console.error('API call error:', error)
     return {
@@ -138,8 +137,8 @@ export async function apiCall<T = any>(
       error: {
         error: 'network_error',
         message: 'ネットワークエラーが発生しました',
-        status: 0
-      }
+        status: 0,
+      },
     }
   }
 }
@@ -175,7 +174,7 @@ export async function apiPost<T = any>(
   return apiCall<T>(endpoint, {
     ...options,
     method: 'POST',
-    body: data ? JSON.stringify(data) : undefined
+    body: data ? JSON.stringify(data) : undefined,
   })
 }
 
@@ -190,7 +189,7 @@ export async function apiPut<T = any>(
   return apiCall<T>(endpoint, {
     ...options,
     method: 'PUT',
-    body: data ? JSON.stringify(data) : undefined
+    body: data ? JSON.stringify(data) : undefined,
   })
 }
 
@@ -234,7 +233,7 @@ export const tokenManager = {
    */
   isAuthenticated: (): boolean => {
     return !!TokenManager.getInstance().getToken()
-  }
+  },
 }
 
 /**
@@ -258,10 +257,7 @@ export function handleApiError(error: ApiError): string {
 /**
  * レガシーサポート: 既存のAPI呼び出し形式との互換性
  */
-export async function legacyFetch(
-  url: string,
-  options: RequestInit = {}
-): Promise<Response> {
+export async function legacyFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const tokenManager = TokenManager.getInstance()
   const token = tokenManager.getToken()
 

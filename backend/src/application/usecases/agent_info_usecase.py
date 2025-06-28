@@ -13,7 +13,7 @@ from typing import Any
 
 class AgentInfoUseCase:
     """エージェント情報管理のビジネスロジック
-    
+
     専門エージェント情報の取得、管理機能を提供
     """
 
@@ -74,10 +74,12 @@ class AgentInfoUseCase:
 
             specialists = []
             for agent_type, info in self._specialist_master.items():
-                specialists.append({
-                    "agent_type": agent_type,
-                    **info,
-                })
+                specialists.append(
+                    {
+                        "agent_type": agent_type,
+                        **info,
+                    },
+                )
 
             self.logger.info(f"全専門家情報取得完了: {len(specialists)}件")
 
@@ -156,7 +158,6 @@ class AgentInfoUseCase:
                 "tools": ["manage_child_files", "file_organization"],
                 "category": "basic_tools",
             },
-
             # 15専門エージェント
             "coordinator": {
                 "name": "子育て相談のジーニー",
@@ -248,7 +249,6 @@ class AgentInfoUseCase:
                 "tools": ["web_search", "event_planning", "outing_recommendations"],
                 "category": "core_specialists",
             },
-
             # マルチエージェント
             "sequential": {
                 "name": "連携分析のジーニー",
@@ -287,10 +287,12 @@ class AgentInfoUseCase:
         categorized = []
         for agent_type, info in self._specialist_master.items():
             if info.get("category") == category:
-                categorized.append({
-                    "agent_type": agent_type,
-                    **info,
-                })
+                categorized.append(
+                    {
+                        "agent_type": agent_type,
+                        **info,
+                    },
+                )
         return categorized
 
     def _get_default_specialist_info(self) -> dict[str, Any]:

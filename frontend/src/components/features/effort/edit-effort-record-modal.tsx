@@ -1,24 +1,32 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { 
-  Save, 
-  Loader2, 
-  Plus,
-  X,
-  Trophy,
-  Star,
-  Trash2
-} from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Save, Loader2, Plus, X, Trophy, Star, Trash2 } from 'lucide-react'
 import { FaTrophy } from 'react-icons/fa'
-import { updateEffortRecord, deleteEffortRecord, EffortRecordUpdateRequest } from '@/libs/api/effort-records'
+import {
+  updateEffortRecord,
+  deleteEffortRecord,
+  EffortRecordUpdateRequest,
+} from '@/libs/api/effort-records'
 
 interface EditEffortRecordModalProps {
   open: boolean
@@ -42,17 +50,17 @@ interface EditEffortRecordModalProps {
   onSuccess: () => void
 }
 
-export function EditEffortRecordModal({ 
-  open, 
-  onOpenChange, 
+export function EditEffortRecordModal({
+  open,
+  onOpenChange,
   recordData,
-  onSuccess 
+  onSuccess,
 }: EditEffortRecordModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [newHighlight, setNewHighlight] = useState('')
   const [newAchievement, setNewAchievement] = useState('')
-  
+
   const [formData, setFormData] = useState<EffortRecordUpdateRequest>({
     date: '',
     period: '過去1週間',
@@ -63,10 +71,10 @@ export function EditEffortRecordModal({
       feeding: 70,
       sleep: 70,
       play: 70,
-      care: 70
+      care: 70,
     },
     summary: '',
-    achievements: []
+    achievements: [],
   })
 
   // 編集対象データでフォームを初期化
@@ -82,10 +90,10 @@ export function EditEffortRecordModal({
           feeding: recordData.categories.feeding,
           sleep: recordData.categories.sleep,
           play: recordData.categories.play,
-          care: recordData.categories.care
+          care: recordData.categories.care,
         },
         summary: recordData.summary,
-        achievements: [...recordData.achievements]
+        achievements: [...recordData.achievements],
       })
       setNewHighlight('')
       setNewAchievement('')
@@ -94,21 +102,21 @@ export function EditEffortRecordModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!recordData?.id) return
-    
+
     if (!formData.summary?.trim()) {
       alert('サマリーを入力してください')
       return
     }
-    
+
     if (!formData.effort_count || formData.effort_count <= 0) {
       alert('努力回数を入力してください')
       return
     }
-    
+
     setIsSubmitting(true)
-    
+
     try {
       const result = await updateEffortRecord(recordData.id, formData)
       if (result.success) {
@@ -128,13 +136,13 @@ export function EditEffortRecordModal({
 
   const handleDelete = async () => {
     if (!recordData?.id) return
-    
+
     if (!confirm('この努力記録を削除しますか？この操作は取り消せません。')) {
       return
     }
-    
+
     setIsDeleting(true)
-    
+
     try {
       const result = await deleteEffortRecord(recordData.id)
       if (result.success) {
@@ -156,7 +164,7 @@ export function EditEffortRecordModal({
     if (newHighlight.trim() && !formData.highlights?.includes(newHighlight.trim())) {
       setFormData(prev => ({
         ...prev,
-        highlights: [...(prev.highlights || []), newHighlight.trim()]
+        highlights: [...(prev.highlights || []), newHighlight.trim()],
       }))
       setNewHighlight('')
     }
@@ -165,7 +173,7 @@ export function EditEffortRecordModal({
   const removeHighlight = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      highlights: prev.highlights?.filter((_, i) => i !== index) || []
+      highlights: prev.highlights?.filter((_, i) => i !== index) || [],
     }))
   }
 
@@ -173,7 +181,7 @@ export function EditEffortRecordModal({
     if (newAchievement.trim() && !formData.achievements?.includes(newAchievement.trim())) {
       setFormData(prev => ({
         ...prev,
-        achievements: [...(prev.achievements || []), newAchievement.trim()]
+        achievements: [...(prev.achievements || []), newAchievement.trim()],
       }))
       setNewAchievement('')
     }
@@ -182,17 +190,20 @@ export function EditEffortRecordModal({
   const removeAchievement = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      achievements: prev.achievements?.filter((_, i) => i !== index) || []
+      achievements: prev.achievements?.filter((_, i) => i !== index) || [],
     }))
   }
 
-  const updateCategory = (category: keyof NonNullable<typeof formData.categories>, value: number) => {
+  const updateCategory = (
+    category: keyof NonNullable<typeof formData.categories>,
+    value: number
+  ) => {
     setFormData(prev => ({
       ...prev,
       categories: {
         ...prev.categories!,
-        [category]: value
-      }
+        [category]: value,
+      },
     }))
   }
 
@@ -200,7 +211,7 @@ export function EditEffortRecordModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold text-gray-800">
             <FaTrophy className="h-6 w-6 text-emerald-600" />
@@ -213,7 +224,7 @@ export function EditEffortRecordModal({
 
         <form onSubmit={handleSubmit} className="space-y-6 pt-4">
           {/* 基本情報 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="date" className="text-sm font-medium text-gray-700">
                 記録日 *
@@ -222,7 +233,7 @@ export function EditEffortRecordModal({
                 id="date"
                 type="date"
                 value={formData.date}
-                onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, date: e.target.value }))}
                 className="border-gray-200 focus:border-emerald-400"
                 required
               />
@@ -232,7 +243,10 @@ export function EditEffortRecordModal({
               <Label htmlFor="period" className="text-sm font-medium text-gray-700">
                 期間 *
               </Label>
-              <Select value={formData.period} onValueChange={(value) => setFormData(prev => ({ ...prev, period: value }))}>
+              <Select
+                value={formData.period}
+                onValueChange={value => setFormData(prev => ({ ...prev, period: value }))}
+              >
                 <SelectTrigger className="border-gray-200 focus:border-emerald-400">
                   <SelectValue />
                 </SelectTrigger>
@@ -254,7 +268,9 @@ export function EditEffortRecordModal({
                 type="number"
                 min="0"
                 value={formData.effort_count}
-                onChange={(e) => setFormData(prev => ({ ...prev, effort_count: parseInt(e.target.value) || 0 }))}
+                onChange={e =>
+                  setFormData(prev => ({ ...prev, effort_count: parseInt(e.target.value) || 0 }))
+                }
                 className="border-gray-200 focus:border-emerald-400"
                 placeholder="例: 25"
                 required
@@ -275,8 +291,10 @@ export function EditEffortRecordModal({
                 max="10"
                 step="0.1"
                 value={formData.score}
-                onChange={(e) => setFormData(prev => ({ ...prev, score: parseFloat(e.target.value) || 5.0 }))}
-                className="border-gray-200 focus:border-emerald-400 w-24"
+                onChange={e =>
+                  setFormData(prev => ({ ...prev, score: parseFloat(e.target.value) || 5.0 }))
+                }
+                className="w-24 border-gray-200 focus:border-emerald-400"
                 required
               />
               <span className="text-sm text-gray-600">/ 10.0</span>
@@ -286,30 +304,42 @@ export function EditEffortRecordModal({
           {/* カテゴリ別スコア */}
           <div className="space-y-4">
             <Label className="text-sm font-medium text-gray-700">カテゴリ別スコア (%)</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {[
                 { key: 'feeding', label: '食事・授乳', color: 'from-orange-500 to-red-600' },
                 { key: 'sleep', label: '睡眠', color: 'from-blue-500 to-indigo-600' },
                 { key: 'play', label: '遊び・学び', color: 'from-green-500 to-emerald-600' },
-                { key: 'care', label: 'ケア・世話', color: 'from-purple-500 to-pink-600' }
+                { key: 'care', label: 'ケア・世話', color: 'from-purple-500 to-pink-600' },
               ].map(({ key, label, color }) => (
                 <div key={key} className="space-y-2">
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">{label}</span>
-                    <span className="text-sm font-bold text-gray-800">{formData.categories?.[key as keyof NonNullable<typeof formData.categories>]}%</span>
+                    <span className="text-sm font-bold text-gray-800">
+                      {formData.categories?.[key as keyof NonNullable<typeof formData.categories>]}%
+                    </span>
                   </div>
                   <Input
                     type="range"
                     min="0"
                     max="100"
-                    value={formData.categories?.[key as keyof NonNullable<typeof formData.categories>] || 70}
-                    onChange={(e) => updateCategory(key as keyof NonNullable<typeof formData.categories>, parseInt(e.target.value))}
+                    value={
+                      formData.categories?.[key as keyof NonNullable<typeof formData.categories>] ||
+                      70
+                    }
+                    onChange={e =>
+                      updateCategory(
+                        key as keyof NonNullable<typeof formData.categories>,
+                        parseInt(e.target.value)
+                      )
+                    }
                     className="w-full"
                   />
-                  <div className="h-2 bg-gray-200 rounded-full">
-                    <div 
+                  <div className="h-2 rounded-full bg-gray-200">
+                    <div
                       className={`h-2 bg-gradient-to-r ${color} rounded-full transition-all duration-300`}
-                      style={{ width: `${formData.categories?.[key as keyof NonNullable<typeof formData.categories>] || 70}%` }}
+                      style={{
+                        width: `${formData.categories?.[key as keyof NonNullable<typeof formData.categories>] || 70}%`,
+                      }}
                     ></div>
                   </div>
                 </div>
@@ -325,7 +355,7 @@ export function EditEffortRecordModal({
             <Textarea
               id="summary"
               value={formData.summary}
-              onChange={(e) => setFormData(prev => ({ ...prev, summary: e.target.value }))}
+              onChange={e => setFormData(prev => ({ ...prev, summary: e.target.value }))}
               placeholder="この期間の努力や成果について詳しく記述してください..."
               rows={4}
               className="border-gray-200 focus:border-emerald-400"
@@ -335,18 +365,18 @@ export function EditEffortRecordModal({
 
           {/* ハイライト */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
               <Star className="h-4 w-4" />
               ハイライト
             </Label>
-            
+
             <div className="flex gap-2">
               <Input
                 value={newHighlight}
-                onChange={(e) => setNewHighlight(e.target.value)}
+                onChange={e => setNewHighlight(e.target.value)}
                 placeholder="特別な出来事や成果を追加..."
                 className="border-gray-200 focus:border-emerald-400"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addHighlight())}
+                onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addHighlight())}
               />
               <Button
                 type="button"
@@ -357,10 +387,14 @@ export function EditEffortRecordModal({
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <div className="flex flex-wrap gap-2">
               {formData.highlights?.map((highlight, index) => (
-                <Badge key={index} variant="outline" className="text-emerald-700 border-emerald-300 bg-emerald-50">
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="border-emerald-300 bg-emerald-50 text-emerald-700"
+                >
                   {highlight}
                   <button
                     type="button"
@@ -376,18 +410,18 @@ export function EditEffortRecordModal({
 
           {/* 達成事項 */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <Label className="flex items-center gap-2 text-sm font-medium text-gray-700">
               <Trophy className="h-4 w-4" />
               達成事項
             </Label>
-            
+
             <div className="flex gap-2">
               <Input
                 value={newAchievement}
-                onChange={(e) => setNewAchievement(e.target.value)}
+                onChange={e => setNewAchievement(e.target.value)}
                 placeholder="達成したマイルストーンや目標を追加..."
                 className="border-gray-200 focus:border-emerald-400"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAchievement())}
+                onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addAchievement())}
               />
               <Button
                 type="button"
@@ -398,10 +432,14 @@ export function EditEffortRecordModal({
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-            
+
             <div className="flex flex-wrap gap-2">
               {formData.achievements?.map((achievement, index) => (
-                <Badge key={index} variant="outline" className="text-purple-700 border-purple-300 bg-purple-50">
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="border-purple-300 bg-purple-50 text-purple-700"
+                >
                   {achievement}
                   <button
                     type="button"
@@ -426,7 +464,7 @@ export function EditEffortRecordModal({
             >
               キャンセル
             </Button>
-            
+
             <Button
               type="button"
               variant="destructive"
@@ -436,30 +474,30 @@ export function EditEffortRecordModal({
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   削除中...
                 </>
               ) : (
                 <>
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="mr-2 h-4 w-4" />
                   削除
                 </>
               )}
             </Button>
-            
+
             <Button
               type="submit"
-              className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white"
+              className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-700 text-white hover:from-emerald-700 hover:to-teal-800"
               disabled={isSubmitting || isDeleting}
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   更新中...
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="mr-2 h-4 w-4" />
                   更新
                 </>
               )}

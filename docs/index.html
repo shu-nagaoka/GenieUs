@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenieUs Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #cccccc;
+            background-color: #1e1e1e;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #0e4f79 0%, #2d5a87 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border: 1px solid #30363d;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .nav-card {
+            background: #252526;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .nav-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            border-color: #569cd6;
+        }
+        
+        .nav-card h3 {
+            color: #569cd6;
+            margin-bottom: 16px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-card ul {
+            list-style: none;
+        }
+        
+        .nav-card li {
+            margin-bottom: 8px;
+        }
+        
+        .nav-card a {
+            color: #9cdcfe;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .nav-card a:hover {
+            background-color: #2a2d2e;
+            color: #ffffff;
+            text-decoration: none;
+        }
+        
+        .quick-start {
+            background: linear-gradient(135deg, #0e4f79 0%, #2d5a87 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid #30363d;
+        }
+        
+        .quick-start h2 {
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .quick-link {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .quick-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.02);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .quick-link a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #858585;
+            border-top: 1px solid #30363d;
+            margin-top: 40px;
+        }
+        
+        .emoji {
+            font-size: 1.2em;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.875rem;
+            color: #858585;
+            margin-left: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .nav-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .quick-links {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span class="emoji">🧞‍♂️</span> GenieUs Documentation</h1>
+            <p>見えない成長に、光をあてる。不安な毎日を、自信に変える。</p>
+        </div>
+        
+        <div class="quick-start">
+            <h2><span class="emoji">🚀</span> すぐ始める</h2>
+            <div class="quick-links">
+                <div class="quick-link">
+                    <a href="development/quick-start.md">環境構築・起動</a>
+                </div>
+                <div class="quick-link">
+                    <a href="development/coding-standards.md">コーディング規約</a>
+                </div>
+                <div class="quick-link">
+                    <a href="architecture/overview.md">アーキテクチャ概要</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="nav-grid">
+            <div class="nav-card">
+                <h3><span class="emoji">🏗️</span> アーキテクチャ</h3>
+                <ul>
+                    <li><a href="architecture/overview.md">🏗️ アーキテクチャ概要</a></li>
+                    <li><a href="architecture/composition-root-design.md">📄 Composition Root設計パターン</a></li>
+                </ul>
+            </div>
+            
+            <div class="nav-card">
+                <h3><span class="emoji">👨‍💻</span> 開発ガイド</h3>
+                <ul>
+                    <li><a href="development/quick-start.md">⚡ クイックスタート</a></li>
+                    <li><a href="development/coding-standards.md">📝 コーディング規約</a></li>
+                    <li><a href="development/refactoring-plans.md">📄 開発リファクタリング計画</a></li>
+                    <li><a href="development/claude-code-integration.md">📖 Claude Code統合・自律参照保証ガイド</a></li>
+                    <li><a href="development/cicd-setup-guide.md">🔧 CI/CDセットアップガイド - 自動化スクリプト使用法</a></li>
+                    <li><a href="development/environment-setup.md">🔧 環境変数設定ガイド</a></li>
+                </ul>
+            </div>
+            
+            <div class="nav-card">
+                <h3><span class="emoji">⚙️</span> 技術詳細</h3>
+                <ul>
+                    <li><a href="technical/routing-system-migration.md">📄 GenieUs ルーティングシステム移行完了報告</a></li>
+                    <li><a href="technical/adk-constraints-and-best-practices.md">📄 Google ADK制約とベストプラクティス</a></li>
+                    <li><a href="technical/layer-return-values.md">📄 レイヤー別戻り値仕様書</a></li>
+                    <li><a href="technical/adk-routing-integration.md">📖 ADK標準ルーティング統合ガイド</a></li>
+                    <li><a href="technical/fastapi-di-integration.md">📖 FastAPI DI 統合ガイド</a></li>
+                    <li><a href="technical/function-declaration-guide.md">📖 FunctionDeclaration 完全ガイド</a></li>
+                    <li><a href="technical/usecase-design-rules.md">📖 UseCase層設計ルール完全ガイド</a></li>
+                    <li><a href="technical/routing-stability-improvements.md">🤖 エージェントルーティング安定化改善</a></li>
+                </ul>
+            </div>
+            
+            <div class="nav-card">
+                <h3><span class="emoji">📖</span> 実装ガイド</h3>
+                <ul>
+                    <li><a href="guides/agent-manager-architecture-guide.md">🏗️ Agent Manager分割アーキテクチャガイド</a></li>
+                    <li><a href="guides/new-agent-creation.md">🏗️ 新エージェント作成ガイド（V2分割アーキテクチャ対応）</a></li>
+                    <li><a href="guides/di-migration-guide.md">📖 DI統合マイグレーションガイド</a></li>
+                    <li><a href="guides/user-authentication-implementation.md">📖 ユーザー認証・パーソナライズ機能実装ガイド</a></li>
+                    <li><a href="guides/authentication-system-explained.md">📖 認証システム実装ガイド - GenieUs</a></li>
+                </ul>
+            </div>
+            
+            <div class="nav-card">
+                <h3><span class="emoji">🚀</span> デプロイメント</h3>
+                <ul>
+                    <li><a href="deployment/cloud-build-guide.md">🏗️ Cloud Build統合デプロイガイド</a></li>
+                    <li><a href="deployment/infrastructure.md">📄 Cloud Runインフラストラクチャ設計</a></li>
+                    <li><a href="deployment/overview.md">📖 Genius Cloud Run デプロイメントガイド</a></li>
+                    <li><a href="deployment/initial-deployment.md">📖 初回デプロイメントガイド</a></li>
+                    <li><a href="deployment/cicd-pipeline.md">🔄 CI/CDパイプライン - GitHub Actions & GCP Cloud Run</a></li>
+                    <li><a href="deployment/quickstart.md">🚀 GenieUs Cloud Run デプロイメント クイックスタート</a></li>
+                    <li><a href="deployment/entrypoint-cloud-run-guide.md">🚀 GenieUs Cloud Run 統合デプロイメントガイド</a></li>
+                    <li><a href="deployment/README.md">🚀 GenieUs Deployment Documentation</a></li>
+                    <li><a href="deployment/checklist.md">🚀 デプロイ前チェックリスト</a></li>
+                </ul>
+            </div>
+            
+            <div class="nav-card">
+                <h3><span class="emoji">📋</span> 実装プラン</h3>
+                <ul>
+                    <li><a href="plan/parallel-agent-collaborative-reports.md">📋 並列エージェント協働レポート実装プラン</a></li>
+                </ul>
+            </div>
+            
+            <div class="nav-card">
+                <h3><span class="emoji">🎫</span> Issue管理</h3>
+                <ul>
+                    <li><a href="issue/frontend-performance-optimization.md">🎫 Issue: フロントエンド速度最適化実装</a></li>
+                    <li><a href="issue/local-file-image-analysis.md">🎫 Issue: ローカルファイル保存ベース画像分析パイプライン実装</a></li>
+                    <li><a href="issue/image-auto-prompt-and-ui-exclusivity.md">🎫 Issue: 画像添付時の自動プロンプト追加とUI排他制御実装</a></li>
+                    <li><a href="issue/frontend-performance-optimization-completed.md">📄 Frontend Performance Optimization - Phase 1 完了報告</a></li>
+                    <li><a href="issue/github-actions-cloud-run-cicd-setup.md">🔄 Issue: GitHub Actions CI/CD → GCP Cloud Run 自動デプロイパイプライン構築</a></li>
+                </ul>
+            </div>
+            
+            <div class="nav-card">
+                <h3><span class="emoji">📝</span> ブログ</h3>
+                <ul>
+                    <li><a href="blog/hackathon-blog-v2.md">📄 GenieUs ハッカソン向けブログ記事 v2</a></li>
+                    <li><a href="blog/hackathon-blog-v3.md">📄 GenieUs ハッカソン向けブログ記事 v3（実機能版）</a></li>
+                    <li><a href="blog/hackathon-blog-v4.md">📄 GenieUs ハッカソン向けブログ記事 v4（インパクト重視版）</a></li>
+                    <li><a href="blog/hackathon-blog-outline.md">📄 GenieUs ハッカソン向けブログ記事アウトライン</a></li>
+                    <li><a href="blog/hackathon-overview.md">📄 Hackathon Overview</a></li>
+                    <li><a href="blog/new-concept.md">📄 New Concept</a></li>
+                </ul>
+            </div>
+            
+        </div>
+        
+        <div class="footer">
+            <p>📖 GenieUs Documentation - AI子育て支援プラットフォーム</p>
+            <p>🤖 自動更新対応Webビューアー - Generated with Claude Code - 最終更新: 2025/6/28 12:55:42</p>
+            <p style="margin-top: 10px; font-size: 0.8rem; color: #666;">
+                💡 高機能ビューアー: <a href="web/index.html" style="color: #9cdcfe;">docs/web/index.html</a>
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // MarkdownリンクをHTMLで表示する際の処理
+        document.addEventListener('DOMContentLoaded', function() {
+            const links = document.querySelectorAll('a[href$=".md"]');
+            
+            links.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const href = this.getAttribute('href');
+                    
+                    // Markdownファイルの内容を取得して表示
+                    fetch(href)
+                        .then(response => response.text())
+                        .then(markdown => {
+                            // 簡単なMarkdown to HTMLコンバーター
+                            showMarkdownContent(markdown, href);
+                        })
+                        .catch(error => {
+                            console.error('Error loading markdown:', error);
+                            // フォールバック: 新しいタブで開く
+                            window.open(href, '_blank');
+                        });
+                });
+            });
+        });
+        
+        function showMarkdownContent(markdown, title) {
+            // シンプルなMarkdown表示モーダル
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                z-index: 1000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white;
+                border-radius: 12px;
+                padding: 30px;
+                max-width: 800px;
+                max-height: 80vh;
+                overflow-y: auto;
+                position: relative;
+            `;
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '✕';
+            closeBtn.style.cssText = `
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                background: none;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+                color: #666;
+            `;
+            
+            closeBtn.onclick = () => modal.remove();
+            
+            // 簡単なMarkdown to HTML変換
+            const html = markdown
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+                .replace(/\n/gim, '<br>');
+            
+            content.innerHTML = `
+                <h2 style="margin-bottom: 20px; color: #667eea;">${title}</h2>
+                <div style="line-height: 1.6;">${html}</div>
+            `;
+            
+            content.appendChild(closeBtn);
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+            
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.remove();
+            };
+        }
+    </script>
+</body>
+</html>

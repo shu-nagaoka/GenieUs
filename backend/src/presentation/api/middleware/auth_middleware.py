@@ -54,10 +54,13 @@ class GoogleTokenVerifier:
                     self.logger.warning(f"無効なGoogle Token: {token_info.get('error')}")
                     return None
 
-                self.logger.info("Google Token検証成功", extra={
-                    "user_id": token_info.get("sub"),
-                    "email": token_info.get("email"),
-                })
+                self.logger.info(
+                    "Google Token検証成功",
+                    extra={
+                        "user_id": token_info.get("sub"),
+                        "email": token_info.get("email"),
+                    },
+                )
 
                 return token_info
 
@@ -91,10 +94,13 @@ class JWTAuthenticator:
                 algorithm="HS256",
             )
 
-            self.logger.info("JWTトークン生成完了", extra={
-                "user_id": user.google_id,
-                "expires_at": payload["exp"].isoformat(),
-            })
+            self.logger.info(
+                "JWTトークン生成完了",
+                extra={
+                    "user_id": user.google_id,
+                    "expires_at": payload["exp"].isoformat(),
+                },
+            )
 
             return token
 
@@ -111,9 +117,12 @@ class JWTAuthenticator:
                 algorithms=["HS256"],
             )
 
-            self.logger.debug("JWTトークン検証成功", extra={
-                "user_id": payload.get("sub"),
-            })
+            self.logger.debug(
+                "JWTトークン検証成功",
+                extra={
+                    "user_id": payload.get("sub"),
+                },
+            )
 
             return payload
 
@@ -148,7 +157,7 @@ class AuthMiddleware:
         authorization: HTTPAuthorizationCredentials | None,
     ) -> dict[str, Any] | None:
         """リクエスト認証
-        
+
         1. JWTトークン検証 (優先)
         2. Google OAuth Token検証 (フォールバック)
         """
@@ -200,10 +209,13 @@ class AuthMiddleware:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        self.logger.info("認証成功", extra={
-            "user_id": user_context["user_id"],
-            "auth_type": user_context["auth_type"],
-        })
+        self.logger.info(
+            "認証成功",
+            extra={
+                "user_id": user_context["user_id"],
+                "auth_type": user_context["auth_type"],
+            },
+        )
 
         return user_context
 
@@ -215,10 +227,13 @@ class AuthMiddleware:
         user_context = await self.authenticate_request(authorization)
 
         if user_context:
-            self.logger.info("オプション認証成功", extra={
-                "user_id": user_context["user_id"],
-                "auth_type": user_context["auth_type"],
-            })
+            self.logger.info(
+                "オプション認証成功",
+                extra={
+                    "user_id": user_context["user_id"],
+                    "auth_type": user_context["auth_type"],
+                },
+            )
         else:
             self.logger.debug("未認証ユーザーによるアクセス")
 

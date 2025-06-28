@@ -44,9 +44,12 @@ class DataMigrator:
 
             # 4. 他のエンティティも同様に追加可能
 
-            self.logger.info("データ移行完了", extra={
-                "total_migrated": sum(r.get("migrated_count", 0) for r in migration_results["summary"].values()),
-            })
+            self.logger.info(
+                "データ移行完了",
+                extra={
+                    "total_migrated": sum(r.get("migrated_count", 0) for r in migration_results["summary"].values()),
+                },
+            )
 
             return migration_results
 
@@ -71,7 +74,7 @@ class DataMigrator:
                     user_id = family_file.stem.replace("_family", "")
 
                     # JSONファイル読み込み
-                    with open(family_file, encoding='utf-8') as f:
+                    with open(family_file, encoding="utf-8") as f:
                         family_data = json.load(f)
 
                     # SQLiteに挿入
@@ -131,7 +134,7 @@ class DataMigrator:
             growth_file = self.data_dir / "growth_records.json"
 
             if growth_file.exists():
-                with open(growth_file, encoding='utf-8') as f:
+                with open(growth_file, encoding="utf-8") as f:
                     growth_data = json.load(f)
 
                 # リスト形式の場合
@@ -205,7 +208,7 @@ class DataMigrator:
             effort_file = self.data_dir / "effort_reports.json"
 
             if effort_file.exists():
-                with open(effort_file, encoding='utf-8') as f:
+                with open(effort_file, encoding="utf-8") as f:
                     effort_data = json.load(f)
 
                 # データ構造に応じて処理
@@ -271,7 +274,8 @@ class DataMigrator:
         """デフォルトユーザーの存在を確保"""
         # ユーザー存在チェック
         existing_user = self.sqlite_manager.execute_query(
-            "SELECT google_id FROM users WHERE google_id = ?", (user_id,),
+            "SELECT google_id FROM users WHERE google_id = ?",
+            (user_id,),
         )
 
         if not existing_user:
@@ -310,7 +314,7 @@ class DataMigrator:
             for json_file in self.data_dir.glob("*.json"):
                 try:
                     backup_file = backup_dir / json_file.name
-                    backup_file.write_text(json_file.read_text(encoding='utf-8'), encoding='utf-8')
+                    backup_file.write_text(json_file.read_text(encoding="utf-8"), encoding="utf-8")
                     result["backed_up_files"].append(json_file.name)
                     self.logger.debug(f"バックアップ完了: {json_file.name}")
                 except Exception as e:

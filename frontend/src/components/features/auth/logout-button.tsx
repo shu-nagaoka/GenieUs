@@ -10,10 +10,10 @@ interface LogoutButtonProps {
   showIcon?: boolean
 }
 
-export function LogoutButton({ 
-  variant = 'ghost', 
-  size = 'sm', 
-  showIcon = true 
+export function LogoutButton({
+  variant = 'ghost',
+  size = 'sm',
+  showIcon = true,
 }: LogoutButtonProps) {
   const handleLogout = () => {
     signOut({ callbackUrl: '/' })

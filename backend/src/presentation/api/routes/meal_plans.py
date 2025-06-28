@@ -20,6 +20,7 @@ from src.presentation.api.dependencies import get_meal_plan_management_usecase
 
 # === Pydantic Models ===
 
+
 class NutritionInfoRequest(BaseModel):
     """栄養情報リクエストモデル"""
 
@@ -95,6 +96,7 @@ class SearchMealPlansRequestModel(BaseModel):
 
 
 # === Response Models ===
+
 
 class NutritionInfoResponse(BaseModel):
     """栄養情報レスポンスモデル"""

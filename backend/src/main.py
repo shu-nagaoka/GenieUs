@@ -16,10 +16,16 @@ from src.presentation.api.routes.effort_reports import router as effort_reports_
 from src.presentation.api.routes.family import router as family_router
 from src.presentation.api.routes.file_upload import router as file_upload_router
 from src.presentation.api.routes.growth_records import router as growth_records_router
+from src.presentation.api.routes.image_analysis import router as image_analysis_router
 from src.presentation.api.routes.meal_plans import router as meal_plans_router
 from src.presentation.api.routes.memories import router as memories_router
+from src.presentation.api.routes.record_management import (
+    router as record_management_router,
+)
 from src.presentation.api.routes.schedules import router as schedules_router
+from src.presentation.api.routes.search_history import router as search_history_router
 from src.presentation.api.routes.streaming_chat import router as streaming_chat_router
+from src.presentation.api.routes.voice_analysis import router as voice_analysis_router
 
 
 @asynccontextmanager
@@ -35,14 +41,16 @@ async def lifespan(app: FastAPI):
         logger = composition_root.logger
         logger.info("✅ CompositionRoot初期化完了")
 
-        # AgentManagerに必要なツールとルーティング戦略を注入
+        # AgentManagerに必要なツールとルーティング戦略、AgentRegistryを注入
         all_tools = composition_root.get_all_tools()
         routing_strategy = composition_root.get_routing_strategy()
+        agent_registry = composition_root.get_agent_registry()
         agent_manager = AgentManager(
             tools=all_tools,
             logger=logger,
             settings=composition_root.settings,
             routing_strategy=routing_strategy,
+            agent_registry=agent_registry,
         )
         agent_manager.initialize_all_components()
         logger.info("✅ AgentManager初期化完了（Pure Composition Root + ルーティング戦略）")
@@ -71,6 +79,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
 # CORS設定（動的ポート対応）
 def get_cors_origins():
     """環境変数からCORS許可オリジンを動的に構築"""
@@ -92,6 +101,7 @@ def get_cors_origins():
 
     return list(set(origins))  # 重複除去
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_cors_origins(),
@@ -111,7 +121,7 @@ app.include_router(effort_reports_router, prefix="/api", tags=["effort_reports"]
 app.include_router(schedules_router, prefix="/api", tags=["schedules"])
 app.include_router(growth_records_router, prefix="/api", tags=["growth_records"])
 app.include_router(memories_router, prefix="/api", tags=["memories"])
-app.include_router(file_upload_router, prefix="/api", tags=["files"])
+app.include_router(file_upload_router, tags=["files"])
 
 # 🍽️ 食事プラン管理ルーター
 app.include_router(meal_plans_router, prefix="/api", tags=["meal_plans"])
@@ -124,6 +134,18 @@ app.include_router(admin_router, prefix="/api/admin", tags=["admin"])
 
 # 🤖 エージェント情報ルーター
 app.include_router(agents_router, prefix="/api", tags=["agents"])
+
+# 🖼️ 画像解析ルーター
+app.include_router(image_analysis_router, tags=["image_analysis"])
+
+# 🎙️ 音声解析ルーター
+app.include_router(voice_analysis_router, tags=["voice_analysis"])
+
+# 📝 記録管理ルーター
+app.include_router(record_management_router, tags=["record_management"])
+
+# 🔍 検索履歴ルーター
+app.include_router(search_history_router, tags=["search_history"])
 
 
 @app.exception_handler(Exception)
@@ -163,6 +185,10 @@ async def root():
             "schedules_crud": "/api/v1/schedules/*",
             "growth_records_crud": "/api/v1/growth-records/*",
             "memories_crud": "/api/v1/memories/*",
+            "image_analysis": "/api/v1/image-analysis/*",
+            "voice_analysis": "/api/v1/voice-analysis/*",
+            "record_management": "/api/v1/record-management/*",
+            "search_history": "/api/v1/search-history/*",
         },
     }
 

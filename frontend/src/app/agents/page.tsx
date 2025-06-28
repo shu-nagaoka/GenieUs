@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { memo } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -9,33 +9,114 @@ import { FiUsers, FiZap, FiStar, FiCheck, FiArrowRight } from 'react-icons/fi'
 import { HiOutlineSparkles, HiOutlineChatBubbleLeftEllipsis } from 'react-icons/hi2'
 import { GiMagicLamp, GiSparkles } from 'react-icons/gi'
 import Link from 'next/link'
-import { getAgents, Agent } from '@/libs/api/agents'
+import { useAgents } from '@/hooks/useAgents'
+import type { Agent } from '@/libs/api/agents'
+
+// メモ化されたエージェントカードコンポーネント
+const AgentCard = memo(({ agent }: { agent: Agent }) => (
+  <Card className="group overflow-hidden border-0 bg-white/80 shadow-lg backdrop-blur-sm">
+    <CardHeader className={`bg-gradient-to-r ${agent.color} relative text-white`}>
+      <div className="absolute right-2 top-2">
+        <Badge variant="secondary" className="border-0 bg-white/20 text-white">
+          専門Agent
+        </Badge>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="rounded-full bg-white/20 p-3 text-4xl backdrop-blur-sm">
+          {agent.icon}
+        </div>
+        <div>
+          <CardTitle className="text-lg font-bold text-white">{agent.name}</CardTitle>
+          <div className="mt-1 flex items-center gap-1">
+            <FiCheck className="h-3 w-3" />
+            <span className="text-xs text-white/90">オンライン</span>
+          </div>
+        </div>
+      </div>
+    </CardHeader>
+
+    <CardContent className="p-6">
+      <p className="mb-4 text-sm leading-relaxed text-gray-700">{agent.description}</p>
+
+      <div className="mb-4">
+        <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
+          <FiStar className="h-4 w-4" />
+          専門分野
+        </h4>
+        <div className="flex flex-wrap gap-1">
+          {agent.specialties.slice(0, 3).map((specialty, index) => (
+            <Badge
+              key={index}
+              variant="outline"
+              className="border-gray-300 text-xs text-gray-600"
+            >
+              {specialty}
+            </Badge>
+          ))}
+          {agent.specialties.length > 3 && (
+            <Badge variant="outline" className="border-gray-300 text-xs text-gray-500">
+              +{agent.specialties.length - 3}つ
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
+          <FiZap className="h-4 w-4" />
+          主な機能
+        </h4>
+        <div className="space-y-1">
+          {agent.capabilities.slice(0, 2).map((capability, index) => (
+            <div key={index} className="flex items-center gap-2 text-xs text-gray-600">
+              <div className="h-1 w-1 rounded-full bg-gray-400"></div>
+              {capability}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Link href="/chat" className="block">
+        <Button
+          className={`w-full bg-gradient-to-r ${agent.color} border-0 text-white hover:opacity-90`}
+          size="sm"
+        >
+          <HiOutlineChatBubbleLeftEllipsis className="mr-2 h-4 w-4" />
+          相談してみる
+          <FiArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </Link>
+    </CardContent>
+  </Card>
+))
+AgentCard.displayName = 'AgentCard'
 
 export default function AgentsPage() {
-  const [agents, setAgents] = useState<Agent[]>([])
-  const [loading, setLoading] = useState(true)
-  const [activeCount, setActiveCount] = useState(0)
+  const { data: agents = [], isLoading, error } = useAgents()
+  const activeCount = agents.filter(agent => agent.status === 'active').length
 
-  useEffect(() => {
-    loadAgents()
-  }, [])
-
-  const loadAgents = async () => {
-    try {
-      setLoading(true)
-      const result = await getAgents()
-      if (result.success && result.data) {
-        setAgents(result.data)
-        setActiveCount(result.data.filter(agent => agent.status === 'active').length)
-      }
-    } catch (error) {
-      console.error('エージェント読み込みエラー:', error)
-    } finally {
-      setLoading(false)
-    }
+  if (error) {
+    return (
+      <AppLayout>
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
+          <div className="text-center">
+            <div className="mb-4 text-6xl">😵</div>
+            <h2 className="mb-2 text-xl font-bold text-gray-800">エージェント情報の読み込みに失敗しました</h2>
+            <p className="mb-4 text-gray-600">しばらく時間をおいてから再度お試しください</p>
+            <Button
+              onClick={() => window.location.reload()}
+              className="bg-orange-500 text-white hover:bg-orange-600"
+            >
+              再読み込み
+            </Button>
+          </div>
+        </div>
+      </AppLayout>
+    )
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <AppLayout>
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
@@ -101,84 +182,7 @@ export default function AgentsPage() {
           {/* エージェントカード一覧 */}
           <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {agents.map(agent => (
-              <Card
-                key={agent.id}
-                className="group overflow-hidden border-0 bg-white/80 shadow-lg backdrop-blur-sm"
-              >
-                <CardHeader className={`bg-gradient-to-r ${agent.color} relative text-white`}>
-                  <div className="absolute right-2 top-2">
-                    <Badge variant="secondary" className="border-0 bg-white/20 text-white">
-                      専門Agent
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="rounded-full bg-white/20 p-3 text-4xl backdrop-blur-sm">
-                      {agent.icon}
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg font-bold text-white">{agent.name}</CardTitle>
-                      <div className="mt-1 flex items-center gap-1">
-                        <FiCheck className="h-3 w-3" />
-                        <span className="text-xs text-white/90">オンライン</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="p-6">
-                  <p className="mb-4 text-sm leading-relaxed text-gray-700">{agent.description}</p>
-
-                  <div className="mb-4">
-                    <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
-                      <FiStar className="h-4 w-4" />
-                      専門分野
-                    </h4>
-                    <div className="flex flex-wrap gap-1">
-                      {agent.specialties.slice(0, 3).map((specialty, index) => (
-                        <Badge
-                          key={index}
-                          variant="outline"
-                          className="border-gray-300 text-xs text-gray-600"
-                        >
-                          {specialty}
-                        </Badge>
-                      ))}
-                      {agent.specialties.length > 3 && (
-                        <Badge variant="outline" className="border-gray-300 text-xs text-gray-500">
-                          +{agent.specialties.length - 3}つ
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-800">
-                      <FiZap className="h-4 w-4" />
-                      主な機能
-                    </h4>
-                    <div className="space-y-1">
-                      {agent.capabilities.slice(0, 2).map((capability, index) => (
-                        <div key={index} className="flex items-center gap-2 text-xs text-gray-600">
-                          <div className="h-1 w-1 rounded-full bg-gray-400"></div>
-                          {capability}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Link href="/chat" className="block">
-                    <Button
-                      className={`w-full bg-gradient-to-r ${agent.color} border-0 text-white hover:opacity-90`}
-                      size="sm"
-                    >
-                      <HiOutlineChatBubbleLeftEllipsis className="mr-2 h-4 w-4" />
-                      相談してみる
-                      <FiArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
+              <AgentCard key={agent.id} agent={agent} />
             ))}
           </div>
 

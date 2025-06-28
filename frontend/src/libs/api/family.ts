@@ -3,46 +3,48 @@
  */
 
 export interface Child {
-  name: string;
-  age: string;
-  gender: string;
-  birth_date: string;
-  characteristics: string;
-  allergies: string;
-  medical_notes: string;
+  name: string
+  age: string
+  gender: string
+  birth_date: string
+  characteristics: string
+  allergies: string
+  medical_notes: string
 }
 
 export interface FamilyInfo {
-  family_id?: string;
-  user_id?: string;
-  parent_name: string;
-  family_structure: string;
-  concerns: string;
-  living_area?: string;  // 居住エリア情報
-  children: Child[];
-  created_at?: string;
-  updated_at?: string;
+  family_id?: string
+  user_id?: string
+  parent_name: string
+  family_structure: string
+  concerns: string
+  living_area?: string // 居住エリア情報
+  children: Child[]
+  created_at?: string
+  updated_at?: string
 }
 
 export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
+  success: boolean
+  data?: T
+  message?: string
+  error?: string
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 /**
  * 家族情報を取得
  */
-export async function getFamilyInfo(userId: string = 'frontend_user'): Promise<ApiResponse<FamilyInfo>> {
+export async function getFamilyInfo(
+  userId: string = 'frontend_user'
+): Promise<ApiResponse<FamilyInfo>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/family/info?user_id=${userId}`);
-    return await response.json();
+    const response = await fetch(`${API_BASE_URL}/api/family/info?user_id=${userId}`)
+    return await response.json()
   } catch (error) {
-    console.error('家族情報取得エラー:', error);
-    throw error;
+    console.error('家族情報取得エラー:', error)
+    throw error
   }
 }
 
@@ -61,18 +63,18 @@ export async function registerFamilyInfo(
       },
       body: JSON.stringify({
         ...familyData,
-        user_id: userId
+        user_id: userId,
       }),
-    });
-    
+    })
+
     if (!response.ok) {
-      throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+      throw new Error(`HTTP Error: ${response.status} ${response.statusText}`)
     }
-    
-    return await response.json();
+
+    return await response.json()
   } catch (error) {
-    console.error('家族情報登録エラー:', error);
-    throw error;
+    console.error('家族情報登録エラー:', error)
+    throw error
   }
 }
 
@@ -91,18 +93,18 @@ export async function updateFamilyInfo(
       },
       body: JSON.stringify({
         ...familyData,
-        user_id: userId
+        user_id: userId,
       }),
-    });
-    
+    })
+
     if (!response.ok) {
-      throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+      throw new Error(`HTTP Error: ${response.status} ${response.statusText}`)
     }
-    
-    return await response.json();
+
+    return await response.json()
   } catch (error) {
-    console.error('家族情報更新エラー:', error);
-    throw error;
+    console.error('家族情報更新エラー:', error)
+    throw error
   }
 }
 
@@ -113,11 +115,11 @@ export async function deleteFamilyInfo(userId: string = 'frontend_user'): Promis
   try {
     const response = await fetch(`${API_BASE_URL}/api/family/delete?user_id=${userId}`, {
       method: 'DELETE',
-    });
-    return await response.json();
+    })
+    return await response.json()
   } catch (error) {
-    console.error('家族情報削除エラー:', error);
-    throw error;
+    console.error('家族情報削除エラー:', error)
+    throw error
   }
 }
 
@@ -137,7 +139,7 @@ export function formatFamilyInfoForChat(familyInfo: FamilyInfo): Record<string, 
       birth_date: child.birth_date,
       characteristics: child.characteristics,
       allergies: child.allergies,
-      medical_notes: child.medical_notes
-    }))
-  };
+      medical_notes: child.medical_notes,
+    })),
+  }
 }

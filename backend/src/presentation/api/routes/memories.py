@@ -112,7 +112,9 @@ async def update_memory_record(
         user_id = request_data.get("user_id", "frontend_user")
 
         result = await memory_record_usecase.update_memory_record(
-            user_id=user_id, memory_id=memory_id, update_data=request_data,
+            user_id=user_id,
+            memory_id=memory_id,
+            update_data=request_data,
         )
         return result
     except Exception as e:
@@ -143,7 +145,9 @@ async def toggle_memory_favorite(
     """メモリーのお気に入り状態を切り替え"""
     try:
         result = await memory_record_usecase.toggle_memory_favorite(
-            user_id=user_id, memory_id=memory_id, favorited=favorited,
+            user_id=user_id,
+            memory_id=memory_id,
+            favorited=favorited,
         )
         return result
     except Exception as e:

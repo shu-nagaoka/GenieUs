@@ -1,6 +1,6 @@
 """AgentRegistry - エージェント初期化とRunner管理
 
-18専門エージェントの初期化、登録、Runner管理を担当
+15専門エージェントの初期化、登録、Runner管理を担当
 """
 
 import logging
@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from google.adk.agents import Agent, ParallelAgent, SequentialAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
-
 from src.agents.constants import (
     AGENT_CONFIG,
     AGENT_DISPLAY_NAMES,
@@ -25,9 +24,9 @@ load_dotenv()
 
 class AgentRegistry:
     """エージェント登録・管理システム
-    
+
     責務:
-    - 18専門エージェントの初期化
+    - 15専門エージェントの初期化
     - Sequential/Parallelパイプラインの構築
     - Runner管理
     - エージェント情報の提供
@@ -35,7 +34,7 @@ class AgentRegistry:
 
     def __init__(self, tools: dict, logger: logging.Logger, app_name: str = "GenieUs"):
         """AgentRegistry初期化
-        
+
         Args:
             tools: エージェントが使用するツール群
             logger: DIコンテナから注入されるロガー
@@ -58,11 +57,11 @@ class AgentRegistry:
         self._failed_agents: set[str] = set()
 
     def initialize_all_agents(self) -> None:
-        """18専門エージェント初期化"""
-        self.logger.info("18専門エージェント統合システム初期化開始")
+        """15専門エージェント初期化"""
+        self.logger.info("15専門エージェント統合システム初期化開始")
 
         try:
-            # 1. 18専門エージェント作成
+            # 1. 15専門エージェント作成
             self._create_all_specialist_agents()
 
             # 2. Sequential/Parallelエージェント作成
@@ -77,19 +76,18 @@ class AgentRegistry:
             total_agents = len(self._agents)
 
             self.logger.info(
-                f"18専門エージェント初期化完了: {total_agents}個作成成功, "
-                f"{success_count}個正常, {failed_count}個失敗",
+                f"15専門エージェント初期化完了: {total_agents}個作成成功, {success_count}個正常, {failed_count}個失敗",
             )
 
             if self._failed_agents:
                 self.logger.warning(f"作成失敗エージェント: {', '.join(self._failed_agents)}")
 
         except Exception as e:
-            self.logger.error(f"18専門エージェント初期化エラー: {e}")
+            self.logger.error(f"15専門エージェント初期化エラー: {e}")
             raise
 
     def _create_all_specialist_agents(self) -> None:
-        """18専門エージェント一括作成"""
+        """15専門エージェント一括作成"""
         # 環境変数確認
         project = os.getenv("GOOGLE_CLOUD_PROJECT")
         location = os.getenv("GOOGLE_CLOUD_LOCATION")
@@ -123,7 +121,12 @@ class AgentRegistry:
     def _create_single_agent(self, agent_id: str, instruction: str) -> None:
         """単一エージェント作成"""
         # エージェント名を決定
-        agent_name = agent_id.replace("_", "").title() + "Specialist"
+        # アンダースコア区切りを適切にCapitalCaseに変換
+        # 既に"specialist"が含まれている場合は追加しない
+        parts = agent_id.split("_")
+        agent_name = "".join(part.capitalize() for part in parts)
+        if not agent_name.endswith("Specialist"):
+            agent_name += "Specialist"
 
         # ツール設定
         tools = []
@@ -137,9 +140,7 @@ class AgentRegistry:
 
         # モデル選択
         model = (
-            LIGHTWEIGHT_AGENT_CONFIG["model"]
-            if agent_id == "followup_question_generator"
-            else AGENT_CONFIG["model"]
+            LIGHTWEIGHT_AGENT_CONFIG["model"] if agent_id == "followup_question_generator" else AGENT_CONFIG["model"]
         )
 
         agent_kwargs = {
@@ -153,8 +154,7 @@ class AgentRegistry:
             agent_kwargs["tools"] = tools
 
         self.logger.debug(
-            f"エージェント作成パラメータ ({agent_id}): "
-            f"model={model}, tools={len(tools) if tools else 0}",
+            f"エージェント作成パラメータ ({agent_id}): model={model}, tools={len(tools) if tools else 0}",
         )
         self._agents[agent_id] = Agent(**agent_kwargs)
 
@@ -181,7 +181,7 @@ class AgentRegistry:
                 sub_agents=primary_agents[:3],
             )
             self.logger.info(
-                f"🔄 Sequential18専門家パイプライン作成完了: {len(primary_agents[:3])}エージェント",
+                f"🔄 Sequential15専門家パイプライン作成完了: {len(primary_agents[:3])}エージェント",
             )
         else:
             self.logger.error("❌ 専門エージェントが不足してSequentialパイプライン作成不可")
@@ -228,7 +228,7 @@ class AgentRegistry:
                 sub_agents=parallel_specialists[:5],
             )
             self.logger.info(
-                f"⚡ Parallel18専門家パイプライン作成完了: {len(parallel_specialists[:5])}エージェント",
+                f"⚡ Parallel15専門家パイプライン作成完了: {len(parallel_specialists[:5])}エージェント",
             )
         else:
             self.logger.warning("⚠️ 専門エージェント不足。Parallel分析パイプライン未作成")
@@ -287,7 +287,7 @@ class AgentRegistry:
         return self._session_service
 
     def get_agent_info(self) -> dict[str, dict[str, any]]:
-        """18専門エージェント情報取得"""
+        """15専門エージェント情報取得"""
         from src.agents.constants import AGENT_KEYWORDS
 
         info = {}
@@ -307,7 +307,7 @@ class AgentRegistry:
         if self._sequential_agent:
             info["sequential_pipeline"] = {
                 "name": self._sequential_agent.name,
-                "display_name": "Sequential18専門家パイプライン",
+                "display_name": "Sequential15専門家パイプライン",
                 "model": "pipeline",
                 "sub_agents_count": len(self._sequential_agent.sub_agents),
                 "type": "sequential",
@@ -318,7 +318,7 @@ class AgentRegistry:
         if self._parallel_agent:
             info["parallel_pipeline"] = {
                 "name": self._parallel_agent.name,
-                "display_name": "Parallel18専門家パイプライン",
+                "display_name": "Parallel15専門家パイプライン",
                 "model": "pipeline",
                 "sub_agents_count": len(self._parallel_agent.sub_agents),
                 "type": "parallel",
@@ -337,6 +337,88 @@ class AgentRegistry:
             types.append("parallel")
         types.append("auto")  # 自動選択
         return types
+
+    def get_specialist_llm_agents(self) -> dict[str, "LlmAgent"]:
+        """専門エージェントをLlmAgent形式で取得（ADKルーティング統合用）
+
+        Returns:
+            Dict[str, LlmAgent]: 専門エージェントのLlmAgent変換版
+
+        Note:
+            既存のAgentをLlmAgentでラップして、ADK標準ルーティングとの互換性を確保
+
+        """
+        from google.adk.agents import LlmAgent
+
+        specialist_llm_agents = {}
+
+        # 専門エージェントのリスト（sequential/parallelを除く）
+        specialist_types = [
+            "nutrition_specialist",
+            "sleep_specialist",
+            "development_specialist",
+            "health_specialist",
+            "behavior_specialist",
+            "play_learning_specialist",
+            "safety_specialist",
+            "work_life_specialist",
+            "mental_care_specialist",
+            "search_specialist",
+        ]
+
+        for agent_id in specialist_types:
+            if agent_id in self._agents:
+                original_agent = self._agents[agent_id]
+
+                # 既存AgentをLlmAgentでラップ（ADK標準対応）
+                # 注意: specialist agentは転送機能を無効化（自分の専門分野で回答）
+                # ただし、search_specialistのみgoogle_searchツールを有効化
+                # specialist agentのツール設定
+                tools_for_agent = []
+                if agent_id == "search_specialist":
+                    # search_specialistのみADKのgoogle_searchツールを有効化
+                    from google.adk.tools import google_search
+
+                    tools_for_agent = [google_search]
+
+                llm_agent = LlmAgent(
+                    name=original_agent.name,
+                    model="gemini-2.5-flash",  # ADK標準モデル
+                    instruction=original_agent.instruction,
+                    tools=tools_for_agent,  # search_specialistのみツール有効、他は空配列
+                )
+
+                specialist_llm_agents[agent_id] = llm_agent
+
+        self.logger.info(f"🔄 専門エージェントLlmAgent変換完了: {len(specialist_llm_agents)}個")
+        return specialist_llm_agents
+
+    def register_adk_coordinator(self, coordinator_agent: "LlmAgent") -> None:
+        """ADKコーディネーターエージェントを登録してRunner作成
+
+        Args:
+            coordinator_agent: ADK標準LlmAgentコーディネーター
+
+        """
+        from google.adk.runners import Runner
+
+        self.logger.info("🔧 ADKコーディネーター登録開始...")
+
+        # ADKコーディネーターエージェントを登録
+        self._agents["adk_coordinator"] = coordinator_agent
+        self.logger.info(f"📋 ADKコーディネーターAgent登録: {coordinator_agent.name}")
+
+        # ADKコーディネーター用のRunner作成
+        self._runners["adk_coordinator"] = Runner(
+            agent=coordinator_agent,
+            app_name=self._app_name,
+            session_service=self._session_service,
+        )
+        self.logger.info(f"🏃 ADKコーディネーターRunner登録: app_name={self._app_name}")
+
+        # 登録確認
+        total_runners = len(self._runners)
+        self.logger.info(f"✅ ADKコーディネーターAgent & Runner登録完了 (総Runner数: {total_runners})")
 
     @property
     def default_runner(self) -> Runner:

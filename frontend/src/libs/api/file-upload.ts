@@ -14,13 +14,16 @@ export interface UploadResponse {
 /**
  * 画像ファイルをアップロード
  */
-export async function uploadImage(file: File, userId: string = 'frontend_user'): Promise<UploadResponse> {
+export async function uploadImage(
+  file: File,
+  userId: string = 'frontend_user'
+): Promise<UploadResponse> {
   try {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('user_id', userId)
 
-    const response = await fetch(`${API_BASE_URL}/api/files/upload/image`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/files/upload/image`, {
       method: 'POST',
       body: formData,
     })
@@ -35,7 +38,7 @@ export async function uploadImage(file: File, userId: string = 'frontend_user'):
     console.error('画像アップロードエラー:', error)
     return {
       success: false,
-      message: error instanceof Error ? error.message : '画像のアップロードに失敗しました'
+      message: error instanceof Error ? error.message : '画像のアップロードに失敗しました',
     }
   }
 }
@@ -44,17 +47,23 @@ export async function uploadImage(file: File, userId: string = 'frontend_user'):
  * 画像のURLを取得（表示用）
  */
 export function getImageUrl(filename: string): string {
-  return `${API_BASE_URL}/api/files/images/${filename}`
+  return `${API_BASE_URL}/api/v1/files/images/${filename}`
 }
 
 /**
  * 画像を削除
  */
-export async function deleteImage(filename: string, userId: string = 'frontend_user'): Promise<{ success: boolean; message?: string }> {
+export async function deleteImage(
+  filename: string,
+  userId: string = 'frontend_user'
+): Promise<{ success: boolean; message?: string }> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/files/images/${filename}?user_id=${userId}`, {
-      method: 'DELETE',
-    })
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/files/images/${filename}?user_id=${userId}`,
+      {
+        method: 'DELETE',
+      }
+    )
 
     if (!response.ok) {
       const errorData = await response.json()
@@ -66,7 +75,7 @@ export async function deleteImage(filename: string, userId: string = 'frontend_u
     console.error('画像削除エラー:', error)
     return {
       success: false,
-      message: error instanceof Error ? error.message : '画像の削除に失敗しました'
+      message: error instanceof Error ? error.message : '画像の削除に失敗しました',
     }
   }
 }

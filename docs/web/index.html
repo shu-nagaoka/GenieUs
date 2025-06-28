@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenieUs Documentation</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-dark.min.css">
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <div class="app">
+        <div class="sidebar">
+            <div class="logo">
+                <h1>🧞‍♂️ GenieUs Docs</h1>
+                <p>自動更新対応ドキュメント</p>
+            </div>
+            
+            <div class="search-section">
+                <input type="text" id="search-input" placeholder="🔍 ドキュメント検索..." class="search-input">
+                <div id="search-results" class="search-results"></div>
+            </div>
+            
+            <!-- ナビゲーションは JavaScript で動的生成 -->
+        </div>
+        
+        <div class="content">
+            <div id="content-area">
+                <div class="home-content">
+                    <h1>🧞‍♂️ GenieUs Documentation</h1>
+                    <p>見えない成長に、光をあてる。不安な毎日を、自信に変える。</p>
+                    
+                    <div class="quick-access">
+                        <a href="#" class="quick-item" data-file="development/quick-start.md">
+                            <h3>🚀 クイックスタート</h3>
+                            <p>3分で開発環境起動</p>
+                        </a>
+                        <a href="#" class="quick-item" data-file="architecture/overview.md">
+                            <h3>🏗️ アーキテクチャ</h3>
+                            <p>設計思想を理解</p>
+                        </a>
+                        <a href="#" class="quick-item" data-file="development/coding-standards.md">
+                            <h3>📝 コーディング規約</h3>
+                            <p>実装時の必須ルール</p>
+                        </a>
+                    </div>
+                    
+                    <div class="auto-refresh-indicator">
+                        <span class="indicator-dot active"></span>
+                        自動更新: ON (5秒間隔)
+                        <button class="toggle-refresh" onclick="viewer.toggleAutoRefresh()">停止</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="assets/viewer.js"></script>
+</body>
+</html>

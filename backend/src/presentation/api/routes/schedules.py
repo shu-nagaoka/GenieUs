@@ -99,7 +99,9 @@ async def update_schedule_event(
         user_id = request_data.get("user_id", "frontend_user")
 
         result = await schedule_event_usecase.update_schedule_event(
-            user_id=user_id, event_id=event_id, update_data=request_data,
+            user_id=user_id,
+            event_id=event_id,
+            update_data=request_data,
         )
         return result
     except Exception as e:

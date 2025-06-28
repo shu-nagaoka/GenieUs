@@ -132,7 +132,7 @@ export async function createMealPlan(
     console.error('Create meal plan error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : '食事プラン作成に失敗しました'
+      error: error instanceof Error ? error.message : '食事プラン作成に失敗しました',
     }
   }
 }
@@ -158,7 +158,7 @@ export async function getMealPlan(
     console.error('Get meal plan error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : '食事プランの取得に失敗しました'
+      error: error instanceof Error ? error.message : '食事プランの取得に失敗しました',
     }
   }
 }
@@ -191,7 +191,7 @@ export async function updateMealPlan(
     console.error('Update meal plan error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : '食事プランの更新に失敗しました'
+      error: error instanceof Error ? error.message : '食事プランの更新に失敗しました',
     }
   }
 }
@@ -218,7 +218,7 @@ export async function deleteMealPlan(
     console.error('Delete meal plan error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : '食事プランの削除に失敗しました'
+      error: error instanceof Error ? error.message : '食事プランの削除に失敗しました',
     }
   }
 }
@@ -243,7 +243,7 @@ export async function getMealPlans(
     console.error('Get meal plans error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : '食事プラン一覧の取得に失敗しました'
+      error: error instanceof Error ? error.message : '食事プラン一覧の取得に失敗しました',
     }
   }
 }
@@ -275,7 +275,7 @@ export async function searchMealPlans(
     console.error('Search meal plans error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : '食事プランの検索に失敗しました'
+      error: error instanceof Error ? error.message : '食事プランの検索に失敗しました',
     }
   }
 }

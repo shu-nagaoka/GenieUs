@@ -178,7 +178,7 @@ export default function HackathonLandingPage() {
                 <ArrowRight className="mr-3 h-6 w-6 transition-transform group-hover:translate-x-1" />
                 今すぐ始める
               </Button>
-              
+
               <Button
                 onClick={startAnimation}
                 size="lg"

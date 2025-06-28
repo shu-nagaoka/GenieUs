@@ -30,7 +30,7 @@ export default function APITestPage() {
         response: `Ping応答: ${data.message}`,
         status: 'success',
         user_id: userId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       })
     } catch (err) {
       setError(`Pingエラー: ${err}`)
@@ -55,8 +55,8 @@ export default function APITestPage() {
         },
         body: JSON.stringify({
           message: message,
-          user_id: userId
-        })
+          user_id: userId,
+        }),
       })
 
       if (!res.ok) {
@@ -74,12 +74,10 @@ export default function APITestPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 p-6">
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="mx-auto max-w-2xl space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-amber-800">
-              🧪 API接続テスト
-            </CardTitle>
+            <CardTitle className="text-2xl font-bold text-amber-800">🧪 API接続テスト</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -87,34 +85,27 @@ export default function APITestPage() {
               <Input
                 id="userId"
                 value={userId}
-                onChange={(e) => setUserId(e.target.value)}
+                onChange={e => setUserId(e.target.value)}
                 placeholder="test_user"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="message">テストメッセージ</Label>
               <Input
                 id="message"
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={e => setMessage(e.target.value)}
                 placeholder="こんにちは"
               />
             </div>
 
             <div className="flex gap-3">
-              <Button 
-                onClick={testPing}
-                disabled={loading}
-                variant="outline"
-              >
+              <Button onClick={testPing} disabled={loading} variant="outline">
                 {loading ? '実行中...' : 'Pingテスト'}
               </Button>
-              
-              <Button 
-                onClick={testSimpleAPI}
-                disabled={loading || !message.trim()}
-              >
+
+              <Button onClick={testSimpleAPI} disabled={loading || !message.trim()}>
                 {loading ? '実行中...' : 'APIテスト'}
               </Button>
             </div>
@@ -124,7 +115,7 @@ export default function APITestPage() {
         {error && (
           <Card className="border-red-200 bg-red-50">
             <CardContent className="pt-6">
-              <p className="text-red-600 font-medium">❌ エラー:</p>
+              <p className="font-medium text-red-600">❌ エラー:</p>
               <p className="text-red-700">{error}</p>
             </CardContent>
           </Card>
@@ -138,7 +129,7 @@ export default function APITestPage() {
             <CardContent className="space-y-3">
               <div>
                 <p className="font-medium text-green-700">レスポンス:</p>
-                <p className="bg-white p-3 rounded border">{response.response}</p>
+                <p className="rounded border bg-white p-3">{response.response}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 text-sm">
@@ -154,7 +145,7 @@ export default function APITestPage() {
 
               <div>
                 <p className="font-medium text-green-700">タイムスタンプ:</p>
-                <p className="text-green-600 text-sm">{response.timestamp}</p>
+                <p className="text-sm text-green-600">{response.timestamp}</p>
               </div>
             </CardContent>
           </Card>
@@ -162,10 +153,10 @@ export default function APITestPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">📋 テスト手順</CardTitle>  
+            <CardTitle className="text-lg">📋 テスト手順</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <ol className="list-decimal list-inside space-y-2 text-sm">
+            <ol className="list-inside list-decimal space-y-2 text-sm">
               <li>まず「Pingテスト」でサーバー接続を確認</li>
               <li>メッセージを入力して「APIテスト」を実行</li>
               <li>「こんにちは」「ありがとう」等で条件分岐をテスト</li>

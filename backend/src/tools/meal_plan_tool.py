@@ -17,7 +17,7 @@ from src.application.usecases.meal_plan_management_usecase import (
 
 class MealPlanTool:
     """食事プラン管理ツール
-    
+
     Genius Agentsが食事プランの作成、編集、削除、検索を行うためのツール
     """
 
@@ -59,7 +59,6 @@ class MealPlanTool:
                     required=["user_id", "week_start", "title", "description"],
                 ),
             ),
-
             # 食事プラン取得
             FunctionDeclaration(
                 name="get_meal_plans",
@@ -72,7 +71,6 @@ class MealPlanTool:
                     required=["user_id"],
                 ),
             ),
-
             # 食事プラン更新
             FunctionDeclaration(
                 name="update_meal_plan",
@@ -97,7 +95,6 @@ class MealPlanTool:
                     required=["user_id", "plan_id"],
                 ),
             ),
-
             # 食事プラン削除
             FunctionDeclaration(
                 name="delete_meal_plan",
@@ -111,7 +108,6 @@ class MealPlanTool:
                     required=["user_id", "plan_id"],
                 ),
             ),
-
             # AI食事プラン提案
             FunctionDeclaration(
                 name="suggest_meal_plan",

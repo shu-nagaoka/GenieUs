@@ -65,11 +65,11 @@ from typing import Dict, Any, Optional
 # 2. サードパーティライブラリ
 from google.adk import Agent
 from google.adk.tools import FunctionTool
-from dependency_injector import containers, providers
+from fastapi import Depends, Request
 
 # 3. プロジェクト内モジュール（絶対パス）
-from src.application.interface.protocols.child_carer import SafetyAssessorProtocol
-from src.infrastructure.adapters.childcare_safety_assessor import GeminiSafetyAssessor
+from src.application.interface.protocols.image_analyzer import ImageAnalyzerProtocol
+from src.infrastructure.adapters.gemini_image_analyzer import GeminiImageAnalyzer
 from src.share.logger import setup_logger
 ```
 
@@ -182,7 +182,7 @@ def process_request(request: SomeRequest) -> SomeResponse:
 
 #### **全層ロガーDI化（必須）**
 
-**🚨 重要**: すべての層でロガーはDIコンテナから注入し、個別初期化は禁止
+**🚨 重要**: すべての層でロガーはComposition Rootから注入し、個別初期化は禁止
 
 ```python
 # ✅ 正しいパターン: DI注入
@@ -191,10 +191,10 @@ class SomeUseCase:
     
     def __init__(
         self,
-        safety_assessor: SafetyAssessorProtocol,
-        logger: logging.Logger  # DIコンテナから注入
+        image_analyzer: ImageAnalyzerProtocol,
+        logger: logging.Logger  # Composition Rootから注入
     ):
-        self.safety_assessor = safety_assessor
+        self.image_analyzer = image_analyzer
         self.logger = logger
     
     def execute(self, request: SomeRequest) -> SomeResponse:
@@ -268,89 +268,104 @@ def bad_function():
 #### **FastAPI Depends統合パターン（推奨）**
 
 ```python
-# ✅ FastAPI Depends + DI統合例
-from dependency_injector.wiring import inject, Provide
-from fastapi import APIRouter, Depends
+# ✅ FastAPI Depends + Composition Root統合例
+from fastapi import APIRouter, Depends, Request
+from src.presentation.api.dependencies import get_image_analysis_usecase
 
 router = APIRouter()
 
 @router.post("/chat", response_model=ChatResponse)
-@inject  # DI注入を有効化
 async def chat_endpoint(
-    request: ChatRequest,
-    # FastAPI Depends + DI統合
-    tool = Depends(Provide[DIContainer.childcare_consultation_tool]),
-    logger = Depends(Provide[DIContainer.logger]),
+    chat_request: ChatRequest,
+    request: Request,
+    # Composition Root経由でUseCase取得
+    image_usecase = Depends(get_image_analysis_usecase),
 ):
-    """チャットエンドポイント（DI完全統合版）"""
+    """チャットエンドポイント（Composition Root統合版）"""
+    # request.app.composition_rootから必要なコンポーネント取得
+    logger = request.app.logger
+    agent_manager = request.app.agent_manager
+    
     logger.info(
         "チャット要求受信",
         extra={
-            "user_id": request.user_id,
-            "session_id": request.session_id,
-            "message_length": len(request.message)
+            "user_id": chat_request.user_id,
+            "session_id": chat_request.session_id,
+            "message_length": len(chat_request.message)
         }
     )
     
     try:
-        # ツール使用（DIから注入済み）
-        tool_result = tool.func(
-            message=request.message,
-            user_id=request.user_id,
-            session_id=request.session_id
+        # AgentManagerでルーティング実行
+        response = await agent_manager.route_query_async(
+            message=chat_request.message,
+            user_id=chat_request.user_id,
+            session_id=chat_request.session_id
         )
         
-        logger.info("チャット処理完了", extra={"session_id": request.session_id})
-        return ChatResponse(...)
+        logger.info("チャット処理完了", extra={"session_id": chat_request.session_id})
+        return ChatResponse(response=response, session_id=chat_request.session_id)
         
     except Exception as e:
         logger.error(
             "チャット処理エラー",
             extra={
                 "error": str(e),
-                "session_id": request.session_id
+                "session_id": chat_request.session_id
             }
         )
-        raise HTTPException(status_code=500, detail="...")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 # ❌ 避けるべき例：グローバル変数
 _container = None  # これは避ける
-_childcare_agent = None  # これも避ける
+_agent_manager = None  # これも避ける
 
 def setup_routes(container, agent):  # この方式は非推奨
-    global _container, _childcare_agent
+    global _container, _agent_manager
     _container = container
-    _childcare_agent = agent
+    _agent_manager = agent
 ```
 
 #### **アプリケーションファクトリーパターン（必須）**
 
 ```python
-# ✅ main.py アプリケーションファクトリー化
-from dependency_injector.wiring import inject, Provide
-from src.di_provider.container import DIContainer
+# ✅ main.py アプリケーションファクトリー化（Composition Root）
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from src.di_provider.composition_root import CompositionRootFactory
 from src.agents.agent_manager import AgentManager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Pure CompositionRoot Pattern"""
+    
+    # 🎯 1. CompositionRoot一元初期化（アプリケーション全体で1度だけ）
+    composition_root = CompositionRootFactory.create()
+    
+    # 🎯 2. AgentManagerに必要なツールのみ注入
+    all_tools = composition_root.get_all_tools()
+    agent_manager = AgentManager(
+        tools=all_tools, 
+        logger=composition_root.logger, 
+        settings=composition_root.settings
+    )
+    agent_manager.initialize_all_components()
+    
+    # 🎯 3. FastAPIアプリには必要なコンポーネントのみ注入
+    app.agent_manager = agent_manager
+    app.logger = composition_root.logger
+    app.composition_root = composition_root
+    
+    yield
 
 def create_app() -> FastAPI:
     """FastAPIアプリケーションファクトリー"""
-    # DIコンテナ初期化
-    container = DIContainer()
+    app = FastAPI(
+        title="GenieUs API",
+        lifespan=lifespan
+    )
     
-    # ⭐ 新規追加: AgentManager による一元管理
-    agent_manager = AgentManager(container)
-    agent_manager.initialize_all_agents()
-    
-    app = FastAPI(...)
-    app.container = container  # アプリケーションに関連付け
-    app.agent_manager = agent_manager  # エージェント管理を関連付け
-    
-    # ⭐ 重要: wiringでFastAPI Dependsと統合
-    container.wire(modules=[
-        "src.presentation.api.routes.chat",
-        "src.presentation.api.routes.health",
-    ])
-    
-    # ルーター登録（グローバル変数不要）
+    # ルーター登録
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(chat_router, prefix="/api/v1")
     
@@ -363,8 +378,8 @@ app = create_app()
 logger = setup_logger(__name__)  # main.pyでも個別初期化は避ける
 
 # ❌ 避けるべき例：個別エージェント初期化
-childcare_tool = container.childcare_consultation_tool()  # AgentManagerで集約
-childcare_agent = get_childcare_agent("simple", childcare_tool)  # 個別初期化は避ける
+# composition_root = CompositionRootFactory.create()  # lifespanで実行
+# agent_manager = AgentManager(...)  # lifespanで実行
 ```
 
 #### **AgentManagerパターン（推奨）**
@@ -373,59 +388,61 @@ childcare_agent = get_childcare_agent("simple", childcare_tool)  # 個別初期�
 # ✅ src/agents/agent_manager.py
 from typing import Dict
 from google.adk.agents import Agent
-from src.agents.di_based_childcare_agent import get_childcare_agent
-from src.agents.development_agent import get_development_agent
-from src.di_provider.container import DIContainer
+from google.adk.tools import FunctionTool
+import logging
 
 class AgentManager:
-    """エージェント一元管理クラス
+    """エージェント一元管理クラス（Composition Root統合）
     
     main.pyの肥大化を防ぎ、エージェント関連の処理を集約する
     """
     
-    def __init__(self, container: DIContainer):
-        self.container = container
-        self.logger = container.logger()
+    def __init__(self, tools: Dict[str, FunctionTool], logger: logging.Logger, settings):
+        """CompositionRootから必要なコンポーネントのみ注入"""
+        self.tools = tools
+        self.logger = logger
+        self.settings = settings
         self._agents: Dict[str, Agent] = {}
     
-    def initialize_all_agents(self) -> None:
+    def initialize_all_components(self) -> None:
         """全エージェントを初期化"""
-        self.logger.info("全エージェント初期化開始")
+        self.logger.info("AgentManager初期化開始（CompositionRoot統合）")
         
         try:
-            # 各エージェントを順次初期化
+            # 基本子育てエージェント
             self._initialize_childcare_agent()
-            self._initialize_development_agent()
-            # 将来: self._initialize_nutrition_agent()
-            # 将来: self._initialize_sleep_agent()
             
-            self.logger.info(f"全エージェント初期化完了: {len(self._agents)}個のエージェント")
+            # 将来の専門エージェント
+            # self._initialize_nutrition_agent()
+            # self._initialize_sleep_agent()
+            
+            self.logger.info(f"AgentManager初期化完了: {len(self._agents)}個のエージェント")
             
         except Exception as e:
-            self.logger.error(f"エージェント初期化エラー: {e}")
+            self.logger.error(f"AgentManager初期化エラー: {e}")
             raise
     
     def _initialize_childcare_agent(self) -> None:
-        """子育て相談エージェント初期化"""
-        try:
-            childcare_tool = self.container.childcare_consultation_tool()
-            agent = get_childcare_agent("simple", childcare_tool, self.logger)
-            self._agents["childcare"] = agent
-            self.logger.info("子育て相談エージェント初期化完了")
-        except Exception as e:
-            self.logger.error(f"子育て相談エージェント初期化エラー: {e}")
-            raise
-    
-    def _initialize_development_agent(self) -> None:
-        """発育相談エージェント初期化"""
-        try:
-            development_tool = self.container.development_consultation_tool()
-            agent = get_development_agent("simple", development_tool, self.logger)
-            self._agents["development"] = agent
-            self.logger.info("発育相談エージェント初期化完了")
-        except Exception as e:
-            self.logger.error(f"発育相談エージェント初期化エラー: {e}")
-            raise
+        """基本子育てエージェント初期化"""
+        from src.agents.di_based_childcare_agent import get_childcare_agent
+        
+        # CompositionRootから注入されたツールを使用
+        image_tool = self.tools.get("image_analysis")
+        voice_tool = self.tools.get("voice_analysis") 
+        file_tool = self.tools.get("file_management")
+        record_tool = self.tools.get("record_management")
+        
+        agent = get_childcare_agent(
+            agent_type="simple",
+            image_analysis_tool=image_tool,
+            voice_analysis_tool=voice_tool,
+            file_management_tool=file_tool,
+            record_management_tool=record_tool,
+            logger=self.logger
+        )
+        
+        self._agents["childcare"] = agent
+        self.logger.info("子育てエージェント初期化完了（CompositionRoot統合）")
     
     def get_agent(self, agent_type: str) -> Agent:
         """指定されたタイプのエージェントを取得"""
@@ -594,31 +611,33 @@ export async function sendMessage(
 ```python
 # tests/test_usecase.py
 import pytest
-from src.di_provider.factory import get_container
-from src.application.usecases.pure_childcare_usecase import PureChildcareRequest
+from unittest.mock import Mock
+from src.di_provider.composition_root import CompositionRootFactory
+from src.application.usecases.image_analysis_usecase import ImageAnalysisRequest
 
-class TestPureChildcareUseCase:
-    """UseCase単体テスト"""
+class TestImageAnalysisUseCase:
+    """UseCase単体テスト（Composition Root）"""
     
     def setup_method(self):
         """テストセットアップ"""
-        self.container = get_container()
-        self.usecase = self.container.pure_childcare_usecase()
+        # テスト用CompositionRoot作成
+        mock_logger = Mock()
+        self.composition_root = CompositionRootFactory.create(logger=mock_logger)
+        self.usecase = self.composition_root._usecases.get("image_analysis")
     
-    def test_successful_consultation(self):
-        """正常な相談処理のテスト"""
-        request = PureChildcareRequest(
-            message="3ヶ月の赤ちゃんが夜泣きします",
-            user_id="test_user",
-            session_id="test_session"
+    def test_successful_image_analysis(self):
+        """正常な画像分析処理のテスト"""
+        request = ImageAnalysisRequest(
+            image_path="/test/path/image.jpg",
+            analysis_prompt="この画像を分析してください",
+            user_id="test_user"
         )
         
-        response = self.usecase.consult(request)
+        response = self.usecase.execute(request)
         
         assert response.success is True
-        assert "睡眠" in response.advice
-        assert response.age_group == "乳児前期"
-        assert len(response.recommendations) > 0
+        assert response.analysis_result is not None
+        assert len(response.extracted_text) > 0
     
     def test_error_handling(self):
         """エラーハンドリングのテスト"""
@@ -731,18 +750,18 @@ npm run type-check                 # TypeScript型チェック
 - [ ] テストケースが追加されている
 
 ### ✅ DI統合（重要）
-- [ ] **ロガーはDIコンテナから注入されている**（個別初期化禁止）
+- [ ] **ロガーはComposition Rootから注入されている**（個別初期化禁止）
 - [ ] **エージェント作成関数にlogger引数が追加されている**
 - [ ] **ツール作成関数にlogger引数が追加されている**
-- [ ] **FastAPI Dependsパターンが使用されている**（@inject + Depends(Provide[])）
+- [ ] **FastAPI Dependsパターンが使用されている**（request.app.composition_root経由）
 - [ ] **グローバル変数を使用していない**（_container, _agentなど）
 
 ### ✅ アーキテクチャ
 - [ ] レイヤー責務が守られている
-- [ ] DI統合が適切に実装されている
+- [ ] Composition Root統合が適切に実装されている
 - [ ] Protocol/Interface使用が適切
 - [ ] 依存関係の方向が正しい
-- [ ] **アプリケーションファクトリーパターンが使用されている**（main.pyのcreate_app）
+- [ ] **アプリケーションファクトリーパターンが使用されている**（main.pyのlifespan + create_app）
 
 ### ✅ ADK統合
 - [ ] ADK制約が遵守されている
@@ -758,10 +777,10 @@ npm run type-check                 # TypeScript型チェック
 - [ ] **エージェント取得がget_agent()メソッド経由である**
 
 ### ✅ FastAPI統合
-- [ ] **container.wire()が設定されている**（main.pyで）
+- [ ] **lifespan パターンが使用されている**（main.pyで）
 - [ ] **setup_routes関数を使用していない**（非推奨パターン）
-- [ ] **@injectデコレータが使用されている**
-- [ ] **Depends(Provide[])パターンが使用されている**
+- [ ] **request.app.composition_root パターンが使用されている**
+- [ ] **Depends(get_xxx_usecase) パターンが使用されている**
 
 ## 🔗 関連ドキュメント
 
@@ -938,33 +957,51 @@ class ChildcareAdviserProtocol(Protocol):  # Agent内で実装
 class SafetyAssessorProtocol(Protocol):  # Agent内で実装
 ```
 
-#### **5. DIコンテナ構成の制限**
+#### **5. Composition Root構成の制限**
 
 ```python
-# ✅ 正しいDIコンテナ構成
-class DIContainer(containers.DeclarativeContainer):
-    """Agent中心のシンプル構成"""
+# ✅ 正しいComposition Root構成
+class CompositionRoot:
+    """Agent中心のシンプル構成（Composition Root）"""
     
-    # Core Layer
-    config = providers.Singleton(get_settings)
-    logger = providers.Singleton(setup_logger)
+    def __init__(self, settings: AppSettings, logger: logging.Logger):
+        # Core components
+        self.settings = settings
+        self.logger = logger
+        
+        # Service registries
+        self._usecases = ServiceRegistry[Any]()
+        self._tools = ServiceRegistry[FunctionTool]()
+        self._infrastructure = ServiceRegistry[Any]()
+        
+        # Build dependency tree
+        self._build_infrastructure_layer()  # マルチモーダル機能のみ
+        self._build_application_layer()     # マルチモーダル機能のみ
+        self._build_tool_layer()           # マルチモーダル機能のみ
     
-    # Infrastructure Layer（マルチモーダル機能のみ）
-    image_analyzer = providers.Singleton(GeminiImageAnalyzer, logger=logger)
-    voice_analyzer = providers.Singleton(GeminiVoiceAnalyzer, logger=logger)
-    file_operator = providers.Singleton(GcsFileOperator, logger=logger)
+    def _build_infrastructure_layer(self):
+        """Infrastructure Layer（マルチモーダル機能のみ）"""
+        image_analyzer = GeminiImageAnalyzer(logger=self.logger)
+        voice_analyzer = GeminiVoiceAnalyzer(logger=self.logger) 
+        file_operator = GcsFileOperator(logger=self.logger)
+        
+        self._infrastructure.register("image_analyzer", image_analyzer)
+        self._infrastructure.register("voice_analyzer", voice_analyzer)
+        self._infrastructure.register("file_operator", file_operator)
     
-    # Application Layer（マルチモーダル機能のみ）
-    image_analysis_usecase = providers.Factory(ImageAnalysisUseCase, ...)
-    voice_analysis_usecase = providers.Factory(VoiceAnalysisUseCase, ...)
-    file_management_usecase = providers.Factory(FileManagementUseCase, ...)
-    
-    # Tools Layer（マルチモーダル機能のみ）
-    image_analysis_tool = providers.Factory(create_image_analysis_tool, ...)
-    voice_analysis_tool = providers.Factory(create_voice_analysis_tool, ...)
-    
-    # Agent Manager
-    agent_manager = providers.Singleton(AgentManager)
+    def _build_application_layer(self):
+        """Application Layer（マルチモーダル機能のみ）"""
+        image_analysis_usecase = ImageAnalysisUseCase(
+            image_analyzer=self._infrastructure.get("image_analyzer"),
+            logger=self.logger
+        )
+        voice_analysis_usecase = VoiceAnalysisUseCase(
+            voice_analyzer=self._infrastructure.get("voice_analyzer"),
+            logger=self.logger
+        )
+        
+        self._usecases.register("image_analysis", image_analysis_usecase)
+        self._usecases.register("voice_analysis", voice_analysis_usecase)
 
 # ❌ 削除された設定（Agent内で実装）
 # childcare_adviser = ...  # 削除
@@ -976,19 +1013,28 @@ class DIContainer(containers.DeclarativeContainer):
 #### **6. chat.pyルーティングパターン**
 
 ```python
-# ✅ Agent中心ルーティング
+# ✅ Agent中心ルーティング（Composition Root統合）
 @router.post("/chat")
-async def chat_endpoint(request: ChatRequest):
+async def chat_endpoint(chat_request: ChatRequest, request: Request):
     """AgentManager中心のシンプルルーティング"""
     
-    # AgentManagerでマルチエージェント処理
-    response_text = _agent_manager.route_query(request.message)
+    # request.app経由でAgentManager取得
+    agent_manager = request.app.agent_manager
+    logger = request.app.logger
     
-    return ChatResponse(response=response_text, ...)
+    # AgentManagerでマルチエージェント処理
+    response_text = await agent_manager.route_query_async(
+        message=chat_request.message,
+        user_id=chat_request.user_id,
+        session_id=chat_request.session_id
+    )
+    
+    return ChatResponse(response=response_text, session_id=chat_request.session_id)
 
 # ❌ 旧パターン（削除済み）
 # tool = _container.childcare_consultation_tool()  # 削除
 # tool_result = tool(message=request.message)      # 削除
+# _agent_manager.route_query()  # グローバル変数パターンも削除
 ```
 
 #### **7. 新機能実装時のチェックリスト**

@@ -19,6 +19,7 @@ class EventType(str, Enum):
     PHOTO = "photo"
     HEALTH = "health"
     ACTIVITY = "activity"
+    OTHER = "other"
 
 
 class MealType(str, Enum):
@@ -1037,4 +1038,42 @@ class User:
             "created_at": self.created_at.isoformat(),
             "last_login": self.last_login.isoformat(),
             "updated_at": self.updated_at.isoformat(),
+        }
+
+
+@dataclass
+class SearchHistoryEntry:
+    """検索履歴エンティティ"""
+
+    id: str
+    user_id: str
+    query: str
+    search_type: str  # web, internal, agent, tool
+    results_count: int
+    timestamp: datetime
+    metadata: dict[str, Any] = field(default_factory=dict)
+    created_at: datetime = field(default_factory=datetime.now)
+
+    def __post_init__(self):
+        """バリデーション"""
+        if not self.id.strip():
+            raise ValueError("id is required")
+        if not self.user_id.strip():
+            raise ValueError("user_id is required")
+        if not self.query.strip():
+            raise ValueError("query is required")
+        if self.results_count < 0:
+            raise ValueError("results_count must be non-negative")
+
+    def to_dict(self) -> dict[str, Any]:
+        """辞書形式に変換"""
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "query": self.query,
+            "search_type": self.search_type,
+            "results_count": self.results_count,
+            "timestamp": self.timestamp.isoformat(),
+            "metadata": self.metadata,
+            "created_at": self.created_at.isoformat(),
         }

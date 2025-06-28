@@ -3,17 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, PanInfo } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { 
-  Mic, 
-  Camera, 
-  MessageCircle, 
-  Sparkles, 
-  X, 
-  Send,
-  MicOff,
-  Upload,
-  Wand2
-} from 'lucide-react'
+import { Mic, Camera, MessageCircle, Sparkles, X, Send, MicOff, Upload, Wand2 } from 'lucide-react'
 
 interface FloatingMagicOrbProps {
   onAction: (type: 'voice' | 'photo' | 'text', content: string) => void
@@ -32,10 +22,13 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
 
   // 魔法のランダムな光る効果
   useEffect(() => {
-    const interval = setInterval(() => {
-      setIsGlowing(true)
-      setTimeout(() => setIsGlowing(false), 1000)
-    }, 5000 + Math.random() * 10000) // 5-15秒間隔でランダムに光る
+    const interval = setInterval(
+      () => {
+        setIsGlowing(true)
+        setTimeout(() => setIsGlowing(false), 1000)
+      },
+      5000 + Math.random() * 10000
+    ) // 5-15秒間隔でランダムに光る
 
     return () => clearInterval(interval)
   }, [])
@@ -44,7 +37,7 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
   const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     setPosition({
       x: position.x + info.delta.x,
-      y: position.y + info.delta.y
+      y: position.y + info.delta.y,
     })
   }
 
@@ -52,7 +45,7 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
   const castMagic = (type: 'voice' | 'photo' | 'text') => {
     setActiveMode(type)
     setIsExpanded(true)
-    
+
     if (type === 'voice') {
       startVoiceRecording()
     } else if (type === 'photo') {
@@ -122,7 +115,7 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
         dragElastic={0.1}
       >
         <motion.div
-          className={`relative w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 flex items-center justify-center cursor-pointer shadow-lg ${
+          className={`relative flex h-16 w-16 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 shadow-lg ${
             isGlowing ? 'shadow-2xl shadow-purple-400' : ''
           }`}
           animate={{
@@ -136,7 +129,7 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
         >
           {/* 魔法のアイコン */}
           <Wand2 className="h-8 w-8 text-white" />
-          
+
           {/* 魔法のパーティクル効果 */}
           <AnimatePresence>
             {isGlowing && (
@@ -144,23 +137,23 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
                 {[...Array(6)].map((_, i) => (
                   <motion.div
                     key={i}
-                    className="absolute w-2 h-2 bg-yellow-300 rounded-full"
-                    initial={{ 
-                      x: 32, 
-                      y: 32, 
+                    className="absolute h-2 w-2 rounded-full bg-yellow-300"
+                    initial={{
+                      x: 32,
+                      y: 32,
                       scale: 0,
-                      opacity: 1 
+                      opacity: 1,
                     }}
                     animate={{
-                      x: 32 + Math.cos(i * 60 * Math.PI / 180) * 40,
-                      y: 32 + Math.sin(i * 60 * Math.PI / 180) * 40,
+                      x: 32 + Math.cos((i * 60 * Math.PI) / 180) * 40,
+                      y: 32 + Math.sin((i * 60 * Math.PI) / 180) * 40,
                       scale: [0, 1, 0],
-                      opacity: [1, 1, 0]
+                      opacity: [1, 1, 0],
                     }}
                     exit={{ opacity: 0 }}
-                    transition={{ 
+                    transition={{
                       duration: 1.2,
-                      delay: i * 0.1 
+                      delay: i * 0.1,
                     }}
                   />
                 ))}
@@ -169,8 +162,8 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
           </AnimatePresence>
 
           {/* 新着通知ドット */}
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-            <span className="text-xs text-white font-bold">3</span>
+          <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500">
+            <span className="text-xs font-bold text-white">3</span>
           </div>
         </motion.div>
 
@@ -186,7 +179,7 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
             >
               {/* 声の魔法 */}
               <motion.button
-                className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-400 flex items-center justify-center shadow-lg"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-400 shadow-lg"
                 onClick={() => castMagic('voice')}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -199,7 +192,7 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
 
               {/* 写真の魔法 */}
               <motion.button
-                className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-400 flex items-center justify-center shadow-lg"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-indigo-400 shadow-lg"
                 onClick={() => castMagic('photo')}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -212,7 +205,7 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
 
               {/* 相談の魔法 */}
               <motion.button
-                className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center shadow-lg"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-purple-400 to-pink-400 shadow-lg"
                 onClick={() => castMagic('text')}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -225,7 +218,7 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
 
               {/* 閉じるボタン */}
               <motion.button
-                className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center shadow-lg mt-2"
+                className="mt-2 flex h-8 w-8 items-center justify-center rounded-full bg-gray-500 shadow-lg"
                 onClick={closeOrb}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -244,56 +237,68 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
       <AnimatePresence>
         {isExpanded && activeMode && (
           <motion.div
-            className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-4"
+            className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeOrb}
           >
             <motion.div
-              className="bg-white rounded-2xl p-8 max-w-md w-full"
+              className="w-full max-w-md rounded-2xl bg-white p-8"
               initial={{ opacity: 0, scale: 0.8, y: 50 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.8, y: 50 }}
-              onClick={(e) => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
             >
               {/* 音声録音モード */}
               {activeMode === 'voice' && (
                 <div className="text-center">
-                  <div className={`w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center ${
-                    isRecording 
-                      ? 'bg-red-500 animate-pulse' 
-                      : 'bg-gradient-to-br from-emerald-400 to-teal-400'
-                  }`}>
+                  <div
+                    className={`mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full ${
+                      isRecording
+                        ? 'animate-pulse bg-red-500'
+                        : 'bg-gradient-to-br from-emerald-400 to-teal-400'
+                    }`}
+                  >
                     {isRecording ? (
                       <MicOff className="h-12 w-12 text-white" />
                     ) : (
                       <Mic className="h-12 w-12 text-white" />
                     )}
                   </div>
-                  
-                  <h3 className="text-2xl font-bold mb-2">🗣️ 声の魔法</h3>
-                  <p className="text-gray-600 mb-6">
-                    {isRecording 
-                      ? 'お話しください...' 
-                      : '何でもお話しください。自動で記録します。'}
+
+                  <h3 className="mb-2 text-2xl font-bold">🗣️ 声の魔法</h3>
+                  <p className="mb-6 text-gray-600">
+                    {isRecording ? 'お話しください...' : '何でもお話しください。自動で記録します。'}
                   </p>
 
                   {isRecording && (
                     <div className="mb-6">
                       <div className="flex justify-center gap-1">
-                        <div className="w-2 h-8 bg-emerald-400 rounded animate-pulse"></div>
-                        <div className="w-2 h-6 bg-emerald-400 rounded animate-pulse" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-10 bg-emerald-400 rounded animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-2 h-4 bg-emerald-400 rounded animate-pulse" style={{ animationDelay: '0.3s' }}></div>
-                        <div className="w-2 h-8 bg-emerald-400 rounded animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                        <div className="h-8 w-2 animate-pulse rounded bg-emerald-400"></div>
+                        <div
+                          className="h-6 w-2 animate-pulse rounded bg-emerald-400"
+                          style={{ animationDelay: '0.1s' }}
+                        ></div>
+                        <div
+                          className="h-10 w-2 animate-pulse rounded bg-emerald-400"
+                          style={{ animationDelay: '0.2s' }}
+                        ></div>
+                        <div
+                          className="h-4 w-2 animate-pulse rounded bg-emerald-400"
+                          style={{ animationDelay: '0.3s' }}
+                        ></div>
+                        <div
+                          className="h-8 w-2 animate-pulse rounded bg-emerald-400"
+                          style={{ animationDelay: '0.4s' }}
+                        ></div>
                       </div>
                     </div>
                   )}
 
                   <div className="flex gap-3">
                     {isRecording ? (
-                      <Button 
+                      <Button
                         onClick={stopVoiceRecording}
                         className="flex-1 bg-red-500 hover:bg-red-600"
                       >
@@ -301,7 +306,7 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
                         完了
                       </Button>
                     ) : (
-                      <Button 
+                      <Button
                         onClick={startVoiceRecording}
                         className="flex-1 bg-emerald-500 hover:bg-emerald-600"
                       >
@@ -319,27 +324,25 @@ export function FloatingMagicOrb({ onAction, className = '' }: FloatingMagicOrbP
               {/* テキスト入力モード */}
               {activeMode === 'text' && (
                 <div>
-                  <div className="text-center mb-6">
-                    <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
+                  <div className="mb-6 text-center">
+                    <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-purple-400 to-pink-400">
                       <MessageCircle className="h-12 w-12 text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-2">💬 相談の魔法</h3>
-                    <p className="text-gray-600">
-                      どんな悩みでもお聞かせください
-                    </p>
+                    <h3 className="mb-2 text-2xl font-bold">💬 相談の魔法</h3>
+                    <p className="text-gray-600">どんな悩みでもお聞かせください</p>
                   </div>
 
                   <div className="space-y-4">
                     <textarea
                       value={textInput}
-                      onChange={(e) => setTextInput(e.target.value)}
+                      onChange={e => setTextInput(e.target.value)}
                       placeholder="夜泣きで困っています..."
-                      className="w-full h-32 p-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                      className="h-32 w-full resize-none rounded-lg border-2 border-gray-200 p-4 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-purple-500"
                       autoFocus
                     />
-                    
+
                     <div className="flex gap-3">
-                      <Button 
+                      <Button
                         onClick={sendText}
                         disabled={!textInput.trim()}
                         className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"

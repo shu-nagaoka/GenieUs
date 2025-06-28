@@ -15,6 +15,7 @@ from src.agents.constants import (
     AGENT_RESPONSE_PATTERNS,
     ERROR_INDICATORS,
     FALLBACK_AGENT_PRIORITY,
+    EXPLICIT_SEARCH_FLAGS,
 )
 from src.agents.message_processor import MessageProcessor
 from src.agents.routing_strategy import RoutingStrategy
@@ -22,7 +23,7 @@ from src.agents.routing_strategy import RoutingStrategy
 
 class RoutingExecutor:
     """ルーティング実行システム
-    
+
     責務:
     - ルーティング決定に基づくエージェント実行
     - 専門家への自動ルーティング
@@ -38,7 +39,7 @@ class RoutingExecutor:
         app_name: str = "GenieUs",
     ):
         """RoutingExecutor初期化
-        
+
         Args:
             logger: DIコンテナから注入されるロガー
             routing_strategy: ルーティング戦略
@@ -62,9 +63,14 @@ class RoutingExecutor:
         conversation_history: list | None = None,
         family_info: dict | None = None,
         agent_type: str = "auto",
+        # 画像・マルチモーダル対応パラメータ追加
+        has_image: bool = False,
+        message_type: str = "text",
+        image_path: str = None,
+        multimodal_context: dict = None,
     ) -> tuple[str, dict, list]:
         """ルーティングを含むエージェント実行
-        
+
         Returns:
             Tuple[response, agent_info, routing_path]
 
@@ -77,7 +83,13 @@ class RoutingExecutor:
             routing_start_time = time.time()
 
             if agent_type == "auto":
-                selected_agent_type = self._determine_agent_type(message)
+                selected_agent_type = self._determine_agent_type(
+                    message, 
+                    conversation_history, 
+                    family_info, 
+                    has_image, 
+                    message_type
+                )
                 self._log_routing_decision(message, selected_agent_type, "auto_routing")
             elif agent_type in ["sequential", "parallel"]:
                 selected_agent_type = agent_type
@@ -88,8 +100,7 @@ class RoutingExecutor:
 
             routing_duration = time.time() - routing_start_time
             self.logger.info(
-                f"🎯 ルーティング決定: {selected_agent_type} "
-                f"(判定時間: {routing_duration:.3f}s)",
+                f"🎯 ルーティング決定: {selected_agent_type} (判定時間: {routing_duration:.3f}s)",
             )
 
             # ルーティング妥当性チェック
@@ -117,41 +128,59 @@ class RoutingExecutor:
             }
 
             # ルーティングパス記録
-            routing_path.append({
-                "step": "routing_decision",
-                "selected_agent": selected_agent_type,
-                "display_name": AGENT_DISPLAY_NAMES.get(selected_agent_type, selected_agent_type),
-                "timestamp": time.time(),
-            })
+            routing_path.append(
+                {
+                    "step": "routing_decision",
+                    "selected_agent": selected_agent_type,
+                    "display_name": AGENT_DISPLAY_NAMES.get(selected_agent_type, selected_agent_type),
+                    "timestamp": time.time(),
+                },
+            )
 
             self.logger.info(f"🚀 実行エージェント: {selected_agent_type} (Agent: {runner.agent.name})")
 
             # セッション確保
             await self._ensure_session_exists(user_id, session_id, session_service)
 
+            # 画像パス情報をログ出力
+            if image_path:
+                self.logger.info(f"🖼️ 画像パス受信: {len(image_path) if image_path else 0}文字")
+
             # エージェント実行
             content = Content(role="user", parts=[Part(text=enhanced_message)])
             response = await self._execute_agent(
-                runner, user_id, session_id, content, selected_agent_type,
+                runner,
+                user_id,
+                session_id,
+                content,
+                selected_agent_type,
             )
 
             # コーディネーターの場合、専門家ルーティングチェック
             if selected_agent_type == "coordinator":
                 specialist_result = await self._check_and_route_to_specialist(
-                    message, response, user_id, session_id,
-                    runners, session_service, conversation_history, family_info,
+                    message,
+                    response,
+                    user_id,
+                    session_id,
+                    runners,
+                    session_service,
+                    conversation_history,
+                    family_info,
                 )
 
                 if specialist_result:
                     specialist_response, specialist_agent_id = specialist_result
 
                     # ルーティングパス更新
-                    routing_path.append({
-                        "step": "specialist_routing",
-                        "agent": specialist_agent_id,
-                        "display_name": AGENT_DISPLAY_NAMES.get(specialist_agent_id, "専門家"),
-                        "timestamp": time.time(),
-                    })
+                    routing_path.append(
+                        {
+                            "step": "specialist_routing",
+                            "agent": specialist_agent_id,
+                            "display_name": AGENT_DISPLAY_NAMES.get(specialist_agent_id, "専門家"),
+                            "timestamp": time.time(),
+                        },
+                    )
 
                     return specialist_response, agent_info, routing_path
 
@@ -194,8 +223,7 @@ class RoutingExecutor:
                 self._log_response_content(event.content, agent_type)
 
         self.logger.info(
-            f"🔧 {agent_type} ツール使用結果: "
-            f"{'使用された' if tool_used else '使用されなかった'}",
+            f"🔧 {agent_type} ツール使用結果: {'使用された' if tool_used else '使用されなかった'}",
         )
 
         # レスポンス抽出
@@ -204,17 +232,48 @@ class RoutingExecutor:
         else:
             raise Exception("No response from agent")
 
-    def _determine_agent_type(self, message: str) -> str:
+    def _determine_agent_type(
+        self, 
+        message: str, 
+        conversation_history: list | None = None,
+        family_info: dict | None = None,
+        has_image: bool = False,
+        message_type: str = "text"
+    ) -> str:
         """ルーティング決定"""
         if not self.routing_strategy:
             raise ValueError("ルーティング戦略が設定されていません")
 
-        agent_id, routing_info = self.routing_strategy.determine_agent(message)
+        # 🖼️ **最優先**: 画像添付検出（戦略に依存しない）
+        if has_image or message_type == "image":
+            self.logger.info(f"🎯 RoutingExecutor: 画像添付最優先検出 has_image={has_image}, message_type={message_type} → image_specialist")
+            return "image_specialist"
+
+        # 🔍 **第2優先**: 明示的検索フラグの直接検出（戦略に依存しない）
+        for search_flag in EXPLICIT_SEARCH_FLAGS:
+            if search_flag.lower() in message.lower() or search_flag in message:
+                self.logger.info(f"🎯 RoutingExecutor: 明示的検索フラグ第2優先検出 '{search_flag}' → search_specialist")
+                return "search_specialist"
+
+        agent_id, routing_info = self.routing_strategy.determine_agent(
+            message, 
+            conversation_history, 
+            family_info, 
+            has_image, 
+            message_type
+        )
         self.logger.info(
             f"🎯 戦略ルーティング: {agent_id} "
             f"(確信度: {routing_info.get('confidence', 0):.1%}, "
             f"理由: {routing_info.get('reasoning', 'なし')})",
         )
+
+        # ADKモード時は強制マッピングを無効化（ADK標準ルーティングを尊重）
+        if self.routing_strategy and hasattr(self.routing_strategy, "get_strategy_name"):
+            strategy_name = self.routing_strategy.get_strategy_name()
+            if "ADK" in strategy_name or "adk" in strategy_name.lower():
+                self.logger.info(f"🎯 ADKモード: エージェント強制マッピング無効化, 選択エージェント='{agent_id}'を維持")
+                return agent_id
 
         # coordinatorではない専門エージェントが選ばれた場合は
         # 既存の動作を維持（coordinator経由）
@@ -234,20 +293,43 @@ class RoutingExecutor:
         family_info: dict | None = None,
     ) -> tuple[str, str] | None:
         """コーディネーターのレスポンスから専門家紹介を検出し、自動ルーティング
-        
+
         Returns:
             Optional[Tuple[response, specialist_agent_id]]
 
         """
+        # ADKモード時は既存のパターンマッチングを無効化（ADK標準のtransfer_to_agent()を使用）
+        if self.routing_strategy and hasattr(self.routing_strategy, "get_strategy_name"):
+            strategy_name = self.routing_strategy.get_strategy_name()
+            if "ADK" in strategy_name or "adk" in strategy_name.lower():
+                self.logger.info("🎯 ADKモード検出: 既存パターンマッチング無効化、ADK標準transfer_to_agent()に委任")
+                return None
+
         response_lower = coordinator_response.lower()
 
         # 専門家への紹介キーワードを検出
         routing_keywords = [
-            "専門家", "専門医", "栄養士", "睡眠専門", "発達専門",
-            "健康管理", "行動専門", "遊び専門", "安全専門", "心理専門",
-            "仕事両立", "特別支援", "詳しく相談", "専門的なアドバイス",
-            "より詳しく", "専門家に相談", "ジーニーが心を込めて",
-            "ジーニーが", "お答えします", "回答します", "サポートします",
+            "専門家",
+            "専門医",
+            "栄養士",
+            "睡眠専門",
+            "発達専門",
+            "健康管理",
+            "行動専門",
+            "遊び専門",
+            "安全専門",
+            "心理専門",
+            "仕事両立",
+            "特別支援",
+            "詳しく相談",
+            "専門的なアドバイス",
+            "より詳しく",
+            "専門家に相談",
+            "ジーニーが心を込めて",
+            "ジーニーが",
+            "お答えします",
+            "回答します",
+            "サポートします",
             "アドバイスします",
         ]
 
@@ -256,9 +338,7 @@ class RoutingExecutor:
         # 元のメッセージが専門的な相談の場合は強制的にルーティング
         specialist_agent, routing_info = self.routing_strategy.determine_agent(original_message.lower())
         should_route_automatically = (
-            specialist_agent and
-            specialist_agent != "coordinator" and
-            specialist_agent in runners
+            specialist_agent and specialist_agent != "coordinator" and specialist_agent in runners
         )
 
         if keyword_match or should_route_automatically:
@@ -269,8 +349,13 @@ class RoutingExecutor:
 
             # 専門家ルーティング実行
             specialist_response = await self._perform_specialist_routing(
-                original_message, user_id, session_id,
-                runners, session_service, conversation_history, family_info,
+                original_message,
+                user_id,
+                session_id,
+                runners,
+                session_service,
+                conversation_history,
+                family_info,
             )
 
             if specialist_response and specialist_response != "コーディネーターで直接対応いたします。":
@@ -296,30 +381,42 @@ class RoutingExecutor:
         """強化されたスペシャリストルーティング"""
         # 戦略パターンを使用してエージェントを決定
         agent_id, routing_info = self.routing_strategy.determine_agent(
-            message, conversation_history, family_info,
+            message,
+            conversation_history,
+            family_info,
         )
 
         # エージェントが存在する場合はルーティング
         if agent_id and agent_id in runners:
             self.logger.info(
-                f"🔄 専門エージェントへルーティング: "
-                f"{AGENT_DISPLAY_NAMES.get(agent_id, agent_id)}",
+                f"🔄 専門エージェントへルーティング: {AGENT_DISPLAY_NAMES.get(agent_id, agent_id)}",
             )
             return await self._route_to_specific_agent_with_fallback(
-                agent_id, message, user_id, session_id,
-                runners, session_service, conversation_history, family_info,
+                agent_id,
+                message,
+                user_id,
+                session_id,
+                runners,
+                session_service,
+                conversation_history,
+                family_info,
             )
 
         # フォールバック階層
         for fallback_agent in FALLBACK_AGENT_PRIORITY:
             if fallback_agent in runners:
                 self.logger.info(
-                    f"🔄 フォールバックルーティング: "
-                    f"{AGENT_DISPLAY_NAMES.get(fallback_agent, fallback_agent)}",
+                    f"🔄 フォールバックルーティング: {AGENT_DISPLAY_NAMES.get(fallback_agent, fallback_agent)}",
                 )
                 return await self._route_to_specific_agent_with_fallback(
-                    fallback_agent, message, user_id, session_id,
-                    runners, session_service, conversation_history, family_info,
+                    fallback_agent,
+                    message,
+                    user_id,
+                    session_id,
+                    runners,
+                    session_service,
+                    conversation_history,
+                    family_info,
                 )
 
         # 最終フォールバック
@@ -343,8 +440,13 @@ class RoutingExecutor:
         if agent_id not in runners:
             self.logger.error(f"❌ エージェント {agent_id} が存在しません")
             return await self._execute_fallback_agent(
-                message, user_id, session_id, runners, session_service,
-                conversation_history, family_info,
+                message,
+                user_id,
+                session_id,
+                runners,
+                session_service,
+                conversation_history,
+                family_info,
             )
 
         try:
@@ -354,13 +456,19 @@ class RoutingExecutor:
 
             # MessageProcessorを使用してコンテキスト付きメッセージを作成
             enhanced_message = self.message_processor.create_message_with_context(
-                message, conversation_history, family_info,
+                message,
+                conversation_history,
+                family_info,
             )
             content = Content(role="user", parts=[Part(text=enhanced_message)])
 
             # 実行
             response = await self._execute_agent(
-                runner, user_id, session_id, content, agent_id,
+                runner,
+                user_id,
+                session_id,
+                content,
+                agent_id,
             )
 
             # レスポンス品質検証
@@ -371,15 +479,27 @@ class RoutingExecutor:
                 self.logger.warning(f"⚠️ {agent_id} レスポンス品質不良、リトライ実行")
                 if retry_count < max_retries:
                     return await self._route_to_specific_agent_with_fallback(
-                        agent_id, message, user_id, session_id,
-                        runners, session_service, conversation_history, family_info,
-                        retry_count + 1, max_retries,
+                        agent_id,
+                        message,
+                        user_id,
+                        session_id,
+                        runners,
+                        session_service,
+                        conversation_history,
+                        family_info,
+                        retry_count + 1,
+                        max_retries,
                     )
                 else:
                     self.logger.error(f"❌ {agent_id} 最大リトライ回数到達、フォールバック実行")
                     return await self._execute_fallback_agent(
-                        message, user_id, session_id, runners, session_service,
-                        conversation_history, family_info,
+                        message,
+                        user_id,
+                        session_id,
+                        runners,
+                        session_service,
+                        conversation_history,
+                        family_info,
                     )
 
         except Exception as e:
@@ -387,14 +507,26 @@ class RoutingExecutor:
             if retry_count < max_retries:
                 self.logger.info(f"🔄 リトライ実行 ({retry_count + 1}/{max_retries})")
                 return await self._route_to_specific_agent_with_fallback(
-                    agent_id, message, user_id, session_id,
-                    runners, session_service, conversation_history, family_info,
-                    retry_count + 1, max_retries,
+                    agent_id,
+                    message,
+                    user_id,
+                    session_id,
+                    runners,
+                    session_service,
+                    conversation_history,
+                    family_info,
+                    retry_count + 1,
+                    max_retries,
                 )
             else:
                 return await self._execute_fallback_agent(
-                    message, user_id, session_id, runners, session_service,
-                    conversation_history, family_info,
+                    message,
+                    user_id,
+                    session_id,
+                    runners,
+                    session_service,
+                    conversation_history,
+                    family_info,
                 )
 
     async def _execute_fallback_agent(
@@ -417,20 +549,23 @@ class RoutingExecutor:
                     await self._ensure_session_exists(user_id, session_id, session_service)
 
                     enhanced_message = self._create_simple_context_message(
-                        message, conversation_history, family_info,
+                        message,
+                        conversation_history,
+                        family_info,
                     )
                     content = Content(role="user", parts=[Part(text=enhanced_message)])
 
                     response = await self._execute_agent(
-                        runner, user_id, session_id, content, fallback_agent,
+                        runner,
+                        user_id,
+                        session_id,
+                        content,
+                        fallback_agent,
                     )
 
                     if response and len(response.strip()) > 10:
                         self.logger.info(f"✅ フォールバック成功: {fallback_agent}")
-                        return (
-                            f"【{AGENT_DISPLAY_NAMES.get(fallback_agent, fallback_agent)}より】\n"
-                            f"{response}"
-                        )
+                        return f"【{AGENT_DISPLAY_NAMES.get(fallback_agent, fallback_agent)}より】\n{response}"
 
                 except Exception as e:
                     self.logger.error(f"❌ フォールバックエージェント({fallback_agent})エラー: {e}")
@@ -590,8 +725,7 @@ class RoutingExecutor:
         agent_display = AGENT_DISPLAY_NAMES.get(selected_agent, selected_agent)
 
         self.logger.info(
-            f"📋 ルーティング詳細 - タイプ: {routing_type}, "
-            f"選択: {agent_display}, メッセージ: '{message_preview}'",
+            f"📋 ルーティング詳細 - タイプ: {routing_type}, 選択: {agent_display}, メッセージ: '{message_preview}'",
         )
 
     def _log_tool_usage(self, event, agent_type: str) -> None:
@@ -603,7 +737,7 @@ class RoutingExecutor:
             for i, action in enumerate(event.actions):
                 action_type = type(action).__name__
                 action_str = str(action)
-                
+
                 # ツール名を抽出して明確にログ出力
                 tool_name = self._extract_tool_name(action_str)
                 if tool_name:
@@ -612,18 +746,18 @@ class RoutingExecutor:
                     self.logger.info(f"📋 アクション#{i + 1}: {action_type}")
                     # デバッグ：ツール名が抽出できない場合の詳細情報
                     self.logger.debug(f"🔍 ツール名抽出失敗 - アクション: {action_str[:200]}")
-                
+
                 # アクション内容を詳細にログ出力
                 if len(action_str) > 100:
                     self.logger.info(f"📄 アクション内容: {action_str[:500]}...")
                 else:
                     self.logger.info(f"📄 アクション内容: {action_str}")
-                    
+
                 # 特別なアクションタイプの場合、追加情報をログ
-                if hasattr(action, '__len__') and len(action) >= 2:
+                if hasattr(action, "__len__") and len(action) >= 2:
                     try:
                         action_name, action_data = action[0], action[1]
-                        if action_name in ['function_call', 'tool_call']:
+                        if action_name in ["function_call", "tool_call"]:
                             self.logger.info(f"🔧 関数呼び出し検出: {action_name} -> {action_data}")
                     except Exception:
                         pass
@@ -634,7 +768,7 @@ class RoutingExecutor:
         """アクション文字列からツール名を抽出"""
         try:
             import re
-            
+
             # より詳細なパターンマッチングを実行
             # 1. FunctionCall パターンを検出
             if "function_call" in action_str.lower():
@@ -644,7 +778,7 @@ class RoutingExecutor:
                     r"'name':\s*'([a-zA-Z_]+)'",  # 'name': 'function_name'
                     r'"name":\s*"([a-zA-Z_]+)"',  # "name": "function_name"
                 ]
-                
+
                 for pattern in patterns:
                     match = re.search(pattern, action_str)
                     if match:
@@ -652,7 +786,7 @@ class RoutingExecutor:
                         # ツール名のマッピング
                         tool_mapping = {
                             "get_family_information": "family_info",
-                            "analyze_child_image": "image_analysis", 
+                            "analyze_child_image": "image_analysis",
                             "analyze_child_voice": "voice_analysis",
                             "manage_child_files": "file_management",
                             "manage_child_records": "record_management",
@@ -660,7 +794,7 @@ class RoutingExecutor:
                             "google_search": "google_search",  # 直接の場合も対応
                         }
                         return tool_mapping.get(function_name, function_name)
-            
+
             # 2. アクションタイプから推測（フォールバック）
             action_lower = action_str.lower()
             if "search" in action_lower:
@@ -675,7 +809,7 @@ class RoutingExecutor:
                 return "file_management"
             elif "record" in action_lower:
                 return "record_management"
-                
+
             return ""
         except Exception as e:
             self.logger.debug(f"ツール名抽出エラー: {e}")
@@ -691,18 +825,15 @@ class RoutingExecutor:
                     tool_name = self._extract_tool_name_from_response(response_str)
                     if tool_name:
                         self.logger.info(
-                            f"✅ {tool_name}ツール結果#{i + 1}: "
-                            f"{response_str[:300]}...",
+                            f"✅ {tool_name}ツール結果#{i + 1}: {response_str[:300]}...",
                         )
                     else:
                         self.logger.info(
-                            f"🔧 ツールレスポンス#{i + 1}: "
-                            f"{response_str[:500]}...",
+                            f"🔧 ツールレスポンス#{i + 1}: {response_str[:500]}...",
                         )
                 elif hasattr(part, "text") and len(str(part.text)) > 0:
                     self.logger.info(
-                        f"💬 {agent_type} 文章#{i + 1}: "
-                        f"{str(part.text)[:200]}...",
+                        f"💬 {agent_type} 文章#{i + 1}: {str(part.text)[:200]}...",
                     )
 
     def _extract_tool_name_from_response(self, response_str: str) -> str:

@@ -173,7 +173,9 @@ async def update_growth_record(
         user_id = request_data.get("user_id", "frontend_user")
 
         result = await growth_record_usecase.update_growth_record(
-            user_id=user_id, record_id=record_id, update_data=request_data,
+            user_id=user_id,
+            record_id=record_id,
+            update_data=request_data,
         )
         return result
     except Exception as e:

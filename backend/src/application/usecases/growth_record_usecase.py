@@ -38,7 +38,9 @@ class GrowthRecordUseCase:
             # 子どもの情報から記録時点での月齢を自動計算
             if record_data.get("child_id") and record_data.get("date"):
                 calculated_age = await self._calculate_age_at_record_date(
-                    user_id, record_data["child_id"], record_data["date"],
+                    user_id,
+                    record_data["child_id"],
+                    record_data["date"],
                 )
                 if calculated_age is not None:
                     record_data["age_in_months"] = calculated_age
@@ -135,7 +137,9 @@ class GrowthRecordUseCase:
             # 年齢再計算（日付が変更された場合）
             if update_data.get("date"):
                 calculated_age = await self._calculate_age_at_record_date(
-                    user_id, updated_data.get("child_id"), update_data["date"],
+                    user_id,
+                    updated_data.get("child_id"),
+                    update_data["date"],
                 )
                 if calculated_age is not None:
                     updated_data["age_in_months"] = calculated_age

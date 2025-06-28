@@ -5,16 +5,16 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { 
-  Mic, 
-  MicOff, 
-  Square, 
+import {
+  Mic,
+  MicOff,
+  Square,
   Play,
   Pause,
   CheckCircle,
   AlertCircle,
   Loader2,
-  Sparkles
+  Sparkles,
 } from 'lucide-react'
 
 interface VoiceRecordingResult {
@@ -30,9 +30,9 @@ interface FloatingVoiceButtonProps {
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
 }
 
-export function FloatingVoiceButton({ 
-  className = "", 
-  position = "bottom-right" 
+export function FloatingVoiceButton({
+  className = '',
+  position = 'bottom-right',
 }: FloatingVoiceButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
@@ -105,11 +105,11 @@ export function FloatingVoiceButton({
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      
+
       mediaRecorderRef.current = new MediaRecorder(stream)
       audioChunksRef.current = []
 
-      mediaRecorderRef.current.ondataavailable = (event) => {
+      mediaRecorderRef.current.ondataavailable = event => {
         audioChunksRef.current.push(event.data)
       }
 
@@ -137,7 +137,6 @@ export function FloatingVoiceButton({
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1)
       }, 1000)
-
     } catch (err) {
       setError('マイクへのアクセスが拒否されました')
       console.error('Error accessing microphone:', err)
@@ -199,8 +198,8 @@ export function FloatingVoiceButton({
         body: JSON.stringify({
           voice_text: transcription,
           child_id: 'default_child',
-          parent_id: 'default_parent'
-        })
+          parent_id: 'default_parent',
+        }),
       })
 
       if (!response.ok) {
@@ -238,12 +237,12 @@ export function FloatingVoiceButton({
       {/* フローティングボタン */}
       <Button
         onClick={() => setIsOpen(true)}
-        className={`fixed ${getPositionClasses()} ${className} h-14 w-14 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 shadow-lg hover:shadow-xl transition-all duration-300 border-0 group z-50`}
+        className={`fixed ${getPositionClasses()} ${className} group z-50 h-14 w-14 rounded-full border-0 bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg transition-all duration-300 hover:from-emerald-500 hover:to-teal-600 hover:shadow-xl`}
         size="icon"
       >
         <div className="flex items-center justify-center">
-          <Mic className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
-          <div className="absolute -top-1 -right-1 h-3 w-3 bg-red-400 rounded-full animate-pulse" />
+          <Mic className="h-6 w-6 text-white transition-transform group-hover:scale-110" />
+          <div className="absolute -right-1 -top-1 h-3 w-3 animate-pulse rounded-full bg-red-400" />
         </div>
       </Button>
 
@@ -259,18 +258,18 @@ export function FloatingVoiceButton({
 
           <div className="space-y-6">
             {/* 録音コントロール */}
-            <div className="text-center space-y-4">
+            <div className="space-y-4 text-center">
               {!isRecording && !transcription && (
                 <div>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="mb-4 text-sm text-gray-600">
                     「さっき10時にミルク150ml飲んで、すぐ寝ちゃった」のように自然に話してください
                   </p>
-                  <Button 
+                  <Button
                     onClick={startRecording}
                     className="bg-emerald-500 hover:bg-emerald-600"
                     size="lg"
                   >
-                    <Mic className="h-5 w-5 mr-2" />
+                    <Mic className="mr-2 h-5 w-5" />
                     録音開始
                   </Button>
                 </div>
@@ -279,28 +278,26 @@ export function FloatingVoiceButton({
               {isRecording && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-center gap-4">
-                    <div className={`h-16 w-16 rounded-full ${isPaused ? 'bg-yellow-100' : 'bg-red-100'} flex items-center justify-center`}>
+                    <div
+                      className={`h-16 w-16 rounded-full ${isPaused ? 'bg-yellow-100' : 'bg-red-100'} flex items-center justify-center`}
+                    >
                       {isPaused ? (
                         <Pause className="h-8 w-8 text-yellow-600" />
                       ) : (
-                        <div className="h-4 w-4 bg-red-500 rounded-full animate-pulse" />
+                        <div className="h-4 w-4 animate-pulse rounded-full bg-red-500" />
                       )}
                     </div>
                   </div>
-                  
-                  <div className="text-2xl font-mono text-gray-700">
+
+                  <div className="font-mono text-2xl text-gray-700">
                     {formatTime(recordingTime)}
                   </div>
 
                   <div className="flex justify-center gap-2">
-                    <Button 
-                      onClick={pauseRecording}
-                      variant="outline"
-                      size="sm"
-                    >
+                    <Button onClick={pauseRecording} variant="outline" size="sm">
                       {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                     </Button>
-                    <Button 
+                    <Button
                       onClick={stopRecording}
                       variant="outline"
                       size="sm"
@@ -317,27 +314,21 @@ export function FloatingVoiceButton({
             {transcription && (
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">認識されたテキスト</h4>
-                  <div className="p-3 bg-gray-50 rounded-lg border">
-                    <p className="text-sm text-gray-700">
-                      {transcription || '音声を認識中...'}
-                    </p>
+                  <h4 className="mb-2 text-sm font-medium text-gray-700">認識されたテキスト</h4>
+                  <div className="rounded-lg border bg-gray-50 p-3">
+                    <p className="text-sm text-gray-700">{transcription || '音声を認識中...'}</p>
                   </div>
                 </div>
 
                 {!isRecording && !isProcessing && !result && (
                   <div className="flex gap-2">
-                    <Button 
+                    <Button
                       onClick={processVoiceRecord}
                       className="flex-1 bg-emerald-500 hover:bg-emerald-600"
                     >
                       記録として保存
                     </Button>
-                    <Button 
-                      onClick={resetRecording}
-                      variant="outline"
-                      className="border-gray-300"
-                    >
+                    <Button onClick={resetRecording} variant="outline" className="border-gray-300">
                       やり直し
                     </Button>
                   </div>
@@ -347,8 +338,8 @@ export function FloatingVoiceButton({
 
             {/* 処理中 */}
             {isProcessing && (
-              <div className="text-center space-y-3">
-                <Loader2 className="h-8 w-8 animate-spin text-emerald-600 mx-auto" />
+              <div className="space-y-3 text-center">
+                <Loader2 className="mx-auto h-8 w-8 animate-spin text-emerald-600" />
                 <p className="text-sm text-gray-600">AIが音声を分析しています...</p>
                 <Progress value={50} className="h-2" />
               </div>
@@ -361,9 +352,9 @@ export function FloatingVoiceButton({
                   <CheckCircle className="h-5 w-5" />
                   <span className="font-medium">記録完了</span>
                 </div>
-                
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                  <p className="text-sm text-green-800 mb-2">{result.message}</p>
+
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                  <p className="mb-2 text-sm text-green-800">{result.message}</p>
                   {result.extracted_events > 0 && (
                     <Badge variant="secondary" className="bg-green-100 text-green-700">
                       {result.extracted_events}件のイベントを記録
@@ -371,7 +362,7 @@ export function FloatingVoiceButton({
                   )}
                 </div>
 
-                <Button 
+                <Button
                   onClick={() => {
                     resetRecording()
                     setIsOpen(false)
@@ -390,12 +381,12 @@ export function FloatingVoiceButton({
                   <AlertCircle className="h-5 w-5" />
                   <span className="font-medium">エラー</span>
                 </div>
-                
-                <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                   <p className="text-sm text-red-800">{error}</p>
                 </div>
 
-                <Button 
+                <Button
                   onClick={resetRecording}
                   variant="outline"
                   className="w-full border-red-300 text-red-600 hover:bg-red-50"

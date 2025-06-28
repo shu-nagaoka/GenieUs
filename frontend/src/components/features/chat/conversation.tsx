@@ -42,10 +42,8 @@ export function Conversation({ messages = [], isLoading = false }: ConversationP
             >
               <CardContent className="p-3">
                 {message.type === 'assistant' ? (
-                  <div className="prose prose-sm max-w-none text-sm font-medium leading-relaxed tracking-wide prose-headings:font-bold prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-ul:text-foreground prose-ol:text-foreground">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {message.content}
-                    </ReactMarkdown>
+                  <div className="prose prose-sm max-w-none text-sm font-medium leading-relaxed tracking-wide prose-headings:font-bold prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-ol:text-foreground prose-ul:text-foreground prose-li:text-foreground">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
                   </div>
                 ) : (
                   <p className="whitespace-pre-wrap text-sm font-medium leading-relaxed tracking-wide">

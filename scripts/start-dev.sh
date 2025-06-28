@@ -16,6 +16,7 @@ NC='\033[0m' # No Color
 # PIDファイルのパス
 BACKEND_PID_FILE="./backend/.backend.pid"
 FRONTEND_PID_FILE="./frontend/.frontend.pid"
+DOCS_PID_FILE="./docs/.docs.pid"
 
 # 環境チェック
 check_prerequisites() {
@@ -89,6 +90,22 @@ start_frontend() {
     cd ..
 }
 
+# ドキュメントサーバー起動
+start_docs_server() {
+    echo -e "${CYAN}📚 ドキュメントサーバーを起動中...${NC}"
+    cd docs
+    
+    # ドキュメントサーバーをバックグラウンドで起動
+    python3 serve.py > docs.log 2>&1 &
+    DOCS_PID=$!
+    echo $DOCS_PID > .docs.pid
+    
+    echo -e "${GREEN}✅ ドキュメントサーバー起動完了 (PID: $DOCS_PID)${NC}"
+    echo -e "${BLUE}   🔗 ドキュメント: http://localhost:15080${NC}"
+    
+    cd ..
+}
+
 # プロセス停止
 stop_services() {
     echo -e "${YELLOW}🛑 サービスを停止中...${NC}"
@@ -113,9 +130,20 @@ stop_services() {
         rm -f "./frontend/.frontend.pid"
     fi
     
-    # uvicorn プロセスも強制終了
+    # ドキュメントサーバー停止
+    if [ -f "./docs/.docs.pid" ]; then
+        DOCS_PID=$(cat "./docs/.docs.pid")
+        if kill -0 $DOCS_PID 2>/dev/null; then
+            kill $DOCS_PID
+            echo -e "${GREEN}✅ ドキュメントサーバー停止 (PID: $DOCS_PID)${NC}"
+        fi
+        rm -f "./docs/.docs.pid"
+    fi
+    
+    # プロセスも強制終了
     pkill -f "uvicorn.*src.main:app" 2>/dev/null || true
     pkill -f "next.*dev" 2>/dev/null || true
+    pkill -f "python3.*serve.py" 2>/dev/null || true
     
     echo -e "${GREEN}✅ すべてのサービスを停止しました${NC}"
 }
@@ -168,6 +196,9 @@ start_services() {
     # フロントエンド起動
     start_frontend
     
+    # ドキュメントサーバー起動
+    start_docs_server
+    
     # フロントエンドの起動を待つ
     echo -e "${CYAN}⏳ フロントエンドの起動を待機中...${NC}"
     sleep 8
@@ -184,6 +215,7 @@ start_services() {
     echo -e "${BLUE}│ 🔧 API:           ${GREEN}http://localhost:8000${BLUE} │${NC}"
     echo -e "${BLUE}│ 📖 API仕様書:     ${GREEN}http://localhost:8000/docs${BLUE} │${NC}"
     echo -e "${BLUE}│ 🧞‍♂️ ADK Web UI:   ${GREEN}http://localhost:8001${BLUE} │${NC}"
+    echo -e "${BLUE}│ 📚 ドキュメント:   ${GREEN}http://localhost:15080${BLUE} │${NC}"
     echo -e "${BLUE}└─────────────────────────────────────┘${NC}"
     echo ""
     echo -e "${YELLOW}💡 コマンド:${NC}"
@@ -232,6 +264,7 @@ show_help() {
     echo "  start    開発環境を起動 (デフォルト)"
     echo "  stop     すべてのサービスを停止"
     echo "  restart  サービスを再起動"
+    echo "  docs     ドキュメントサーバーのみ起動"
     echo "  status   サービスの状態を表示"
     echo "  help     このヘルプを表示"
     echo ""
@@ -240,6 +273,7 @@ show_help() {
     echo "  ./start-dev.sh start   # 起動"
     echo "  ./start-dev.sh stop    # 停止"
     echo "  ./start-dev.sh restart # 再起動"
+    echo "  ./start-dev.sh docs    # ドキュメントのみ"
     echo ""
 }
 
@@ -258,6 +292,23 @@ main() {
             stop_services
             echo ""
             start_services
+            ;;
+        "docs")
+            print_logo
+            echo -e "${GREEN}🚀 ドキュメントサーバーを起動します${NC}"
+            echo ""
+            start_docs_server
+            echo ""
+            echo -e "${GREEN}🎉 ドキュメントサーバーが起動しました！${NC}"
+            echo ""
+            echo -e "${BLUE}┌─────────────────────────────────────┐${NC}"
+            echo -e "${BLUE}│          ドキュメントアクセス          │${NC}"
+            echo -e "${BLUE}├─────────────────────────────────────┤${NC}"
+            echo -e "${BLUE}│ 📚 ドキュメント:   ${GREEN}http://localhost:15080${BLUE} │${NC}"
+            echo -e "${BLUE}└─────────────────────────────────────┘${NC}"
+            echo ""
+            echo -e "${YELLOW}💡 停止: ./start-dev.sh stop${NC}"
+            echo ""
             ;;
         "status")
             print_logo

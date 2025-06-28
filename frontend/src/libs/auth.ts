@@ -38,8 +38,8 @@ export interface BackendLoginResponse {
  */
 export async function loginToBackend(sessionUser: any): Promise<BackendLoginResponse> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    console.log('Auth API URL:', `${apiUrl}/api/auth/login/google`); // デバッグ用
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    console.log('Auth API URL:', `${apiUrl}/api/auth/login/google`) // デバッグ用
     const response = await fetch(`${apiUrl}/api/auth/login/google`, {
       method: 'POST',
       headers: {
@@ -51,9 +51,9 @@ export async function loginToBackend(sessionUser: any): Promise<BackendLoginResp
           email: sessionUser.email,
           name: sessionUser.name,
           picture: sessionUser.image,
-          email_verified: true
-        }
-      })
+          email_verified: true,
+        },
+      }),
     })
 
     if (!response.ok) {
@@ -61,7 +61,7 @@ export async function loginToBackend(sessionUser: any): Promise<BackendLoginResp
     }
 
     const result = await response.json()
-    
+
     if (!result.success) {
       throw new Error('Backend login unsuccessful')
     }
@@ -78,13 +78,16 @@ export async function loginToBackend(sessionUser: any): Promise<BackendLoginResp
  */
 export async function verifyBackendToken(token: string): Promise<{ valid: boolean; user?: any }> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/verify`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/verify`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       }
-    })
+    )
 
     if (response.ok) {
       const userData = await response.json()
@@ -103,13 +106,16 @@ export async function verifyBackendToken(token: string): Promise<{ valid: boolea
  */
 export async function getBackendUserProfile(token: string): Promise<any> {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/profile`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/profile`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       }
-    })
+    )
 
     if (!response.ok) {
       throw new Error(`Profile fetch failed: ${response.status}`)
@@ -130,11 +136,11 @@ export async function validateGoogleToken(token: string): Promise<any> {
     const response = await fetch(
       `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`
     )
-    
+
     if (!response.ok) {
       throw new Error('Token validation failed')
     }
-    
+
     return await response.json()
   } catch (error) {
     console.error('Token validation error:', error)
@@ -143,11 +149,7 @@ export async function validateGoogleToken(token: string): Promise<any> {
 }
 
 // API call with authentication
-export async function authenticatedFetch(
-  url: string,
-  options: RequestInit = {},
-  token?: string
-) {
+export async function authenticatedFetch(url: string, options: RequestInit = {}, token?: string) {
   const headers = {
     'Content-Type': 'application/json',
     ...(token && { Authorization: `Bearer ${token}` }),

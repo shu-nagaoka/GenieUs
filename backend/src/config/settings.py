@@ -48,14 +48,8 @@ class AppSettings(BaseSettings):
     ROOT_DIR: str | None = None
     BUCKET_NAME: str = Field(default="genieus-files")
 
-    # ルーティング設定
-    ROUTING_STRATEGY: str = Field(default="keyword")
-    HYBRID_KEYWORD_WEIGHT: float = Field(default=0.4)
-    HYBRID_LLM_WEIGHT: float = Field(default=0.6)
-    ENABLE_AB_TEST: bool = Field(default=False)
-    AB_TEST_RATIO: float = Field(default=0.5)
-    ROUTING_LOG_LEVEL: str = Field(default="INFO")
-    COLLECT_ROUTING_METRICS: bool = Field(default=True)
+    # ルーティング設定（ADK標準固定）
+    ROUTING_LOG_LEVEL: str = Field(default="INFO")  # デバッグ用のみ保持
 
     model_config = SettingsConfigDict(env_file=".env.dev", env_file_encoding="utf-8", extra="ignore")
 

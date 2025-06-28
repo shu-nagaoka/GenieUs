@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 # ========== Response Models ==========
 
+
 class MigrationStatusResponse(BaseModel):
     """移行状況レスポンス"""
 
@@ -30,6 +31,7 @@ router = APIRouter()
 
 
 # ========== 管理用エンドポイント ==========
+
 
 @router.get("/migration/status", response_model=MigrationStatusResponse)
 async def get_migration_status(request: Request):
@@ -98,16 +100,19 @@ async def execute_data_migration(request: Request):
         result = await data_migrator.migrate_all_data()
 
         if result["success"]:
-            logger.info("データ移行実行完了", extra={
-                "total_migrated": sum(
-                    summary.get("migrated_count", 0)
-                    for summary in result["summary"].values()
-                ),
-            })
+            logger.info(
+                "データ移行実行完了",
+                extra={
+                    "total_migrated": sum(summary.get("migrated_count", 0) for summary in result["summary"].values()),
+                },
+            )
         else:
-            logger.warning("データ移行実行でエラー発生", extra={
-                "errors": result["errors"],
-            })
+            logger.warning(
+                "データ移行実行でエラー発生",
+                extra={
+                    "errors": result["errors"],
+                },
+            )
 
         return MigrationResultResponse(**result)
 
@@ -134,8 +139,16 @@ async def get_database_info(request: Request):
 
         # テーブル一覧と件数
         tables_info = {}
-        tables = ["users", "family_info", "child_records", "growth_records",
-                 "memory_records", "schedule_events", "effort_reports", "meal_plans"]
+        tables = [
+            "users",
+            "family_info",
+            "child_records",
+            "growth_records",
+            "memory_records",
+            "schedule_events",
+            "effort_reports",
+            "meal_plans",
+        ]
 
         for table in tables:
             try:
@@ -216,8 +229,11 @@ async def get_system_health(request: Request):
 
         # 各コンポーネントの存在確認
         components = [
-            "user_repository", "data_migrator", "database_migrator",
-            "google_verifier", "jwt_authenticator",
+            "user_repository",
+            "data_migrator",
+            "database_migrator",
+            "google_verifier",
+            "jwt_authenticator",
         ]
 
         for component in components:
@@ -228,13 +244,16 @@ async def get_system_health(request: Request):
                 health_status["components"][component] = f"error: {e!s}"
 
         return {
-            "overall_status": "ok" if all(
-                status == "ok" for status in [
+            "overall_status": "ok"
+            if all(
+                status == "ok"
+                for status in [
                     health_status["database"],
                     health_status["composition_root"],
                     health_status["authentication"],
                 ]
-            ) else "degraded",
+            )
+            else "degraded",
             "details": health_status,
         }
 

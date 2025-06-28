@@ -8,8 +8,8 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from google.adk.tools.tool_context import ToolContext
 from google.adk.tools import FunctionTool, google_search
+from google.adk.tools.tool_context import ToolContext
 
 
 def create_search_history_tool(logger: logging.Logger) -> FunctionTool:
@@ -20,11 +20,11 @@ def create_search_history_tool(logger: logging.Logger) -> FunctionTool:
         tool_context: ToolContext | None = None,
     ) -> dict[str, Any]:
         """Google検索実行 + 履歴記録機能
-        
+
         Args:
             query: 検索クエリ
             tool_context: ADK ToolContext (自動注入)
-            
+
         Returns:
             dict: 検索結果と履歴情報
 
@@ -123,10 +123,10 @@ def create_search_history_tool(logger: logging.Logger) -> FunctionTool:
 
 def get_search_history(tool_context: ToolContext) -> list[dict[str, Any]]:
     """検索履歴取得
-    
+
     Args:
         tool_context: ADK ToolContext
-        
+
     Returns:
         list: 検索履歴リスト
 
@@ -136,10 +136,10 @@ def get_search_history(tool_context: ToolContext) -> list[dict[str, Any]]:
 
 def get_last_search(tool_context: ToolContext) -> dict[str, Any] | None:
     """最後の検索情報取得
-    
+
     Args:
         tool_context: ADK ToolContext
-        
+
     Returns:
         dict or None: 最後の検索情報
 
@@ -149,10 +149,10 @@ def get_last_search(tool_context: ToolContext) -> dict[str, Any] | None:
 
 def clear_search_history(tool_context: ToolContext) -> bool:
     """検索履歴クリア
-    
+
     Args:
         tool_context: ADK ToolContext
-        
+
     Returns:
         bool: 成功可否
 

@@ -16,20 +16,18 @@ export function AppLayout({ children }: AppLayoutProps) {
     }
 
     window.addEventListener('sidebarToggle', handleSidebarToggle as EventListener)
-    
+
     return () => {
       window.removeEventListener('sidebarToggle', handleSidebarToggle as EventListener)
     }
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 flex">
+    <div className="flex min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
       <Sidebar onToggle={setIsCollapsed} />
-      
-      <main 
-        className={`flex-1 transition-all duration-300 ${
-          isCollapsed ? 'md:ml-16' : 'md:ml-64'
-        }`}
+
+      <main
+        className={`flex-1 transition-all duration-300 ${isCollapsed ? 'md:ml-16' : 'md:ml-64'}`}
       >
         {children}
       </main>

@@ -70,14 +70,17 @@ export function useChatHistory() {
   // ローカルストレージに保存
   const saveToStorage = (sessions: ChatSession[]) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        sessions,
-        metadata: {
-          version: '1.0.0',
-          lastUpdated: new Date().toISOString(),
-          totalSessions: sessions.length
-        }
-      }))
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          sessions,
+          metadata: {
+            version: '1.0.0',
+            lastUpdated: new Date().toISOString(),
+            totalSessions: sessions.length,
+          },
+        })
+      )
     } catch (err) {
       console.error('Failed to save to localStorage:', err)
     }
@@ -95,14 +98,14 @@ export function useChatHistory() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         summary: `${messages.length}件のメッセージ`,
-        tags: []
+        tags: [],
       }
-      
+
       const updatedSessions = [newSession, ...sessions]
       setSessions(updatedSessions)
       setCurrentSession(newSession)
       saveToStorage(updatedSessions)
-      
+
       return newSession
     } catch (err) {
       setError(err instanceof Error ? err.message : 'エラーが発生しました')
@@ -118,17 +121,17 @@ export function useChatHistory() {
     setLoading(true)
     setError(null)
     try {
-      const updatedSessions = sessions.map(session => 
-        session.id === sessionId 
+      const updatedSessions = sessions.map(session =>
+        session.id === sessionId
           ? { ...session, messages, updatedAt: new Date().toISOString() }
           : session
       )
-      
+
       setSessions(updatedSessions)
       saveToStorage(updatedSessions)
 
       if (currentSession?.id === sessionId) {
-        setCurrentSession(prev => 
+        setCurrentSession(prev =>
           prev ? { ...prev, messages, updatedAt: new Date().toISOString() } : null
         )
       }
@@ -151,7 +154,7 @@ export function useChatHistory() {
       const updatedSessions = sessions.filter(session => session.id !== sessionId)
       setSessions(updatedSessions)
       saveToStorage(updatedSessions)
-      
+
       if (currentSession?.id === sessionId) {
         setCurrentSession(null)
       }

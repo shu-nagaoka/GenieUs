@@ -16,10 +16,10 @@ export default function GenieHomePage() {
     <div className="relative">
       <GenieDashboard />
       <FloatingMagicOrb onAction={handleMagicAction} />
-      
+
       {/* デバッグ用 - 最後のアクション表示 */}
       {lastAction && (
-        <div className="fixed bottom-20 left-4 p-2 bg-black/80 text-white text-xs rounded">
+        <div className="fixed bottom-20 left-4 rounded bg-black/80 p-2 text-xs text-white">
           {lastAction}
         </div>
       )}

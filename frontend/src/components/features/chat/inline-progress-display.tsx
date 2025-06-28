@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { 
+import {
   IoSettings,
   IoSparkles,
   IoCheckmarkCircle,
@@ -12,7 +12,7 @@ import {
   IoImage,
   IoVolumeHigh,
   IoDocumentText,
-  IoTrendingUp
+  IoTrendingUp,
 } from 'react-icons/io5'
 import { GiMagicLamp } from 'react-icons/gi'
 
@@ -33,17 +33,17 @@ interface InlineProgressDisplayProps {
 
 export function InlineProgressDisplay({
   message,
-  userId = "frontend_user",
-  sessionId = "default-session",
+  userId = 'frontend_user',
+  sessionId = 'default-session',
   onComplete,
   onError,
-  className = ""
+  className = '',
 }: InlineProgressDisplayProps) {
   const [progressUpdates, setProgressUpdates] = useState<ProgressUpdate[]>([])
   const [isComplete, setIsComplete] = useState(false)
-  const [finalResponse, setFinalResponse] = useState<string>("")
+  const [finalResponse, setFinalResponse] = useState<string>('')
   const [isStreaming, setIsStreaming] = useState(false)
-  const [currentStatus, setCurrentStatus] = useState<string>("thinking")
+  const [currentStatus, setCurrentStatus] = useState<string>('thinking')
   const [toolsUsed, setToolsUsed] = useState<string[]>([])
   const eventSourceRef = useRef<EventSource | null>(null)
 
@@ -71,8 +71,8 @@ export function InlineProgressDisplay({
     setIsStreaming(true)
     setProgressUpdates([])
     setIsComplete(false)
-    setFinalResponse("")
-    setCurrentStatus("thinking")
+    setFinalResponse('')
+    setCurrentStatus('thinking')
     setToolsUsed([])
 
     try {
@@ -85,8 +85,8 @@ export function InlineProgressDisplay({
         body: JSON.stringify({
           message,
           user_id: userId,
-          session_id: sessionId
-        })
+          session_id: sessionId,
+        }),
       })
 
       if (!response.ok) {
@@ -102,7 +102,7 @@ export function InlineProgressDisplay({
 
       while (true) {
         const { done, value } = await reader.read()
-        
+
         if (done) break
 
         const chunk = decoder.decode(value)
@@ -115,7 +115,7 @@ export function InlineProgressDisplay({
               const update: ProgressUpdate = {
                 type: data.type,
                 message: data.message,
-                data: data.data || {}
+                data: data.data || {},
               }
 
               setProgressUpdates(prev => [...prev, update])
@@ -136,7 +136,7 @@ export function InlineProgressDisplay({
                 setIsComplete(true)
                 setIsStreaming(false)
                 if (onComplete) {
-                  onComplete(finalResponse || data.data?.response || "")
+                  onComplete(finalResponse || data.data?.response || '')
                 }
               }
 
@@ -153,7 +153,6 @@ export function InlineProgressDisplay({
           }
         }
       }
-
     } catch (error) {
       console.error('Streaming error:', error)
       setIsStreaming(false)
@@ -178,16 +177,16 @@ export function InlineProgressDisplay({
   const getStatusIcon = () => {
     switch (currentStatus) {
       case 'thinking':
-        return <IoSparkles className="h-4 w-4 text-blue-500 animate-pulse" />
+        return <IoSparkles className="h-4 w-4 animate-pulse text-blue-500" />
       case 'tools_available':
         return <IoSettings className="h-4 w-4 text-purple-500" />
       case 'tool_detected':
       case 'tool_executing':
-        return <IoTime className="h-4 w-4 text-orange-500 animate-spin" />
+        return <IoTime className="h-4 w-4 animate-spin text-orange-500" />
       case 'tool_complete':
         return <IoCheckmarkCircle className="h-4 w-4 text-green-500" />
       case 'response_generating':
-        return <GiMagicLamp className="h-4 w-4 text-amber-500 animate-pulse" />
+        return <GiMagicLamp className="h-4 w-4 animate-pulse text-amber-500" />
       case 'complete':
         return <IoCheckmarkCircle className="h-4 w-4 text-green-600" />
       case 'error':
@@ -199,42 +198,42 @@ export function InlineProgressDisplay({
 
   // 現在のステータスメッセージ
   const getCurrentStatusMessage = () => {
-    if (progressUpdates.length === 0) return "思考中..."
-    return progressUpdates[progressUpdates.length - 1]?.message || "処理中..."
+    if (progressUpdates.length === 0) return '思考中...'
+    return progressUpdates[progressUpdates.length - 1]?.message || '処理中...'
   }
 
   return (
     <div className={`space-y-2 ${className}`}>
       {/* コンパクトなプログレス表示 */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
         <CardContent className="p-3">
           <div className="flex items-center gap-3">
-            <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600">
               <GiMagicLamp className="h-3 w-3 text-white" />
             </div>
-            
-            <div className="flex-1 min-w-0">
+
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 {getStatusIcon()}
-                <span className="text-sm text-gray-700 truncate">
-                  {getCurrentStatusMessage()}
-                </span>
+                <span className="truncate text-sm text-gray-700">{getCurrentStatusMessage()}</span>
               </div>
-              
+
               {/* ツール使用表示 */}
               {toolsUsed.length > 0 && (
-                <div className="flex gap-1 mt-1">
+                <div className="mt-1 flex gap-1">
                   {toolsUsed.slice(0, 4).map((tool, index) => (
                     <div
                       key={index}
-                      className="flex items-center gap-1 px-2 py-0.5 bg-white/60 rounded text-xs text-gray-600"
+                      className="flex items-center gap-1 rounded bg-white/60 px-2 py-0.5 text-xs text-gray-600"
                     >
                       {getToolIcon(tool)}
                       <span className="hidden sm:inline">{tool.replace('_', ' ')}</span>
                     </div>
                   ))}
                   {toolsUsed.length > 4 && (
-                    <span className="text-xs text-gray-500 self-center">+{toolsUsed.length - 4}</span>
+                    <span className="self-center text-xs text-gray-500">
+                      +{toolsUsed.length - 4}
+                    </span>
                   )}
                 </div>
               )}
@@ -244,19 +243,23 @@ export function InlineProgressDisplay({
             <div className="flex items-center gap-1">
               {isStreaming ? (
                 <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></div>
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-500"></div>
+                  <div
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-500"
+                    style={{ animationDelay: '0.1s' }}
+                  ></div>
+                  <div
+                    className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-500"
+                    style={{ animationDelay: '0.2s' }}
+                  ></div>
                 </div>
               ) : isComplete ? (
                 <IoCheckmarkCircle className="h-4 w-4 text-green-500" />
               ) : (
-                <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                <div className="h-2 w-2 rounded-full bg-gray-400"></div>
               )}
-              
-              <span className="text-xs text-gray-500">
-                {progressUpdates.length}
-              </span>
+
+              <span className="text-xs text-gray-500">{progressUpdates.length}</span>
             </div>
           </div>
         </CardContent>
@@ -264,9 +267,9 @@ export function InlineProgressDisplay({
 
       {/* 最終レスポンス表示 */}
       {finalResponse && isComplete && (
-        <Card className="bg-white/80 backdrop-blur-sm border border-amber-200">
+        <Card className="border border-amber-200 bg-white/80 backdrop-blur-sm">
           <CardContent className="p-3">
-            <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-line">
+            <div className="prose prose-sm max-w-none whitespace-pre-line text-gray-700">
               {finalResponse}
             </div>
           </CardContent>
