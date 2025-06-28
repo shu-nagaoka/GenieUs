@@ -134,16 +134,26 @@ jobs:
         echo "=== package.json exists? ==="
         ls -la frontend/package.json || echo "package.json not found"
 
-    - name: Build and Deploy Frontend via Container Registry
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and Push Frontend Image
       run: |
         cd frontend
         
-        # Build image with Cloud Build
-        gcloud builds submit \
-          --region ${{ env.REGION }} \
-          --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/genius-frontend:${{ github.sha }}
+        # Build image locally
+        docker build \
+          --platform linux/amd64 \
+          --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/genius-frontend:${{ github.sha }} \
+          --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/genius-frontend:latest \
+          .
         
-        # Deploy to Cloud Run using pre-built image
+        # Push to Google Container Registry
+        docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/genius-frontend:${{ github.sha }}
+        docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/genius-frontend:latest
+
+    - name: Deploy Frontend to Cloud Run
+      run: |
         gcloud run deploy genius-frontend-${{ env.ENVIRONMENT }} \
           --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/genius-frontend:${{ github.sha }} \
           --platform managed \
@@ -161,21 +171,17 @@ jobs:
           --max-instances ${{ env.ENVIRONMENT == 'production' && '10' || '5' }} \
           --port 3000
 
-    - name: Show Frontend Build Logs on Failure
+    - name: Show Build Info on Failure
       if: failure()
       run: |
-        echo "=== Recent Failed Builds ==="
-        gcloud builds list --filter="status=FAILURE" --limit=5 --format="table(id,createTime,status,source.repoSource.branchName)"
-        echo "=== Getting latest failed build logs ==="
-        BUILD_ID=$(gcloud builds list --filter="status=FAILURE" --limit=1 --format="value(id)")
-        if [ ! -z "$BUILD_ID" ]; then
-          echo "Build ID: $BUILD_ID"
-          echo "=== Full Build Log ==="
-          gcloud builds log $BUILD_ID
-        else
-          echo "No recent failed builds found - checking all builds"
-          gcloud builds list --limit=5 --format="table(id,createTime,status)"
-        fi
+        echo "=== Docker Build Failed ==="
+        echo "Frontend build failed with GitHub Actions Docker"
+        echo "Check the build step logs above for specific errors"
+        echo "=== Docker Images ==="
+        docker images | grep genius-frontend || echo "No frontend images found"
+        echo "=== System Info ==="
+        docker --version
+        df -h
 
     - name: Get Frontend URL
       run: |
