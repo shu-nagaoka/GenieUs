@@ -28,6 +28,7 @@ class AgentManager:
         settings,
         routing_strategy: RoutingStrategy | None = None,
         agent_registry: AgentRegistry | None = None,
+        composition_root = None,
     ):
         """AgentManager初期化
 
@@ -37,6 +38,7 @@ class AgentManager:
             settings: アプリケーション設定
             routing_strategy: ルーティング戦略
             agent_registry: 既存のAgentRegistry（CompositionRootから注入）
+            composition_root: CompositionRoot（重複初期化回避用）
 
         """
         self.logger = logger
@@ -56,7 +58,7 @@ class AgentManager:
             self.logger.warning("⚠️ AgentRegistry新規作成: ADKコーディネーター共有なし")
 
         self._message_processor = MessageProcessor(logger)
-        self._routing_executor = RoutingExecutor(logger, routing_strategy, self._message_processor)
+        self._routing_executor = RoutingExecutor(logger, routing_strategy, self._message_processor, composition_root)
 
         # 互換性のためのエイリアス
         self._agents = self._registry._agents

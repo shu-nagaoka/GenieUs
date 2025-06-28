@@ -68,6 +68,7 @@ async def lifespan(app: FastAPI):
                 settings=composition_root.settings,
                 routing_strategy=routing_strategy,
                 agent_registry=agent_registry,
+                composition_root=composition_root,
             )
             agent_manager.initialize_all_components()
             logger.info("✅ AgentManager初期化完了（Pure Composition Root + ルーティング戦略）")
