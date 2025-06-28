@@ -49,7 +49,9 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
         message_lower = message.lower()
 
         # 🎯 **最優先**: 会話履歴から確認待ち状態を検出
+        self.logger.info(f"🔍 確認文脈チェック開始: conversation_history={bool(conversation_history)}, message='{message.strip()}'")
         if conversation_history and self._is_confirmation_context(conversation_history):
+            self.logger.info(f"🔍 確認文脈検出成功、確認応答チェック: '{message.strip()}'")
             if message.strip() in ["はい", "yes", "Yes", "YES", "いいえ", "no", "No", "NO"]:
                 is_positive = message.strip() in ["はい", "yes", "Yes", "YES"]
                 if is_positive:
@@ -143,16 +145,25 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
         Returns:
             bool: 確認待ち状態の場合True
         """
+        self.logger.info(f"🔍 _is_confirmation_context開始: history_length={len(conversation_history) if conversation_history else 0}")
         if not conversation_history or len(conversation_history) == 0:
+            self.logger.info("🔍 会話履歴なし、確認文脈なし")
             return False
             
         # 直前のメッセージ（エージェントからの応答）を確認
         last_message = conversation_history[-1] if conversation_history else None
         if not last_message:
+            self.logger.info("🔍 直前メッセージなし、確認文脈なし")
             return False
             
-        # エージェントからのメッセージ（genie役割）で画像解析結果を含むかチェック
-        if last_message.get("role") == "genie":
+        self.logger.info(f"🔍 直前メッセージチェック: role={last_message.get('role')}, content_length={len(last_message.get('content', ''))}")
+            
+        # エージェントからのメッセージ（genie役割または無指定）で画像解析結果を含むかチェック
+        role = last_message.get("role")
+        self.logger.info(f"🔍 メッセージrole詳細: '{role}' (type: {type(role)})")
+        
+        # roleがgenieまたはNone/未指定の場合（エージェントからの応答と判定）
+        if role == "genie" or role is None or role == "":
             content = last_message.get("content", "")
             
             # 画像解析結果の特徴的なキーワードを検出
@@ -167,14 +178,38 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
                 "記録しますか",
                 "食事記録",
                 "栄養・食事のジーニー",  # 栄養専門家からの提案
-                "食事管理"
+                "食事管理",
+                "お写真の分析ができました",  # 実際のレスポンスパターン
+                "画像分析専門家",
+                "分析してほしい画像",
+                "お写真からは",
+                "この献立は",
+                "毎日の食事管理の記録として",
+                "お食事中のお写真",  # 実際のレスポンス
+                "拝見しましたところ",
+                "お食事は",
+                "豆腐やトマト",
+                "美味しそうで",
+                "食べていたのでしょうね",
+                # エラー・確認時のキーワード追加
+                "お食事の記録のご提案",
+                "システムの方で少し問題が発生",
+                "自動で記録の確認",
+                "食事の記録を、引き続きお手伝い",
+                "「はい」か「いいえ」",
+                "記録しておきませんか",
+                "食事管理システムに記録",
+                "今後の栄養バランスの参考",
+                "日佳梨ちゃんの大切な食事の記録"
             ]
             
             # 画像解析または食事関連の提案が含まれているかチェック
             for indicator in image_analysis_indicators:
                 if indicator in content:
-                    self.logger.info(f"🔍 確認文脈検出: '{indicator}' が含まれる前回応答")
+                    self.logger.info(f"🔍 確認文脈検出成功: '{indicator}' が含まれる前回応答")
                     return True
+            
+            self.logger.info(f"🔍 確認文脈検出失敗: 画像解析キーワードなし、content_preview='{content[:100]}...'")
                     
         return False
 
