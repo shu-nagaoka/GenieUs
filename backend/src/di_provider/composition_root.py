@@ -8,7 +8,6 @@ import logging
 from typing import Any, Generic, TypeVar
 
 from google.adk.tools import FunctionTool
-
 from src.agents.routing_strategy import RoutingStrategy
 from src.application.usecases.agent_info_usecase import AgentInfoUseCase
 from src.application.usecases.chat_support_usecase import ChatSupportUseCase
@@ -17,9 +16,13 @@ from src.application.usecases.family_management_usecase import FamilyManagementU
 from src.application.usecases.file_management_usecase import FileManagementUseCase
 from src.application.usecases.growth_record_usecase import GrowthRecordUseCase
 from src.application.usecases.image_analysis_usecase import ImageAnalysisUseCase
+from src.application.usecases.interactive_confirmation_usecase import (
+    InteractiveConfirmationUseCase,
+)
 from src.application.usecases.meal_plan_management_usecase import (
     MealPlanManagementUseCase,
 )
+from src.application.usecases.meal_record_usecase import MealRecordUseCase
 from src.application.usecases.memory_record_usecase import MemoryRecordUseCase
 from src.application.usecases.record_management_usecase import RecordManagementUseCase
 from src.application.usecases.schedule_event_usecase import ScheduleEventUseCase
@@ -27,8 +30,6 @@ from src.application.usecases.search_history_usecase import SearchHistoryUseCase
 from src.application.usecases.streaming_chat_usecase import StreamingChatUseCase
 from src.application.usecases.user_management_usecase import UserManagementUseCase
 from src.application.usecases.voice_analysis_usecase import VoiceAnalysisUseCase
-from src.application.usecases.interactive_confirmation_usecase import InteractiveConfirmationUseCase
-from src.application.usecases.meal_record_usecase import MealRecordUseCase
 from src.config.settings import AppSettings, get_settings
 from src.infrastructure.adapters.file_operator import GcsFileOperator
 from src.infrastructure.adapters.gemini_image_analyzer import GeminiImageAnalyzer
@@ -42,6 +43,9 @@ from src.infrastructure.adapters.persistence.family_repository import FamilyRepo
 from src.infrastructure.adapters.persistence.growth_record_repository import (
     GrowthRecordRepository,
 )
+from src.infrastructure.adapters.persistence.meal_record_repository import (
+    MealRecordRepository,
+)
 from src.infrastructure.adapters.persistence.memory_record_repository import (
     MemoryRecordRepository,
 )
@@ -49,7 +53,6 @@ from src.infrastructure.adapters.persistence.schedule_event_repository import (
     ScheduleEventRepository,
 )
 from src.infrastructure.adapters.persistence.user_repository import UserRepository
-from src.infrastructure.adapters.persistence.meal_record_repository import MealRecordRepository
 from src.infrastructure.database.data_migrator import DataMigrator
 from src.infrastructure.database.sqlite_manager import DatabaseMigrator, SQLiteManager
 from src.presentation.api.middleware.auth_middleware import (
@@ -383,6 +386,18 @@ class CompositionRoot:
         meal_record_tool = self._create_meal_record_tool()
         self._tools.register("meal_record", meal_record_tool)
 
+        # Schedule ツール（スケジュール管理）
+        schedule_tool = self._create_schedule_tool()
+        self._tools.register("schedule", schedule_tool)
+
+        # Growth Record ツール（成長記録管理）
+        growth_record_tool = self._create_growth_record_tool()
+        self._tools.register("growth_record", growth_record_tool)
+
+        # Meal Plan ツール（食事プラン管理）
+        meal_plan_tool = self._create_meal_plan_tool()
+        self._tools.register("meal_plan", meal_plan_tool)
+
         self.logger.info("Tool層組み立て完了")
 
     def _build_agent_registry(self) -> None:
@@ -441,7 +456,9 @@ class CompositionRoot:
 
     def _create_meal_management_integration_tool(self) -> FunctionTool:
         """Meal Management Integration ツール作成（食事管理統合）"""
-        from src.tools.meal_management_integration_tool import create_meal_management_integration_tool
+        from src.tools.meal_management_integration_tool import (
+            create_meal_management_integration_tool,
+        )
 
         interactive_confirmation_usecase = self._usecases.get_required("interactive_confirmation")
         return create_meal_management_integration_tool(
@@ -461,6 +478,42 @@ class CompositionRoot:
             return FunctionTool(func=lambda: {"error": "MealRecord機能が利用できません"})
 
         return create_meal_record_tool(meal_record_usecase=meal_record_usecase, logger=self.logger)
+
+    def _create_schedule_tool(self) -> FunctionTool:
+        """Schedule ツール作成（スケジュール管理）"""
+        from src.tools.schedule_tool_adk import create_schedule_tool
+
+        schedule_usecase = self._usecases.get("schedule_event_management")
+        if schedule_usecase is None:
+            self.logger.warning("ScheduleEventUseCase が利用できません。")
+            from google.adk.tools import FunctionTool
+            return FunctionTool(func=lambda: {"error": "Schedule機能が利用できません"})
+
+        return create_schedule_tool(schedule_usecase=schedule_usecase, logger=self.logger)
+
+    def _create_growth_record_tool(self) -> FunctionTool:
+        """Growth Record ツール作成（成長記録管理）"""
+        from src.tools.growth_record_tool_adk import create_growth_record_tool
+
+        growth_record_usecase = self._usecases.get("growth_record_management")
+        if growth_record_usecase is None:
+            self.logger.warning("GrowthRecordUseCase が利用できません。")
+            from google.adk.tools import FunctionTool
+            return FunctionTool(func=lambda: {"error": "GrowthRecord機能が利用できません"})
+
+        return create_growth_record_tool(growth_record_usecase=growth_record_usecase, logger=self.logger)
+
+    def _create_meal_plan_tool(self) -> FunctionTool:
+        """Meal Plan ツール作成（食事プラン管理）"""
+        from src.tools.meal_plan_tool_adk import create_meal_plan_tool
+
+        meal_plan_usecase = self._usecases.get("meal_plan_management")
+        if meal_plan_usecase is None:
+            self.logger.warning("MealPlanManagementUseCase が利用できません。")
+            from google.adk.tools import FunctionTool
+            return FunctionTool(func=lambda: {"error": "MealPlan機能が利用できません"})
+
+        return create_meal_plan_tool(meal_plan_usecase=meal_plan_usecase, logger=self.logger)
 
     # ========== One-time Assembly API (main.py only) ==========
 

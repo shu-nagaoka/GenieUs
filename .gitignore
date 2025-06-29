@@ -59,3 +59,8 @@ coverage/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Environment configuration files
+environments/.env.local
+environments/.env.staging
+environments/.env.production

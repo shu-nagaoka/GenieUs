@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { API_BASE_URL } from '@/config/api'
 
 interface APITestResponse {
   response: string
@@ -24,7 +25,7 @@ export default function APITestPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('http://localhost:8080/api/v1/ping')
+      const res = await fetch(`${API_BASE_URL}/api/v1/ping`)
       const data = await res.json()
       setResponse({
         response: `Ping応答: ${data.message}`,
@@ -48,7 +49,7 @@ export default function APITestPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('http://localhost:8080/api/v1/test', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

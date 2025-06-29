@@ -2,8 +2,7 @@
  * スケジュール管理API クライアント
  */
 
-// APIベースURL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+import { API_BASE_URL } from '@/config/api'
 
 // レスポンス型定義
 interface ApiResponse<T = any> {

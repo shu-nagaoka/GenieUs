@@ -199,10 +199,10 @@ start_fastapi_only() {
     # uv が利用可能かチェック
     if command -v uv &> /dev/null; then
         echo -e "${CYAN}uvでFastAPIを起動します...${NC}"
-        uv run uvicorn src.app:app --host 0.0.0.0 --port 8080 --reload
+        uv run uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload
     else
         echo -e "${CYAN}Pythonで直接FastAPIを起動します...${NC}"
-        python -m uvicorn src.app:app --host 0.0.0.0 --port 8080 --reload
+        python -m uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload
     fi
 }
 
@@ -253,7 +253,7 @@ start_integrated_dev() {
     # FastAPI起動 (ポート8080)
     echo -e "${GREEN}🔧 FastAPI (ポート8080) を起動中...${NC}"
     cd backend
-    python -m uvicorn src.app:app --host 0.0.0.0 --port 8080 --reload &
+    python -m uvicorn src.main:app --host 0.0.0.0 --port 8080 --reload &
     FASTAPI_PID=$!
     echo "   FastAPI PID: $FASTAPI_PID"
     cd ..

@@ -2,6 +2,8 @@
  * 家族情報API関連の型定義とヘルパー関数
  */
 
+import { API_BASE_URL } from '@/config/api'
+
 export interface Child {
   name: string
   age: string
@@ -31,7 +33,6 @@ export interface ApiResponse<T = any> {
   error?: string
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 
 /**
  * 家族情報を取得

@@ -17,7 +17,7 @@ services:
     volumes:
       - ./backend:/app:delegated  # ホットリロード用
       - backend_venv:/app/.venv   # 仮想環境の永続化
-    command: uv run uvicorn src.app:app --host 0.0.0.0 --port 8000 --reload
+    command: uv run uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
     restart: unless-stopped
     networks:
       - GenieUs-network

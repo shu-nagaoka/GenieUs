@@ -3,7 +3,7 @@
  * Human-in-the-Loop確認処理のためのAPI関数
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+import { API_BASE_URL } from '@/config/api'
 
 export interface ConfirmationResponseRequest {
   confirmation_id: string
