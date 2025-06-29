@@ -48,7 +48,7 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
         """
         message_lower = message.lower()
 
-        # 🎯 **最優先**: 会話履歴から確認待ち状態を検出
+        # 🎯 **最優先**: 会話履歴から確認待ち状態を検出  
         self.logger.info(f"🔍 確認文脈チェック開始: conversation_history={bool(conversation_history)}, message='{message.strip()}'")
         if conversation_history and self._is_confirmation_context(conversation_history):
             self.logger.info(f"🔍 確認文脈検出成功、確認応答チェック: '{message.strip()}'")
@@ -57,6 +57,8 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
                 if is_positive:
                     # 確認文脈のタイプを判定
                     context_type = self._get_confirmation_context_type(conversation_history)
+                    self.logger.info(f"🔍 確認文脈タイプ判定結果: '{context_type}'")
+                    
                     if context_type == "meal_record":
                         self.logger.info(f"🎯 食事記録確認応答検出（肯定）: '{message.strip()}' → 直接食事記録API実行")
                         return "meal_record_api", {
@@ -146,16 +148,27 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
                 }
 
         # 各エージェントのキーワードマッチング
+        # 🔍 改善: すべてのエージェントをチェックし、最もマッチ数が多いものを選択
+        best_agent_id = None
+        best_match_count = 0
+        best_routing_info = None
+        
         for agent_id, keywords in AGENT_KEYWORDS.items():
             match_count = sum(1 for keyword in keywords if keyword in message_lower)
-            if match_count > 0:
+            if match_count > best_match_count:
+                best_match_count = match_count
+                best_agent_id = agent_id
                 confidence = min(match_count / len(keywords), 1.0)
-                routing_info = {
+                best_routing_info = {
                     "confidence": confidence,
                     "reasoning": f"キーワードマッチ: {match_count}個",
                     "matched_keywords": [kw for kw in keywords if kw in message_lower],
                 }
-                return agent_id, routing_info
+                self.logger.info(f"🎯 新しい最適エージェント: {agent_id} (マッチ数: {match_count})")
+
+        if best_agent_id:
+            self.logger.info(f"✅ 最終選択エージェント: {best_agent_id} (マッチ数: {best_match_count})")
+            return best_agent_id, best_routing_info
 
         # デフォルトはコーディネーター
         return "coordinator", {"confidence": 0.5, "reasoning": "デフォルトルーティング", "matched_keywords": []}
@@ -170,6 +183,7 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
             bool: 確認待ち状態の場合True
         """
         self.logger.info(f"🔍 _is_confirmation_context開始: history_length={len(conversation_history) if conversation_history else 0}")
+            
         if not conversation_history or len(conversation_history) == 0:
             self.logger.info("🔍 会話履歴なし、確認文脈なし")
             return False
@@ -182,16 +196,19 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
             
         self.logger.info(f"🔍 直前メッセージチェック: role={last_message.get('role')}, content_length={len(last_message.get('content', ''))}")
             
-        # エージェントからのメッセージ（genie役割または無指定）で画像解析結果を含むかチェック
+        # エージェントからのメッセージで確認文脈を含むかチェック
         role = last_message.get("role")
         self.logger.info(f"🔍 メッセージrole詳細: '{role}' (type: {type(role)})")
         
-        # roleがgenieまたはNone/未指定の場合（エージェントからの応答と判定）
-        if role == "genie" or role is None or role == "":
+        # より包括的なroleチェック（エージェントからの応答と判定）
+        agent_roles = ["genie", "assistant", "agent", "bot", None, ""]
+        if role in agent_roles:
             content = last_message.get("content", "")
+            self.logger.info(f"🔍 確認文脈チェック対象content: '{content[:200]}{'...' if len(content) > 200 else ''}'")
             
-            # 画像解析結果の特徴的なキーワードを検出
-            image_analysis_indicators = [
+            # 確認文脈の特徴的なキーワードを検出（食事・スケジュール両方）
+            confirmation_indicators = [
+                # 食事・画像解析関連
                 "detected_items",  # 検出されたアイテム
                 "画像を分析",
                 "写真を見て",
@@ -224,16 +241,45 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
                 "記録しておきませんか",
                 "食事管理システムに記録",
                 "今後の栄養バランスの参考",
-                "日佳梨ちゃんの大切な食事の記録"
+                "日佳梨ちゃんの大切な食事の記録",
+                # スケジュール・予定関連の確認文脈
+                "予定を登録",
+                "スケジュールに記録",
+                "カレンダーに記録",
+                "予約の確認",
+                "予定の確認",
+                "スケジュール管理",
+                "リマインダー設定",
+                "予定を追加",
+                "登録しておきませんか",
+                "記録しておきませんか",
+                "予約を記録",
+                "診察の予定",
+                "検診の予約",
+                "健診の予定",
+                "予防接種の予定",
+                "病院の予約",
+                "クリニックの予約",
+                "通院予定",
+                "医院の予約",
+                "小児科の予約",
+                "カレンダーに記録しておきませんか",
+                "スケジュールに記録しておきませんか",
+                "予定を管理",
+                "忘れないように記録",
+                "準備を忘れずに済みます",
+                "当日の持ち物チェック",
+                "便利ですよ",
+                "いかがでしょうか"
             ]
             
-            # 画像解析または食事関連の提案が含まれているかチェック
-            for indicator in image_analysis_indicators:
+            # 確認文脈（食事・スケジュール）の提案が含まれているかチェック
+            for indicator in confirmation_indicators:
                 if indicator in content:
                     self.logger.info(f"🔍 確認文脈検出成功: '{indicator}' が含まれる前回応答")
                     return True
             
-            self.logger.info(f"🔍 確認文脈検出失敗: 画像解析キーワードなし、content_preview='{content[:100]}...'")
+            self.logger.info(f"🔍 確認文脈検出失敗: 確認キーワードなし、content_preview='{content[:100]}...'")
                     
         return False
 
@@ -246,7 +292,10 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
         Returns:
             str: "meal_record", "schedule_record", または "general"
         """
+        self.logger.info(f"🔍 _get_confirmation_context_type開始: history_length={len(conversation_history) if conversation_history else 0}")
+        
         if not conversation_history:
+            self.logger.info("🔍 会話履歴なし、generalを返す")
             return "general"
         
         # 🚨 **重要**: 直前のメッセージ（1件のみ）をチェック - 異なる文脈の混在を防ぐ
@@ -317,7 +366,14 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
                 schedule_count = sum(1 for indicator in schedule_indicators if indicator in content)
                 meal_count = sum(1 for indicator in meal_indicators if indicator in content)
                 
+                # デバッグ: マッチしたキーワードを表示
+                matched_schedule = [indicator for indicator in schedule_indicators if indicator in content]
+                matched_meal = [indicator for indicator in meal_indicators if indicator in content]
+                
                 self.logger.info(f"🔍 確認文脈キーワード一致数: 食事={meal_count}個, スケジュール={schedule_count}個")
+                self.logger.info(f"🔍 マッチしたスケジュールキーワード: {matched_schedule}")
+                self.logger.info(f"🔍 マッチした食事キーワード: {matched_meal}")
+                self.logger.info(f"🔍 検査対象content: '{content}'")
                 
                 if meal_count > schedule_count:
                     self.logger.info(f"🔍 食事記録確認文脈検出: {meal_count}個のキーワード一致（直前メッセージのみ）")
@@ -332,6 +388,7 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
                     self.logger.info(f"🔍 食事記録確認文脈検出: {meal_count}個のキーワード一致（直前メッセージのみ）")
                     return "meal_record"
         
+        self.logger.info("🔍 確認文脈タイプ判定: キーワード一致なし、generalを返す")
         return "general"
 
     def get_strategy_name(self) -> str:

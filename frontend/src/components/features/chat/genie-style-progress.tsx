@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, memo, useMemo, useCallback } from 'react'
+import { API_BASE_URL } from '@/config/api'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   IoSparkles,
@@ -206,7 +207,7 @@ export function GenieStyleProgress({
       })
 
       // バックエンドのユーザー応答処理APIを呼び出し
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+      // API_BASE_URL is imported from config
       const apiResponse = await fetch(`${API_BASE_URL}/api/streaming/process-confirmation-response`, {
         method: 'POST',
         headers: {
@@ -632,7 +633,8 @@ export function GenieStyleProgress({
         requestBody.web_search_enabled = parsedData.web_search_enabled
       }
 
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+      // Use API_BASE_URL from config
+      const apiBaseUrl = API_BASE_URL
       const streamingUrl = `${apiBaseUrl}/api/streaming/streaming-chat`
 
       console.log('🌐 API呼び出し実行:', {

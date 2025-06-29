@@ -15,6 +15,7 @@ import {
   IoTrendingUp,
 } from 'react-icons/io5'
 import { GiMagicLamp } from 'react-icons/gi'
+import { API_BASE_URL } from '@/config/api'
 
 interface ProgressUpdate {
   type: string
@@ -76,8 +77,7 @@ export function InlineProgressDisplay({
     setToolsUsed([])
 
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-      const response = await fetch(`${apiBaseUrl}/api/streaming/streaming-chat`, {
+      const response = await fetch(`${API_BASE_URL}/api/streaming/streaming-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

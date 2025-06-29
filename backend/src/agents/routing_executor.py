@@ -91,6 +91,7 @@ class RoutingExecutor:
                 selected_agent_type = self._determine_agent_type(
                     message, conversation_history, family_info, has_image, message_type
                 )
+                self.logger.info(f"🔍 _determine_agent_type結果: '{selected_agent_type}'")
                 self._log_routing_decision(message, selected_agent_type, "auto_routing")
             elif agent_type in ["sequential", "parallel"]:
                 selected_agent_type = agent_type
@@ -105,6 +106,9 @@ class RoutingExecutor:
             )
             self.logger.info(f"🔍 デバッグ: selected_agent_type='{selected_agent_type}', type={type(selected_agent_type)}")
 
+            # デバッグ: 特別処理前の値確認
+            self.logger.info(f"🔍 特別処理前: selected_agent_type='{selected_agent_type}' (type: {type(selected_agent_type)})")
+            
             # ルーティング妥当性チェック
             if not self._validate_routing_decision(message, selected_agent_type):
                 self.logger.warning(f"⚠️ ルーティング妥当性警告: {selected_agent_type} が適切でない可能性")
@@ -114,6 +118,9 @@ class RoutingExecutor:
                     selected_agent_type = corrected_agent
                 else:
                     self.logger.info(f"✅ ルーティング自動修正不要: {selected_agent_type} をそのまま使用")
+            
+            # デバッグ: 特別処理直前の値確認  
+            self.logger.info(f"🔍 特別処理直前: selected_agent_type='{selected_agent_type}' (type: {type(selected_agent_type)})")
 
             # 🍽️ **特別処理**: meal_record_api の場合は直接API実行
             if selected_agent_type == "meal_record_api":
@@ -160,6 +167,7 @@ class RoutingExecutor:
             )
 
             self.logger.info(f"🚀 実行エージェント: {selected_agent_type} (Agent: {runner.agent.name})")
+            self.logger.info(f"🔍 最終確認: selected_agent_type='{selected_agent_type}', runner.agent.name='{runner.agent.name}'")
 
             # セッション確保
             await self._ensure_session_exists(user_id, session_id, session_service)
@@ -300,6 +308,11 @@ class RoutingExecutor:
             self.logger.info(f"🎯 meal_record_api直接実行: 確認応答による食事記録API呼び出し")
             return agent_id
 
+        # 📅 **特例**: schedule_record_api は直接API実行（確認応答処理のため）
+        if agent_id == "schedule_record_api":
+            self.logger.info(f"🎯 schedule_record_api直接実行: 確認応答によるスケジュール記録API呼び出し")
+            return agent_id
+
         # coordinatorではない専門エージェントが選ばれた場合は
         # 既存の動作を維持（coordinator経由）
         if agent_id != "coordinator" and agent_id not in ["parallel", "sequential"]:
@@ -410,6 +423,24 @@ class RoutingExecutor:
             conversation_history,
             family_info,
         )
+
+        # 🍽️ **特別処理**: meal_record_api の場合は直接API実行
+        if agent_id == "meal_record_api":
+            self.logger.info(f"🎯 _perform_specialist_routing: meal_record_api実行開始")
+            api_response = await self._execute_meal_record_api(
+                conversation_history, user_id, session_id, family_info
+            )
+            self.logger.info(f"✅ _perform_specialist_routing: meal_record_api実行完了")
+            return api_response
+
+        # 📅 **特別処理**: schedule_record_api の場合は直接API実行
+        if agent_id == "schedule_record_api":
+            self.logger.info(f"🎯 _perform_specialist_routing: schedule_record_api実行開始")
+            api_response = await self._execute_schedule_record_api(
+                conversation_history, user_id, session_id, family_info
+            )
+            self.logger.info(f"✅ _perform_specialist_routing: schedule_record_api実行完了")
+            return api_response
 
         # エージェントが存在する場合はルーティング
         if agent_id and agent_id in runners:
@@ -936,7 +967,45 @@ class RoutingExecutor:
             
             if record_result.get("success"):
                 self.logger.info(f"✅ 食事記録作成成功: {record_result.get('meal_id')}")
-                return f"✅ 食事記録を作成しました！\n\n📋 **記録内容**:\n• 食事名: {meal_record_data.get('meal_name', '不明')}\n• 検出された食品: {', '.join(meal_record_data.get('detected_foods', []))}\n• 記録日時: {meal_record_data.get('meal_date', '不明')}\n\n食事記録が保存されました。お疲れ様でした！"
+                
+                # 日時を読みやすい形式にフォーマット
+                from datetime import datetime
+                timestamp_str = meal_record_data.get('timestamp', '不明')
+                formatted_datetime = timestamp_str
+                try:
+                    if timestamp_str != '不明':
+                        dt = datetime.fromisoformat(timestamp_str.replace('Z', ''))
+                        formatted_datetime = dt.strftime('%Y年%m月%d日 %H:%M')
+                except:
+                    formatted_datetime = timestamp_str
+                
+                # 検出された食品
+                detected_foods = meal_record_data.get('detected_foods', [])
+                foods_text = ', '.join(detected_foods) if detected_foods else '記録なし'
+                
+                # 栄養情報
+                nutrition_info = meal_record_data.get('nutrition_info', {})
+                calories = nutrition_info.get('estimated_calories', 0)
+                
+                # レスポンス生成
+                response_parts = [
+                    "✅ **食事記録を作成しました！**",
+                    "",
+                    "🍽️ **記録詳細**",
+                    f"📋 **食事名**: {meal_record_data.get('meal_name', '不明')}",
+                    f"🕐 **記録日時**: {formatted_datetime}",
+                    f"🥗 **検出された食品**: {foods_text}",
+                    f"⚡ **推定カロリー**: {calories}kcal" if calories > 0 else "",
+                    "",
+                    "📊 **栄養バランス**",
+                    f"• タンパク質: {nutrition_info.get('protein', 0)}g",
+                    f"• 炭水化物: {nutrition_info.get('carbs', 0)}g", 
+                    f"• 脂質: {nutrition_info.get('fat', 0)}g",
+                    "",
+                    "✅ 食事記録がデータベースに保存されました！お疲れ様でした！"
+                ]
+                
+                return "\n".join([part for part in response_parts if part])  # 空行を除外
             else:
                 self.logger.error(f"❌ 食事記録作成失敗: {record_result.get('error')}")
                 return f"申し訳ありません。食事記録の作成中にエラーが発生しました: {record_result.get('error', '不明なエラー')}"
@@ -1136,13 +1205,17 @@ JSONのみを返してください。余計な説明は不要です。
             "meal_name": f"{child_info.get('name', 'お子さん')}の食事記録",
             "meal_type": "snack",  # デフォルトはおやつ
             "detected_foods": detected_foods,
-            "meal_date": datetime.datetime.now().isoformat(),
+            "timestamp": datetime.datetime.now().isoformat(),  # meal_date → timestamp
             "nutrition_info": {
                 "estimated_calories": len(detected_foods) * 50,  # 簡易推定
-                "food_variety": len(detected_foods)
+                "food_variety": len(detected_foods),
+                "protein": len(detected_foods) * 2,  # 簡易推定
+                "carbs": len(detected_foods) * 8,    # 簡易推定
+                "fat": len(detected_foods) * 1       # 簡易推定
             },
-            "analysis_source": "image_ai",
-            "confidence": image_analysis.get("analysis_confidence", 0.8)
+            "detection_source": "image_ai",  # analysis_source → detection_source
+            "confidence": image_analysis.get("analysis_confidence", 0.8),
+            "notes": f"画像解析により検出された食品: {', '.join(detected_foods)}"
         }
 
     async def _call_meal_record_api(self, meal_data: dict) -> dict:
@@ -1180,15 +1253,24 @@ JSONのみを返してください。余計な説明は不要です。
                 CreateMealRecordRequest,
             )
             
+            # timestampの処理
+            timestamp = datetime.now()
+            if meal_data.get("timestamp"):
+                try:
+                    timestamp = datetime.fromisoformat(meal_data.get("timestamp").replace("Z", "+00:00"))
+                except Exception:
+                    timestamp = datetime.now()
+            
             meal_record_request = CreateMealRecordRequest(
                 child_id=meal_data.get("child_id", "default_child"),
-                meal_name=meal_data.get("meal_name"),
+                meal_name=meal_data.get("meal_name", "食事記録"),
                 meal_type=meal_data.get("meal_type", "snack"),
-                timestamp=datetime.fromisoformat(meal_data.get("meal_date").replace("Z", "+00:00")) if meal_data.get("meal_date") else datetime.now(),
+                timestamp=timestamp,
                 detected_foods=meal_data.get("detected_foods", []),
                 nutrition_info=meal_data.get("nutrition_info", {}),
                 confidence=meal_data.get("confidence", 0.8),
-                detection_source=meal_data.get("analysis_source", "image_ai")
+                detection_source=meal_data.get("detection_source", "image_ai"),  # analysis_source → detection_source
+                notes=meal_data.get("notes", "")
             )
             
             # データベースに実際に保存
@@ -1259,7 +1341,42 @@ JSONのみを返してください。余計な説明は不要です。
             
             if record_result.get("success"):
                 self.logger.info(f"✅ スケジュール記録作成成功: {record_result.get('schedule_id')}")
-                return f"✅ 予定を登録しました！\n\n📅 **予定詳細**:\n• タイトル: {schedule_record_data.get('title', '不明')}\n• 日時: {schedule_record_data.get('start_datetime', '不明')}\n• 場所: {schedule_record_data.get('location', '未定')}\n• 内容: {schedule_record_data.get('description', '詳細なし')}\n\n予定がカレンダーに保存されました。リマインダーも設定済みです！"
+                
+                # 日時を読みやすい形式にフォーマット
+                from datetime import datetime
+                start_datetime = schedule_record_data.get('start_datetime', '不明')
+                formatted_datetime = start_datetime
+                try:
+                    if start_datetime != '不明':
+                        dt = datetime.fromisoformat(start_datetime.replace('T', ' ').replace('Z', ''))
+                        formatted_datetime = dt.strftime('%Y年%m月%d日 %H:%M')
+                except:
+                    formatted_datetime = start_datetime
+                
+                # 内容を改行で整理
+                description = schedule_record_data.get('description', '')
+                notes = schedule_record_data.get('notes', '')
+                
+                # レスポンス生成
+                response_parts = [
+                    "✅ **予定を登録しました！**",
+                    "",
+                    "📅 **予定詳細**",
+                    f"📋 **タイトル**: {schedule_record_data.get('title', '不明')}",
+                    f"🕐 **日時**: {formatted_datetime}",
+                    f"📍 **場所**: {schedule_record_data.get('location', '未定')}",
+                    f"📝 **内容**: {description}" if description else "",
+                    "",
+                    "💡 **当日の準備**",
+                    "• 健康保険証",
+                    "• 乳児医療証", 
+                    "• 母子手帳",
+                    "• お薬手帳（服用中の薬がある場合）",
+                    "",
+                    "✅ 予定がカレンダーに保存され、リマインダーも設定済みです！"
+                ]
+                
+                return "\n".join([part for part in response_parts if part])  # 空行を除外
             else:
                 self.logger.error(f"❌ スケジュール記録作成失敗: {record_result.get('error')}")
                 return f"申し訳ありません。予定の作成中にエラーが発生しました: {record_result.get('error', '不明なエラー')}"
@@ -1386,28 +1503,54 @@ JSONのみを返してください。余計な説明は不要です。
             
             model = GenerativeModel("gemini-2.5-flash")
             
+            # 現在の日時情報を取得
+            from datetime import datetime, timedelta
+            import pytz
+            
+            # 日本時間での現在日時
+            jst = pytz.timezone('Asia/Tokyo')
+            now = datetime.now(jst)
+            today = now.strftime('%Y-%m-%d')
+            tomorrow = (now + timedelta(days=1)).strftime('%Y-%m-%d')
+            current_time = now.strftime('%H:%M')
+            
             # 構造化プロンプト
             structure_prompt = f"""
 以下の健康・医療関連の会話レスポンスから、スケジュール・予定情報を抽出してください。
 必ずJSON形式で応答し、以下の形式に従ってください：
 
+**重要な日時変換ルール：**
+- 現在日時: {now.strftime('%Y-%m-%d %H:%M')} (日本時間)
+- 今日: {today}
+- 明日: {tomorrow}
+- 「明日」「明日の」→ {tomorrow}
+- 「今日」「今日の」→ {today}
+- 「10時」「午前10時」→ "10:00"
+- 「午後2時」→ "14:00"
+- 時間指定がない場合は "09:00" をデフォルトとする
+
 {{
     "title": "予定のタイトル",
     "description": "予定の詳細説明",
     "event_type": "medical|school|outing|other",
-    "suggested_date": "YYYY-MM-DD（提案された日付があれば）",
-    "suggested_time": "HH:MM（提案された時間があれば）",
+    "suggested_date": "YYYY-MM-DD形式の具体的な日付（必須）",
+    "suggested_time": "HH:MM形式の具体的な時刻（必須）",
     "location": "場所（病院・クリニック名など）",
     "notes": "注意事項やメモ",
-    "reminder_needed": true/false,
+    "reminder_needed": true,
     "confidence": 0.0-1.0の数値,
     "schedule_description": "スケジュールの簡潔な説明"
 }}
 
+**例：**
+- 「明日の10時にキャップスクリニック」→ suggested_date: "{tomorrow}", suggested_time: "10:00"
+- 「来週月曜日の予防接種」→ 次の月曜日の日付を計算
+- 「午後2時の健診」→ suggested_time: "14:00"
+
 スケジュール提案レスポンス:
 {schedule_proposal_content}
 
-JSONのみを返してください。余計な説明は不要です。
+JSONのみを返してください。suggested_dateとsuggested_timeは必ず具体的な値を設定してください。
 """
 
             # API呼び出し
@@ -1499,12 +1642,12 @@ JSONのみを返してください。余計な説明は不要です。
             
             # Composition Rootから実際のScheduleManagementUseCaseを取得（重複初期化回避）
             if self._composition_root:
-                schedule_usecase = self._composition_root._usecases.get("schedule_management")
+                schedule_usecase = self._composition_root._usecases.get("schedule_event_management")
             else:
                 # フォールバック: 新規作成（非推奨パターン）
                 from src.di_provider.composition_root import CompositionRootFactory
                 composition_root = CompositionRootFactory.create()
-                schedule_usecase = composition_root._usecases.get("schedule_management")
+                schedule_usecase = composition_root._usecases.get("schedule_event_management")
             
             if not schedule_usecase:
                 self.logger.error("❌ ScheduleManagementUseCaseが利用できません")
@@ -1513,37 +1656,32 @@ JSONのみを返してください。余計な説明は不要です。
                     "error": "スケジュール管理機能が利用できません"
                 }
             
-            # ScheduleRequestオブジェクトを作成
-            from datetime import datetime
-
-            from src.application.usecases.schedule_management_usecase import (
-                CreateScheduleRequest,
-            )
-            
-            schedule_request = CreateScheduleRequest(
-                user_id=schedule_data.get("user_id", "default_user"),
-                title=schedule_data.get("title"),
-                description=schedule_data.get("description", ""),
-                start_datetime=schedule_data.get("start_datetime"),
-                end_datetime=schedule_data.get("end_datetime", ""),
-                event_type=schedule_data.get("event_type", "medical"),
-                location=schedule_data.get("location", ""),
-                notes=schedule_data.get("notes", ""),
-                reminder_minutes=schedule_data.get("reminder_minutes", 60)
-            )
+            # ScheduleEventUseCaseは辞書を直接受け取る仕様
+            user_id = schedule_data.get("user_id", "default_user")
+            event_data = {
+                "title": schedule_data.get("title"),
+                "description": schedule_data.get("description", ""),
+                "start_datetime": schedule_data.get("start_datetime"),
+                "end_datetime": schedule_data.get("end_datetime", ""),
+                "event_type": schedule_data.get("event_type", "medical"),
+                "location": schedule_data.get("location", ""),
+                "notes": schedule_data.get("notes", ""),
+                "reminder_minutes": schedule_data.get("reminder_minutes", 60)
+            }
             
             # データベースに実際に保存
-            schedule_response = await schedule_usecase.create_schedule_event(schedule_request)
+            schedule_response = await schedule_usecase.create_schedule_event(user_id, event_data)
             
-            if not schedule_response.success:
-                self.logger.error(f"❌ スケジュール記録作成失敗: {schedule_response.error}")
+            if not schedule_response.get("success"):
+                error_msg = schedule_response.get("message", "スケジュール記録作成に失敗しました")
+                self.logger.error(f"❌ スケジュール記録作成失敗: {error_msg}")
                 return {
                     "success": False,
-                    "error": schedule_response.error
+                    "error": error_msg
                 }
             
-            schedule_record = schedule_response.schedule_event
-            schedule_id = schedule_record.get("id") if schedule_record else "unknown"
+            schedule_record = schedule_response.get("data")
+            schedule_id = schedule_response.get("id") or (schedule_record.get("id") if schedule_record else "unknown")
             
             self.logger.info(f"✅ 実際のスケジュールデータベース保存成功: {schedule_id}")
             

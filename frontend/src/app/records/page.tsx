@@ -10,6 +10,7 @@ import {
   toggleMemoryFavorite,
   MemoryRecord as ApiMemoryRecord,
 } from '@/libs/api/memories'
+import { API_BASE_URL } from '@/config/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -522,7 +523,7 @@ function CapturedMemoriesPageContent() {
                               <img
                                 src={
                                   memory.mediaUrl.startsWith('/api/')
-                                    ? `http://localhost:8080${memory.mediaUrl}`
+                                    ? `${API_BASE_URL}${memory.mediaUrl}`
                                     : memory.mediaUrl
                                 }
                                 alt={memory.title}

@@ -1,5 +1,6 @@
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { API_BASE_URL } from '@/config/api'
 
 export function getServerAuthSession() {
   return getServerSession(authOptions)
@@ -38,9 +39,9 @@ export interface BackendLoginResponse {
  */
 export async function loginToBackend(sessionUser: any): Promise<BackendLoginResponse> {
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-    console.log('Auth API URL:', `${apiUrl}/api/auth/login/google`) // デバッグ用
-    const response = await fetch(`${apiUrl}/api/auth/login/google`, {
+    const apiUrl = `${API_BASE_URL}/api/auth/login/google`
+    console.log('Auth API URL:', apiUrl) // デバッグ用
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -79,7 +80,7 @@ export async function loginToBackend(sessionUser: any): Promise<BackendLoginResp
 export async function verifyBackendToken(token: string): Promise<{ valid: boolean; user?: any }> {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/auth/verify`,
+      `${API_BASE_URL}/api/auth/verify`,
       {
         method: 'POST',
         headers: {
@@ -107,7 +108,7 @@ export async function verifyBackendToken(token: string): Promise<{ valid: boolea
 export async function getBackendUserProfile(token: string): Promise<any> {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/auth/profile`,
+      `${API_BASE_URL}/api/auth/profile`,
       {
         method: 'GET',
         headers: {

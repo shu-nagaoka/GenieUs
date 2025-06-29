@@ -21,7 +21,14 @@ RUN npm ci --ignore-scripts --include=dev
 # Copy source code
 COPY . .
 
-# Build with increased memory
+# Build with increased memory and skip env validation
+ENV SKIP_ENV_VALIDATION=true
+# Build時の環境変数はランタイムで上書きされる
+ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ENV NEXTAUTH_SECRET=build-time-secret
+ENV GOOGLE_CLIENT_ID=build-time-id
+ENV GOOGLE_CLIENT_SECRET=build-time-secret
 RUN npm run build
 
 # Set production environment after build

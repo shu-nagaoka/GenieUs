@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { API_BASE_URL } from '@/config/api'
 import {
   TrendingUp,
   Camera,
@@ -789,7 +790,7 @@ export default function GrowthTrackingPage() {
                                         <img
                                           src={
                                             record.imageUrl.startsWith('/api/')
-                                              ? `http://localhost:8080${record.imageUrl}`
+                                              ? `${API_BASE_URL}${record.imageUrl}`
                                               : record.imageUrl
                                           }
                                           alt={record.title}

@@ -2,7 +2,7 @@
  * 食事記録 API クライアント
  */
 
-const API_BASE_URL = 'http://localhost:8080'
+import { API_BASE_URL } from '@/config/api'
 
 export interface CreateMealRecordRequest {
   child_id: string

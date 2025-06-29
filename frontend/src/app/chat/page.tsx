@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, lazy } from 'react'
+import { API_BASE_URL } from '@/config/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { AppLayout } from '@/components/layout/app-layout'
@@ -385,7 +386,7 @@ END_SYSTEM_INSTRUCTION`
       })
 
       // 実際のAPIを呼び出し（バックエンドAPIエンドポイントに合わせて修正）
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+      // API_BASE_URL is imported from config
 
       // Web検索ON または 画像添付時の強力な指示を埋め込み
       let finalMessage = query

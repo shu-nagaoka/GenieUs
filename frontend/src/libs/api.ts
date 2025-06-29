@@ -3,6 +3,7 @@
  */
 
 import { BackendLoginResponse } from './auth'
+import { API_BASE_URL } from '@/config/api'
 
 /**
  * API呼び出しオプション
@@ -75,7 +76,7 @@ export async function apiCall<T = any>(
 ): Promise<ApiResponse<T>> {
   const {
     requireAuth = false,
-    baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+    baseUrl = API_BASE_URL,
     ...fetchOptions
   } = options
 
