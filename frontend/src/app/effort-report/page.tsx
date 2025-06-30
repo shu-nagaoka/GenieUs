@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react'
 import { AppLayout } from '@/components/layout/app-layout'
 import { AuthCheck } from '@/components/features/auth/auth-check'
-import { EffortReportCard } from '@/components/v2/effort-affirmation/EffortReportCard'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -33,11 +32,12 @@ import {
   Activity,
   LayoutGrid,
   List,
+  Trash2,
 } from 'lucide-react'
 import { MdChildCare, MdFamilyRestroom } from 'react-icons/md'
 import { FaHeart, FaStar, FaTrophy } from 'react-icons/fa'
 import Link from 'next/link'
-import { useEffortRecords, useEffortStats } from '@/hooks/useEffortReports'
+import { useEffortRecords, useEffortStats, useGenerateEffortReport, useDeleteEffortRecord } from '@/hooks/useEffortReports'
 import type { EffortRecord as ApiEffortRecord } from '@/libs/api/effort-records'
 
 interface HistoricalReport {
@@ -69,16 +69,22 @@ export default function EffortReportPage() {
 
 function EffortReportPageContent() {
   const [selectedPeriod, setSelectedPeriod] = useState<number>(7)
-  const [reportKey, setReportKey] = useState<number>(0)
   const [selectedReport, setSelectedReport] = useState<HistoricalReport | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('card')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [reportToDelete, setReportToDelete] = useState<HistoricalReport | null>(null)
+  const [showSuccessNotification, setShowSuccessNotification] = useState(false)
+  const [newReportId, setNewReportId] = useState<string | null>(null)
+  const [showCreateConfirm, setShowCreateConfirm] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
   
   // React Query hooks
   const {
     data: effortRecordsData = [],
     isLoading: recordsLoading,
+    refetch: refetchRecords,
   } = useEffortRecords('frontend_user')
   
   const {
@@ -90,6 +96,24 @@ function EffortReportPageContent() {
     },
     isLoading: statsLoading,
   } = useEffortStats('frontend_user', selectedPeriod)
+
+  // レポート生成Mutation
+  const generateReportMutation = useGenerateEffortReport({
+    onSuccess: (data) => {
+      if (data.success && data.id) {
+        setNewReportId(data.id)
+        setShowSuccessNotification(true)
+        // 5秒後に通知を自動で閉じる
+        setTimeout(() => {
+          setShowSuccessNotification(false)
+          setNewReportId(null)
+        }, 5000)
+      }
+    },
+  })
+  
+  // 削除Mutation
+  const deleteReportMutation = useDeleteEffortRecord()
 
   // APIデータをUIフォーマットに変換（メモ化）
   const historicalReports = useMemo(() => {
@@ -110,11 +134,38 @@ function EffortReportPageContent() {
 
   const handlePeriodChange = (value: string) => {
     setSelectedPeriod(parseInt(value))
-    setReportKey(prev => prev + 1) // Force re-render of EffortReportCard
   }
 
-  const regenerateReport = () => {
-    setReportKey(prev => prev + 1)
+  const handleGenerateReport = () => {
+    setShowCreateConfirm(true)
+  }
+
+  const handleCreateConfirm = async () => {
+    setIsCreating(true)
+    
+    try {
+      const result = await generateReportMutation.mutateAsync({
+        userId: 'frontend_user',
+        periodDays: selectedPeriod,
+      })
+      
+      if (result.success) {
+        console.log('✅ レポートが正常に生成されました:', result.data?.id)
+        setShowCreateConfirm(false)
+        setIsCreating(false)
+      } else {
+        console.error('❌ レポート生成に失敗:', result.message)
+        setIsCreating(false)
+      }
+    } catch (error) {
+      console.error('❌ レポート生成エラー:', error)
+      setIsCreating(false)
+    }
+  }
+
+  const handleCreateCancel = () => {
+    setShowCreateConfirm(false)
+    setIsCreating(false)
   }
 
   const openReportModal = (report: HistoricalReport) => {
@@ -125,6 +176,43 @@ function EffortReportPageContent() {
   const closeModal = () => {
     setSelectedReport(null)
     setShowModal(false)
+  }
+
+  const handleDeleteClick = (report: HistoricalReport, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setReportToDelete(report)
+    setShowDeleteConfirm(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!reportToDelete) return
+    
+    try {
+      const result = await deleteReportMutation.mutateAsync({
+        recordId: reportToDelete.id,
+        userId: 'frontend_user',
+      })
+      
+      if (result.success) {
+        console.log('✅ レポートが削除されました:', reportToDelete.id)
+        setShowDeleteConfirm(false)
+        setReportToDelete(null)
+        // モーダルが開いていて削除されたレポートと同じなら閉じる
+        if (showModal && selectedReport?.id === reportToDelete.id) {
+          setShowModal(false)
+          setSelectedReport(null)
+        }
+      } else {
+        console.error('❌ レポート削除に失敗:', result.message)
+      }
+    } catch (error) {
+      console.error('❌ レポート削除エラー:', error)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false)
+    setReportToDelete(null)
   }
 
   if (loading) {
@@ -158,6 +246,23 @@ function EffortReportPageContent() {
               </div>
 
               <div className="flex items-center space-x-3">
+                <Button
+                  onClick={handleGenerateReport}
+                  disabled={generateReportMutation.isPending}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:from-yellow-600 hover:to-amber-600"
+                >
+                  {generateReportMutation.isPending ? (
+                    <>
+                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                      生成中...
+                    </>
+                  ) : (
+                    <>
+                      <TrendingUp className="mr-2 h-4 w-4" />
+                      今すぐ作成
+                    </>
+                  )}
+                </Button>
                 <Link href="/chat">
                   <Button className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg hover:from-lime-600 hover:to-green-600">
                     <Sparkles className="mr-2 h-4 w-4" />
@@ -279,7 +384,7 @@ function EffortReportPageContent() {
                             </div>
                           </div>
                           <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
-                            {report.score}/10
+                            {report.score}/100
                           </Badge>
                         </div>
 
@@ -318,18 +423,20 @@ function EffortReportPageContent() {
                             </div>
                           </div>
 
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                            onClick={e => {
-                              e.stopPropagation()
-                              openReportModal(report)
-                            }}
-                          >
-                            <Eye className="mr-2 h-3 w-3" />
-                            詳細を見る
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                              onClick={e => {
+                                e.stopPropagation()
+                                openReportModal(report)
+                              }}
+                            >
+                              <Eye className="mr-2 h-3 w-3" />
+                              詳細を見る
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -352,7 +459,7 @@ function EffortReportPageContent() {
                         <th className="px-4 py-3 text-left font-medium text-emerald-700">
                           主なハイライト
                         </th>
-                        <th className="px-4 py-3 text-center font-medium text-emerald-700">詳細</th>
+                        <th className="px-4 py-3 text-center font-medium text-emerald-700">操作</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -385,7 +492,7 @@ function EffortReportPageContent() {
                           </td>
                           <td className="px-4 py-3 text-center">
                             <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
-                              {report.score}/10
+                              {report.score}/100
                             </Badge>
                           </td>
                           <td className="px-4 py-3">
@@ -414,7 +521,7 @@ function EffortReportPageContent() {
                               }}
                             >
                               <Eye className="mr-1 h-3 w-3" />
-                              詳細
+                              詳細を見る
                             </Button>
                           </td>
                         </tr>
@@ -426,10 +533,6 @@ function EffortReportPageContent() {
             </CardContent>
           </Card>
 
-          {/* メインレポート */}
-          <div className="mb-8">
-            <EffortReportCard key={reportKey} periodDays={selectedPeriod} className="w-full" />
-          </div>
 
           {/* AIチャット連携カード */}
           <Card className="border-0 bg-gradient-to-br from-lime-50 to-green-50 shadow-xl">
@@ -466,18 +569,11 @@ function EffortReportPageContent() {
                       Genieに努力を報告・相談
                     </Button>
                   </Link>
-                  <Button
-                    onClick={regenerateReport}
-                    variant="outline"
-                    className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                  >
-                    <TrendingUp className="mr-2 h-4 w-4" />
-                    レポート更新
-                  </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
+
 
           {/* 自動作成の説明 */}
           <div className="text-center">
@@ -529,7 +625,7 @@ function EffortReportPageContent() {
                   <Card className="border-0 bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
                     <CardContent className="p-4 text-center">
                       <p className="text-sm text-blue-100">総合スコア</p>
-                      <p className="text-2xl font-bold">{selectedReport.score}/10</p>
+                      <p className="text-2xl font-bold">{selectedReport.score}/100</p>
                     </CardContent>
                   </Card>
 
@@ -651,7 +747,322 @@ function EffortReportPageContent() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* あなたの努力レポート */}
+                <Card className="border-0 bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 shadow-lg">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-3 text-amber-800">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-400">
+                        <Heart className="h-4 w-4 text-white" />
+                      </div>
+                      あなたの努力レポート
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* AI生成されたハイライト */}
+                    {selectedReport.highlights.length > 0 && (
+                      <div className="space-y-3">
+                        {selectedReport.highlights.map((highlight, index) => (
+                          <div
+                            key={index}
+                            className="flex items-start gap-3 rounded-lg border border-amber-200 bg-gradient-to-r from-amber-100 to-orange-100 p-4"
+                          >
+                            <Sparkles className="mt-1 h-5 w-5 flex-shrink-0 text-amber-600" />
+                            <p className="leading-relaxed text-amber-800">{highlight}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* AI生成されたサマリー */}
+                    {selectedReport.summary && (
+                      <div className="rounded-lg border border-amber-200 bg-gradient-to-r from-amber-100 to-orange-100 p-4">
+                        <div className="flex items-start gap-3">
+                          <Heart className="mt-1 h-6 w-6 flex-shrink-0 text-amber-600" />
+                          <div>
+                            <h4 className="mb-2 font-medium text-amber-900">Genieからのメッセージ</h4>
+                            <p className="leading-relaxed text-amber-800">{selectedReport.summary}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AI生成された達成項目 */}
+                    {selectedReport.achievements.length > 0 && (
+                      <div>
+                        <h4 className="mb-3 flex items-center gap-2 text-sm font-medium text-amber-700">
+                          <CheckCircle className="h-4 w-4 text-amber-600" />
+                          今週の頑張りポイント
+                        </h4>
+                        <div className="space-y-2">
+                          {selectedReport.achievements.map((achievement, index) => (
+                            <div
+                              key={index}
+                              className="flex items-start gap-3 rounded-lg border border-amber-100 bg-white/60 p-3"
+                            >
+                              <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+                              <span className="text-sm text-amber-800">{achievement}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* 削除セクション - モーダル下部 */}
+                <Card className="border-0 bg-gradient-to-br from-red-50 to-orange-50 shadow-lg">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-3 text-red-800">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-red-400 to-orange-400">
+                        <Trash2 className="h-4 w-4 text-white" />
+                      </div>
+                      レポートの削除
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="rounded-lg border border-red-200 bg-red-50/50 p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-red-500 text-white">
+                          ⚠️
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-red-900">削除の注意事項</h4>
+                          <p className="mt-1 text-sm text-red-800">
+                            このレポートを削除すると、データは完全に失われ、復元することはできません。
+                            削除は慎重に行ってください。
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="text-center">
+                      <Button
+                        onClick={e => {
+                          if (selectedReport) {
+                            handleDeleteClick(selectedReport, e)
+                          }
+                        }}
+                        variant="outline"
+                        className="border-red-300 text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        このレポートを削除する
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* 削除確認ダイアログ */}
+        {showDeleteConfirm && reportToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
+              {/* ダイアログヘッダー */}
+              <div className="rounded-t-xl bg-gradient-to-r from-red-500 to-red-600 p-4 text-white">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+                    <Trash2 className="h-4 w-4" />
+                  </div>
+                  <h2 className="text-lg font-bold">レポートを削除</h2>
+                </div>
+              </div>
+
+              {/* ダイアログコンテンツ */}
+              <div className="space-y-4 p-6">
+                <div className="text-center">
+                  <p className="mb-2 text-lg font-medium text-gray-800">
+                    このレポートを削除しますか？
+                  </p>
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <p className="text-sm font-medium text-gray-700">{reportToDelete.period}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(reportToDelete.date).toLocaleDateString('ja-JP')}
+                    </p>
+                  </div>
+                  <p className="mt-3 text-sm text-red-600">
+                    ⚠️ この操作は取り消せません
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
+                    onClick={handleDeleteCancel}
+                  >
+                    キャンセル
+                  </Button>
+                  <Button
+                    onClick={handleDeleteConfirm}
+                    disabled={deleteReportMutation.isPending}
+                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700"
+                  >
+                    {deleteReportMutation.isPending ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        削除中...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        削除する
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* レポート作成確認ダイアログ */}
+        {showCreateConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
+              {/* ダイアログヘッダー */}
+              <div className="rounded-t-xl bg-gradient-to-r from-emerald-500 to-teal-600 p-4 text-white">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <h2 className="text-lg font-bold">努力レポート作成</h2>
+                </div>
+              </div>
+
+              {/* ダイアログコンテンツ */}
+              <div className="space-y-4 p-6">
+                {!isCreating ? (
+                  <>
+                    <div className="text-center">
+                      <p className="mb-2 text-lg font-medium text-gray-800">
+                        過去{selectedPeriod}日間の努力レポートを作成しますか？
+                      </p>
+                      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                        <p className="text-sm font-medium text-emerald-700">作成期間</p>
+                        <p className="text-xs text-emerald-600">
+                          {new Date(Date.now() - selectedPeriod * 24 * 60 * 60 * 1000).toLocaleDateString('ja-JP')} 〜 {new Date().toLocaleDateString('ja-JP')}
+                        </p>
+                      </div>
+                      <p className="mt-3 text-sm text-gray-600">
+                        ✨ AIがあなたの子育ての努力を分析して、素敵なレポートを作成します
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-50"
+                        onClick={handleCreateCancel}
+                      >
+                        キャンセル
+                      </Button>
+                      <Button
+                        onClick={handleCreateConfirm}
+                        className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700"
+                      >
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        作成する
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center space-y-4">
+                    <div className="flex justify-center">
+                      <div className="h-12 w-12 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600"></div>
+                    </div>
+                    <div>
+                      <p className="text-lg font-medium text-gray-800">レポートを作成中...</p>
+                      <p className="mt-1 text-sm text-gray-600">
+                        AIがあなたの子育ての記録を分析しています
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-2 w-full rounded-full bg-gray-200">
+                        <div className="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 animate-pulse" style={{width: '70%'}}></div>
+                      </div>
+                      <p className="text-xs text-gray-500">分析中... しばらくお待ちください</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* レポート作成成功通知 */}
+        {showSuccessNotification && (
+          <div className="fixed bottom-6 right-6 z-50 max-w-sm rounded-xl bg-white shadow-2xl border border-emerald-200">
+            <div className="rounded-t-xl bg-gradient-to-r from-emerald-500 to-teal-600 p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+                    <CheckCircle className="h-4 w-4" />
+                  </div>
+                  <h3 className="font-bold">レポート作成完了!</h3>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowSuccessNotification(false)
+                    setNewReportId(null)
+                  }}
+                  className="text-white hover:bg-white/20 h-6 w-6 p-0"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                  <Sparkles className="h-3 w-3 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-800">
+                    新しい努力レポートが作成されました
+                  </p>
+                  <p className="mt-1 text-xs text-gray-600">
+                    上の一覧に新しいカードが追加されています
+                  </p>
+                </div>
+              </div>
+              
+              {newReportId && (
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700"
+                    onClick={() => {
+                      // 新しく作成されたレポートを開く
+                      const newReport = historicalReports.find(r => r.id === newReportId)
+                      if (newReport) {
+                        openReportModal(newReport)
+                        setShowSuccessNotification(false)
+                        setNewReportId(null)
+                      }
+                    }}
+                  >
+                    <Eye className="mr-1 h-3 w-3" />
+                    今すぐ確認
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setShowSuccessNotification(false)
+                      setNewReportId(null)
+                    }}
+                    className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                  >
+                    閉じる
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -708,12 +1119,32 @@ function EffortReportPageContent() {
                   </div>
                 </div>
 
-                <Button
-                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-lime-600 hover:to-green-600"
-                  onClick={() => setShowSettingsModal(false)}
-                >
-                  設定完了
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleGenerateReport}
+                    disabled={generateReportMutation.isPending}
+                    className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-yellow-600 hover:to-amber-600"
+                  >
+                    {generateReportMutation.isPending ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                        生成中...
+                      </>
+                    ) : (
+                      <>
+                        <TrendingUp className="mr-2 h-4 w-4" />
+                        今すぐ作成
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                    onClick={() => setShowSettingsModal(false)}
+                  >
+                    設定完了
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

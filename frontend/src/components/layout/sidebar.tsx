@@ -37,11 +37,11 @@ const mainNavigation = [
 ]
 
 const recordNavigation = [
-  { name: '撮影したメモリー', href: '/records', icon: FaBookOpen },
-  { name: '見守った成長', href: '/tracking', icon: AiOutlineBarChart },
+  // { name: '撮影したメモリー', href: '/records', icon: FaBookOpen }, // 一時的に非表示
+  { name: '記録した成長', href: '/tracking', icon: AiOutlineBarChart },
   { name: '食事記録', href: '/meal-records', icon: FaUtensils, badge: 'New' },
-  { name: '予定を立てたこと', href: '/schedule', icon: AiOutlineCalendar },
-  { name: 'がんばったこと', href: '/effort-report', icon: FaHeart },
+  { name: '立てた予定', href: '/schedule', icon: AiOutlineCalendar },
+  { name: '頑張った軌跡', href: '/effort-report', icon: FaHeart },
 ]
 
 const familyNavigation = [{ name: '家族情報', href: '/family', icon: HiOutlineUsers }]

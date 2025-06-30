@@ -82,6 +82,7 @@ class RoutingExecutor:
         """
         routing_path = []
         agent_info = {}
+        total_execution_start_time = time.time()  # 全体実行時間追跡
 
         try:
             # エージェント選択
@@ -127,6 +128,26 @@ class RoutingExecutor:
             self.logger.info(
                 f"🔍 特別処理直前: selected_agent_type='{selected_agent_type}' (type: {type(selected_agent_type)})"
             )
+
+            # 🎯 **特別処理**: parallel の場合はParallelAgentCoordinatorに委譲
+            if selected_agent_type == "parallel":
+                self.logger.info(f"🎯 parallel agent処理: ParallelAgentCoordinatorに委譲が必要")
+                total_execution_time = time.time() - total_execution_start_time
+
+                # parallel agentの場合、通常のrunnerは存在しないため専用エラーメッセージを返す
+                return (
+                    "パラレルエージェント機能を使用するには、/api/streaming/parallel-chat エンドポイントを使用してください。",
+                    {
+                        "agent_id": "parallel",
+                        "agent_name": "パラレルエージェント",
+                        "display_name": "複数専門家並列分析",
+                        "execution_time": total_execution_time,
+                        "agent_tag": "",  # パラレルエージェントはタグなし
+                        "agent_type_classification": "parallel_coordination",
+                        "requires_parallel_endpoint": True,
+                    },
+                    routing_path,
+                )
 
             # 🍽️ **特別処理**: meal_record_api の場合は直接API実行
             if selected_agent_type == "meal_record_api":
@@ -232,9 +253,47 @@ class RoutingExecutor:
                         },
                     )
 
-                    return specialist_response, agent_info, routing_path
+                    # タグ機能を無効化
+                    total_execution_time = time.time() - total_execution_start_time
+                    agent_tag = ""
 
-            return response, agent_info, routing_path
+                    # タグなしでレスポンス返却
+                    specialist_response_with_tag = specialist_response
+
+                    # agent_infoに実行情報を追加
+                    agent_info.update(
+                        {
+                            "execution_time": total_execution_time,
+                            "agent_tag": agent_tag,
+                            "agent_type_classification": self._classify_agent_type(specialist_agent_id),
+                        }
+                    )
+
+                    return specialist_response_with_tag, agent_info, routing_path
+
+            # エージェント実行時間とタグを追加（parallel agentのみ除外）
+            total_execution_time = time.time() - total_execution_start_time
+
+            # parallel agentの場合はParallelAgentCoordinatorでタグ生成するためスキップ
+            if selected_agent_type == "parallel":
+                self.logger.debug(f"⏭️ parallel agentのためタグ生成をスキップ")
+                response_with_tag = response  # タグなしでそのまま返す
+                agent_tag = ""  # 空のタグ
+            else:
+                agent_tag = self._generate_agent_execution_tag(selected_agent_type, total_execution_time)
+                response_with_tag = f"{response}\n\n{agent_tag}"
+                self.logger.debug(f"🏷️ 単体エージェントタグ生成: {agent_tag}")
+
+            # agent_infoに実行情報を追加
+            agent_info.update(
+                {
+                    "execution_time": total_execution_time,
+                    "agent_tag": agent_tag,
+                    "agent_type_classification": self._classify_agent_type(selected_agent_type),
+                }
+            )
+
+            return response_with_tag, agent_info, routing_path
 
         except Exception as e:
             self.logger.error(f"エージェント実行エラー: {e}")
@@ -1709,3 +1768,88 @@ JSONのみを返してください。suggested_dateとsuggested_timeは必ず具
         except Exception as e:
             self.logger.error(f"❌ スケジュール記録API呼び出しエラー: {e}")
             return {"success": False, "error": f"データベース保存エラー: {str(e)}"}
+
+    def _generate_agent_execution_tag(self, agent_id: str, execution_time: float) -> str:
+        """エージェント実行タグ生成
+
+        Args:
+            agent_id: エージェントID
+            execution_time: 実行時間（秒）
+
+        Returns:
+            str: フォーマットされたエージェント実行タグ
+        """
+        try:
+            # エージェントタイプ分類
+            agent_type_classification = self._classify_agent_type(agent_id)
+
+            # 実行時間をフォーマット（ミリ秒単位で表示する場合は1000倍）
+            if execution_time < 1.0:
+                time_display = f"{execution_time * 1000:.1f}ms"
+            else:
+                time_display = f"{execution_time:.1f}s"
+
+            # タグ形式でフォーマット
+            tag = f"**{agent_type_classification}使用{time_display}**"
+
+            self.logger.debug(f"🏷️ エージェントタグ生成: {agent_id} -> {tag}")
+
+            return tag
+
+        except Exception as e:
+            self.logger.warning(f"⚠️ エージェントタグ生成エラー: {e}")
+            return f"**エージェント使用{execution_time:.1f}s**"
+
+    def _classify_agent_type(self, agent_id: str) -> str:
+        """エージェントタイプ分類
+
+        Args:
+            agent_id: エージェントID
+
+        Returns:
+            str: エージェントタイプ分類
+        """
+        try:
+            # エージェントタイプマッピング
+            agent_type_mapping = {
+                # 単一専門エージェント
+                "coordinator": "single_agent",
+                "nutrition_specialist": "single_agent",
+                "sleep_specialist": "single_agent",
+                "development_specialist": "single_agent",
+                "health_specialist": "single_agent",
+                "behavior_specialist": "single_agent",
+                "play_learning_specialist": "single_agent",
+                "safety_specialist": "single_agent",
+                "work_life_specialist": "single_agent",
+                "mental_care_specialist": "single_agent",
+                "special_support_specialist": "single_agent",
+                "family_relationship_specialist": "single_agent",
+                "administration_specialist": "single_agent",
+                # 検索系エージェント
+                "search_specialist": "search_agent",
+                "outing_event_specialist": "search_agent",
+                # 画像・音声系エージェント
+                "image_specialist": "multimodal_agent",
+                "voice_specialist": "multimodal_agent",
+                # マルチエージェント
+                "sequential": "sequential_agents",
+                "parallel": "parallel_agents",
+                # API系
+                "meal_record_api": "api_agent",
+                "schedule_record_api": "api_agent",
+                # ファイル・記録系
+                "record_specialist": "data_agent",
+                "file_specialist": "data_agent",
+            }
+
+            # デフォルトは single_agent
+            agent_type = agent_type_mapping.get(agent_id, "single_agent")
+
+            self.logger.debug(f"🔍 エージェントタイプ分類: {agent_id} -> {agent_type}")
+
+            return agent_type
+
+        except Exception as e:
+            self.logger.warning(f"⚠️ エージェントタイプ分類エラー: {e}")
+            return "single_agent"

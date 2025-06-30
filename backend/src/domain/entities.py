@@ -35,6 +35,7 @@ class FoodDetectionSource(str, Enum):
     """食事検出ソース列挙"""
 
     MANUAL = "manual"
+    MANUAL_ENTRY = "manual_entry"
     IMAGE_AI = "image_ai"
     VOICE_AI = "voice_ai"
     IMPORT = "import"
@@ -939,13 +940,20 @@ class FamilyInfo:
     @classmethod
     def from_dict(cls, user_id: str, family_data: dict) -> "FamilyInfo":
         """辞書データから家族情報エンティティを作成"""
+        children = family_data.get("children", [])
+
+        # child_idが無い子供にUUIDを自動付与
+        for child in children:
+            if "id" not in child or not child["id"]:
+                child["id"] = str(uuid.uuid4())
+
         return cls(
             user_id=user_id,
             parent_name=family_data.get("parent_name", ""),
             family_structure=family_data.get("family_structure", ""),
             concerns=family_data.get("concerns", ""),
             living_area=family_data.get("living_area", ""),
-            children=family_data.get("children", []),
+            children=children,
         )
 
     def to_dict(self) -> dict[str, Any]:

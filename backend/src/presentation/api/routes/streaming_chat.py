@@ -13,22 +13,55 @@ import asyncio
 import json
 import logging
 from collections.abc import AsyncGenerator
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from src.agents.agent_manager import AgentManager
+from src.agents.simple_parallel_agent import (
+    SimpleParallelAgent,
+    SimpleParallelRequest,
+    SimpleParallelResponse,
+)
 from src.application.usecases.agent_info_usecase import AgentInfoUseCase
 from src.application.usecases.chat_support_usecase import ChatSupportUseCase
 from src.application.usecases.streaming_chat_usecase import StreamingChatUseCase
 from src.presentation.api.dependencies import (
     get_agent_manager,
     get_logger,
+    get_simple_parallel_agent,
     get_streaming_chat_usecase,
 )
 
 router = APIRouter(prefix="/api/streaming", tags=["streaming"])
+
+
+# ========== パラレルエージェント用リクエスト・レスポンスモデル ==========
+
+
+class ParallelChatRequest(BaseModel):
+    """パラレルチャットリクエストモデル"""
+
+    message: str
+    selected_agents: list[str]
+    user_id: str
+    session_id: str
+    context: dict[str, str] = {}
+
+
+class ParallelChatResponse(BaseModel):
+    """パラレルチャットレスポンスモデル"""
+
+    success: bool
+    data: dict | None = None
+    message: str | None = None
+    error: str | None = None
+
+
+# ========== 依存関数（dependencies.pyに移行済み） ==========
+# get_parallel_agent_coordinator は dependencies.py に移行済み
 
 
 # ========== 旧関数（UseCase移行済み - 削除予定） ==========
@@ -643,3 +676,120 @@ async def streaming_chat_endpoint(
             yield f"data: {json.dumps({'type': 'error', 'message': f'❌ エラーが発生しました: {e!s}', 'data': {}})}\n\n"
 
         return StreamingResponse(error_stream(), media_type="text/plain")
+
+
+# ========== パラレルエージェント エンドポイント ==========
+
+
+@router.post("/parallel-chat")
+async def parallel_chat_endpoint(
+    request: ParallelChatRequest,
+    simple_parallel: SimpleParallelAgent = Depends(get_simple_parallel_agent),
+    logger: logging.Logger = Depends(get_logger),
+) -> ParallelChatResponse:
+    logger.info(f"📝 パラレルチャットエンドポイント呼び出し")
+    """マルチエージェント並列チャット
+    
+    複数の専門エージェントによる並列分析とレスポンス統合を実行
+    
+    Args:
+        request: パラレルチャットリクエスト
+        coordinator: パラレルエージェントコーディネーター
+        logger: ロガー
+        
+    Returns:
+        ParallelChatResponse: 統合された分析結果
+    """
+    try:
+        logger.info(
+            f"🎯 パラレルチャット開始: agents={request.selected_agents}, "
+            f"user={request.user_id}, message_len={len(request.message)}"
+        )
+        logger.debug(f"リクエスト詳細: {request}")
+
+        # シンプルパラレルリクエスト作成
+        simple_request = SimpleParallelRequest(
+            user_message=request.message,
+            selected_agents=request.selected_agents,
+            user_id=request.user_id,
+            session_id=request.session_id,
+        )
+        logger.debug(f"SimpleParallelRequest作成完了: {simple_request}")
+
+        # ADKネイティブParallelAgent実行
+        logger.info(f"🚀 SimpleParallelAgent実行開始: {simple_request}")
+        result = await simple_parallel.execute_parallel(simple_request)
+        logger.info(f"✅ SimpleParallelAgent実行完了: success={result.success}")
+
+        if result.success:
+            logger.info(f"✅ パラレルチャット成功: agents_count={len(result.responses)}")
+            logger.debug(f"パラレル結果詳細: {result}")
+
+            return ParallelChatResponse(
+                success=True,
+                data={
+                    "responses": [resp.__dict__ for resp in result.responses],
+                    "message": f"{len(result.responses)}人の専門家による並列分析が完了しました。",
+                },
+                message="パラレル分析が正常に完了しました",
+            )
+        else:
+            logger.warning(f"⚠️ パラレルチャット失敗: {result.error_message}")
+            logger.info(f"パラレル実行結果詳細: {result}")
+
+            return ParallelChatResponse(
+                success=False,
+                error=result.error_message,
+                message="パラレル分析中にエラーが発生しました",
+            )
+
+    except Exception as e:
+        logger.error(f"❌ パラレルチャットエンドポイントエラー: {e}")
+        logger.exception("エラースタックトレース:")
+
+        return ParallelChatResponse(
+            success=False,
+            error=str(e),
+            message="パラレルチャット処理中に予期しないエラーが発生しました",
+        )
+
+
+@router.get("/available-agents")
+async def get_available_agents_endpoint(
+    simple_parallel: SimpleParallelAgent = Depends(get_simple_parallel_agent),
+    logger: logging.Logger = Depends(get_logger),
+) -> dict[str, Any]:
+    """並列処理に利用可能なエージェント一覧取得
+
+    Returns:
+        dict: エージェント情報一覧
+    """
+    try:
+        logger.info("📋 利用可能エージェント一覧取得")
+
+        # SimpleParallelAgentでは簡素化された利用可能エージェント情報を返す
+        available_agents = [
+            {"id": "nutrition_specialist", "name": "栄養のジーニー", "description": "食事・栄養専門"},
+            {"id": "sleep_specialist", "name": "睡眠のジーニー", "description": "睡眠・夜泣き専門"},
+            {"id": "development_specialist", "name": "発達のジーニー", "description": "発達・成長専門"},
+        ]
+
+        logger.info(f"✅ 利用可能エージェント取得完了: {len(available_agents)}件")
+
+        return {
+            "success": True,
+            "data": {
+                "agents": available_agents,
+                "max_agents": 3,
+            },
+            "message": f"{len(available_agents)}個の専門エージェントが利用可能です",
+        }
+
+    except Exception as e:
+        logger.error(f"❌ 利用可能エージェント取得エラー: {e}")
+
+        return {
+            "success": False,
+            "error": str(e),
+            "message": "エージェント情報の取得中にエラーが発生しました",
+        }

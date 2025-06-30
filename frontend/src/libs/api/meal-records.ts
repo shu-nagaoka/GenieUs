@@ -280,6 +280,14 @@ export async function getNutritionSummary(
   end_date?: string
 ): Promise<ApiResponse<NutritionSummaryResponse>> {
   try {
+    // child_idが無効な場合は早期リターン
+    if (!child_id || child_id.trim() === '') {
+      return {
+        success: false,
+        error: '子供IDが指定されていません',
+      }
+    }
+
     const params = new URLSearchParams()
     if (start_date) params.append('start_date', start_date)
     if (end_date) params.append('end_date', end_date)
@@ -291,6 +299,13 @@ export async function getNutritionSummary(
 
     if (!response.ok) {
       const errorData = await response.json()
+      // 404エラーの場合は食事記録が存在しないことを示す
+      if (response.status === 404) {
+        return {
+          success: false,
+          error: 'この子供の食事記録がまだ登録されていません',
+        }
+      }
       throw new Error(errorData.detail || '栄養サマリーの取得に失敗しました')
     }
 

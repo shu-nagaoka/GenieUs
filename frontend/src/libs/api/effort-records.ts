@@ -74,85 +74,77 @@ export async function getEffortRecords(params?: {
   end_date?: string
 }): Promise<ApiResponse<EffortRecord[]>> {
   try {
-    // モックデータを返す（バックエンドAPI実装まで）
+    const userId = params?.user_id || 'frontend_user'
+    const response = await fetch(
+      `${API_BASE_URL}/api/effort-reports/list?user_id=${userId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const result = await response.json()
+    
+    if (result.success && result.data) {
+      // バックエンドのデータ形式をフロントエンドの形式に変換
+      const transformedData: EffortRecord[] = result.data.map((item: any) => ({
+        id: item.id,
+        user_id: item.user_id,
+        date: new Date(item.created_at).toISOString().split('T')[0],
+        period: `過去${item.period_days}日間`,
+        effort_count: item.effort_count || 0,
+        highlights: item.highlights || [],
+        score: item.score || 0,
+        categories: {
+          feeding: item.categories?.['食事管理'] || 0,
+          sleep: item.categories?.['記録継続'] || 0,
+          play: item.categories?.['活動企画'] || 0,
+          care: item.categories?.['健康管理'] || 0,
+        },
+        summary: item.summary || '',
+        achievements: item.achievements || [],
+        created_at: item.created_at || new Date().toISOString(),
+        updated_at: item.updated_at || new Date().toISOString(),
+      }))
+
+      return {
+        success: true,
+        data: transformedData,
+        message: '努力記録一覧を取得しました',
+      }
+    }
+    
+    return result
+  } catch (error) {
+    console.error('努力記録一覧取得エラー:', error)
+    // エラー時はモックデータで回復
     const mockData: EffortRecord[] = [
       {
-        id: '1',
+        id: 'mock_1',
         user_id: 'frontend_user',
         date: '2024-07-20',
-        period: '過去1週間',
-        effort_count: 27,
-        highlights: [
-          '初めて「パパ」と言いました！',
-          '睡眠時間が30分改善',
-          '離乳食を完食する日が増加',
-        ],
-        score: 8.7,
-        categories: {
-          feeding: 85,
-          sleep: 78,
-          play: 92,
-          care: 88,
-        },
-        summary:
-          'この1週間、お子さんとの絆が深まった素晴らしい期間でした。特に言葉の発達と睡眠リズムの改善が目立ちました。',
-        achievements: ['言語発達マイルストーン', '睡眠改善成功', '愛情表現向上'],
-        created_at: '2024-07-20T21:00:00Z',
-        updated_at: '2024-07-20T21:00:00Z',
-      },
-      {
-        id: '2',
-        user_id: 'frontend_user',
-        date: '2024-07-13',
-        period: '過去1週間',
-        effort_count: 24,
-        highlights: ['つかまり立ち成功！', '新しい遊びを覚えました', '夜泣きが減少しました'],
-        score: 8.2,
-        categories: {
-          feeding: 80,
-          sleep: 85,
-          play: 88,
-          care: 82,
-        },
-        summary: '運動発達が著しく進歩した週でした。つかまり立ちの成功は大きなマイルストーンです。',
-        achievements: ['運動発達マイルストーン', '夜泣き改善', '新しい遊び発見'],
-        created_at: '2024-07-13T21:00:00Z',
-        updated_at: '2024-07-13T21:00:00Z',
-      },
-      {
-        id: '3',
-        user_id: 'frontend_user',
-        date: '2024-07-06',
-        period: '過去1週間',
-        effort_count: 22,
-        highlights: ['笑顔が増えました', '離乳食に新しい食材追加', 'お昼寝時間が安定'],
-        score: 7.9,
-        categories: {
-          feeding: 78,
-          sleep: 80,
-          play: 85,
-          care: 79,
-        },
-        summary: '感情表現が豊かになり、食事のバラエティも増えた充実した週でした。',
-        achievements: ['感情表現向上', '食事バラエティ拡大', '生活リズム安定'],
-        created_at: '2024-07-06T21:00:00Z',
-        updated_at: '2024-07-06T21:00:00Z',
+        period: '過去7日間',
+        effort_count: 0,
+        highlights: ['データの取得に失敗しました'],
+        score: 0,
+        categories: { feeding: 0, sleep: 0, play: 0, care: 0 },
+        summary: 'バックエンドAPIに接続できませんでした。',
+        achievements: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       },
     ]
-
-    // 簡単な遅延を追加してローディング体験をシミュレート
-    await new Promise(resolve => setTimeout(resolve, 500))
 
     return {
       success: true,
       data: mockData,
-      message: '努力記録一覧を取得しました（モックデータ）',
-    }
-  } catch (error) {
-    console.error('努力記録一覧取得エラー:', error)
-    return {
-      success: false,
-      message: '努力記録一覧の取得に失敗しました',
+      message: '努力記録一覧の取得に失敗しました（フォールバック）',
     }
   }
 }
@@ -278,21 +270,99 @@ export async function deleteEffortRecord(
   userId: string = 'frontend_user'
 ): Promise<ApiResponse<EffortRecord>> {
   try {
-    // モック: 記録を削除（実際のバックエンドAPI実装まで）
+    const response = await fetch(
+      `${API_BASE_URL}/api/effort-reports/delete/${recordId}?user_id=${userId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
 
-    // 簡単な遅延を追加
-    await new Promise(resolve => setTimeout(resolve, 400))
-
-    return {
-      success: true,
-      data: {} as EffortRecord,
-      message: '努力記録を削除しました（モックデータ）',
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
     }
+
+    const result = await response.json()
+    
+    if (result.success) {
+      return {
+        success: true,
+        data: result.deleted_data || {} as EffortRecord,
+        message: '努力記録を削除しました',
+      }
+    }
+    
+    return result
   } catch (error) {
     console.error('努力記録削除エラー:', error)
     return {
       success: false,
       message: '努力記録の削除に失敗しました',
+    }
+  }
+}
+
+/**
+ * 努力レポートを自動生成
+ */
+export async function generateEffortReport(
+  userId: string = 'frontend_user',
+  periodDays: number = 7
+): Promise<ApiResponse<EffortRecord>> {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/effort-reports/generate?user_id=${userId}&period_days=${periodDays}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const result = await response.json()
+    
+    if (result.success && result.data) {
+      // バックエンドのデータ形式をフロントエンドの形式に変換
+      const transformedData: EffortRecord = {
+        id: result.data.id,
+        user_id: result.data.user_id,
+        date: new Date().toISOString().split('T')[0], // 今日の日付
+        period: `過去${periodDays}日間`,
+        effort_count: result.data.effort_count || 0,
+        highlights: result.data.highlights || [],
+        score: result.data.score || 0,
+        categories: {
+          feeding: result.data.categories?.['食事管理'] || 0,
+          sleep: result.data.categories?.['記録継続'] || 0,
+          play: result.data.categories?.['活動企画'] || 0,
+          care: result.data.categories?.['健康管理'] || 0,
+        },
+        summary: result.data.summary || '',
+        achievements: result.data.achievements || [],
+        created_at: result.data.created_at || new Date().toISOString(),
+        updated_at: result.data.updated_at || new Date().toISOString(),
+      }
+
+      return {
+        success: true,
+        data: transformedData,
+        message: '努力レポートを生成しました',
+      }
+    }
+    
+    return result
+  } catch (error) {
+    console.error('努力レポート生成エラー:', error)
+    return {
+      success: false,
+      message: '努力レポートの生成に失敗しました',
     }
   }
 }
@@ -312,27 +382,46 @@ export async function getEffortRecordsStats(
   }>
 > {
   try {
-    // モック統計データを返す（バックエンドAPI実装まで）
+    const response = await fetch(
+      `${API_BASE_URL}/api/effort-reports/stats?user_id=${userId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    if (!response.ok) {
+      // エラー時はモックデータで回復
+      const mockStats = {
+        total_efforts: 27,
+        streak_days: 21,
+        average_score: 8.3,
+        total_reports: 3,
+      }
+      return {
+        success: true,
+        data: mockStats,
+        message: '努力記録統計を取得しました（フォールバック）',
+      }
+    }
+
+    const result = await response.json()
+    return result
+  } catch (error) {
+    console.error('努力記録統計取得エラー:', error)
+    // エラー時もモックデータで回復
     const mockStats = {
       total_efforts: 27,
       streak_days: 21,
       average_score: 8.3,
       total_reports: 3,
     }
-
-    // 簡単な遅延を追加
-    await new Promise(resolve => setTimeout(resolve, 300))
-
     return {
       success: true,
       data: mockStats,
-      message: '努力記録統計を取得しました（モックデータ）',
-    }
-  } catch (error) {
-    console.error('努力記録統計取得エラー:', error)
-    return {
-      success: false,
-      message: '努力記録統計の取得に失敗しました',
+      message: '努力記録統計を取得しました（フォールバック）',
     }
   }
 }

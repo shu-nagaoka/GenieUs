@@ -35,6 +35,16 @@ class GrowthRecordUseCase:
         try:
             self.logger.info(f"成長記録作成開始: user_id={user_id}")
 
+            # child_idが提供されていてchild_nameが空の場合、child_nameを解決
+            if record_data.get("child_id") and not record_data.get("child_name"):
+                child_name = await self._resolve_child_name(user_id, record_data["child_id"])
+                if child_name:
+                    record_data["child_name"] = child_name
+                    self.logger.info(f"child_name解決成功: child_id={record_data['child_id']}, child_name={child_name}")
+                else:
+                    self.logger.warning(f"child_name解決失敗: child_id={record_data['child_id']}")
+                    return {"success": False, "message": "指定されたchild_idに対応する子どもが見つかりません"}
+
             # 子どもの情報から記録時点での月齢を自動計算
             if record_data.get("child_id") and record_data.get("date"):
                 calculated_age = await self._calculate_age_at_record_date(
@@ -75,6 +85,13 @@ class GrowthRecordUseCase:
             self.logger.info(f"成長記録取得開始: user_id={user_id}")
 
             records = await self.growth_record_repository.get_growth_records(user_id, filters)
+
+            # child_nameが設定されていない場合は解決する
+            for record in records:
+                if record.child_id and not record.child_name:
+                    child_name = await self._resolve_child_name(user_id, record.child_id)
+                    if child_name:
+                        record.child_name = child_name
 
             self.logger.info(f"成長記録取得完了: user_id={user_id}, count={len(records)}")
             return {"success": True, "data": [record.to_dict() for record in records]}
@@ -285,4 +302,30 @@ class GrowthRecordUseCase:
             return None
         except Exception as e:
             self.logger.error(f"年齢計算エラー: {e}")
+            return None
+
+    async def _resolve_child_name(self, user_id: str, child_id: str) -> str | None:
+        """child_idからchild_nameを解決
+
+        Args:
+            user_id: ユーザーID
+            child_id: 子どもID
+
+        Returns:
+            Optional[str]: 子どもの名前（見つからない場合はNone）
+
+        """
+        try:
+            family_info = await self.family_repository.get_family_info(user_id)
+            if not family_info:
+                return None
+
+            # child_idからインデックスを取得
+            child_index = int(child_id.split("_")[-1])
+            if 0 <= child_index < len(family_info.children):
+                return family_info.children[child_index].get("name", "")
+
+            return None
+        except Exception as e:
+            self.logger.error(f"child_name解決エラー: {e}")
             return None

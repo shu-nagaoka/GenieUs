@@ -14,6 +14,7 @@ from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.agents.agent_manager import AgentManager
+from src.agents.simple_parallel_agent import SimpleParallelAgent
 from src.application.usecases.agent_info_usecase import AgentInfoUseCase
 from src.application.usecases.chat_support_usecase import ChatSupportUseCase
 from src.application.usecases.effort_report_usecase import EffortReportUseCase
@@ -145,6 +146,13 @@ def get_logger(request: Request) -> logging.Logger:
 def get_composition_root(request: Request) -> CompositionRoot:
     """CompositionRootを取得（DI注入パターン）"""
     return request.app.composition_root
+
+
+def get_simple_parallel_agent(request: Request) -> SimpleParallelAgent:
+    """SimpleParallelAgentを取得（DI注入パターン）"""
+    agent_manager = request.app.agent_manager
+    logger = request.app.logger
+    return SimpleParallelAgent(agent_manager=agent_manager, logger=logger)
 
 
 # ========== Generic UseCase Getter ==========

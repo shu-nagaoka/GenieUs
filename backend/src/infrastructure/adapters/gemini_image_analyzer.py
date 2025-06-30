@@ -42,8 +42,40 @@ class GeminiImageAnalyzer(ImageAnalyzerProtocol):
     ) -> dict[str, Any]:
         """画像とプロンプトでAI分析を実行（純粋な技術実装）"""
         try:
-            # 詳細ログでデバッグ
-            self.logger.info(f"画像パス詳細: 長さ={len(image_path)}, 先頭50文字={image_path[:50]}...")
+            # プロンプトのデバッグログ追加
+            self.logger.info(f"🤖 Gemini API呼び出し開始")
+            self.logger.info(f"📝 プロンプト長: {len(prompt)}")
+            self.logger.info(f"📝 プロンプト内容サンプル: {prompt[:200]}...")
+
+            # テキストのみのプロンプトの場合（空の画像パス）
+            if not image_path or image_path.strip() == "":
+                self.logger.info("💬 テキストのみの生成として処理")
+
+                # モデル設定の適用
+                generation_config = {}
+                if model_options:
+                    generation_config.update(model_options)
+
+                # テキストのみでコンテンツ生成（画像なし）
+                response = await self.model.generate_content_async(
+                    prompt, generation_config=generation_config if generation_config else None
+                )
+
+                result = {
+                    "raw_response": response.text,
+                    "model_name": self.model_name,
+                    "success": True,
+                    "timestamp": self._get_current_timestamp(),
+                    "generation_type": "text_only",
+                }
+
+                self.logger.info(f"✅ テキスト生成完了: 長さ={len(response.text)}文字")
+                self.logger.info(f"📄 生成されたレスポンス（サンプル): {response.text[:150]}...")
+                return result
+
+            # 画像があるケースの処理
+            self.logger.info(f"🖼️ 画像あり生成: 画像パス長={len(image_path)}")
+
             # 画像読み込み（Base64データ対応）
             if image_path.startswith("data:image/"):
                 # Base64データの場合
@@ -61,9 +93,9 @@ class GeminiImageAnalyzer(ImageAnalyzerProtocol):
                 self.logger.info(f"ファイルパス {image_path} から画像を読み込み成功")
 
             # モデル設定の適用
+            generation_config = {}
             if model_options:
-                # temperature, max_tokens等の設定をここで適用
-                pass
+                generation_config.update(model_options)
 
             # Vertex AI Gemini APIコール（プロンプトはそのまま使用）
             # 画像をVertex AI Part形式に変換
@@ -85,7 +117,9 @@ class GeminiImageAnalyzer(ImageAnalyzerProtocol):
             image_part = Part.from_data(mime_type=mime_type, data=image_bytes)
 
             # 非同期でコンテンツ生成
-            response = await self.model.generate_content_async([prompt, image_part])
+            response = await self.model.generate_content_async(
+                [prompt, image_part], generation_config=generation_config if generation_config else None
+            )
 
             # 生レスポンスを返す（最小限の技術的処理のみ）
             result = {
@@ -93,13 +127,14 @@ class GeminiImageAnalyzer(ImageAnalyzerProtocol):
                 "model_name": self.model_name,
                 "success": True,
                 "timestamp": self._get_current_timestamp(),
+                "generation_type": "image_with_prompt",
             }
 
             self.logger.info("Gemini API call completed")
             return result
 
         except Exception as e:  # noqa: BLE001
-            self.logger.error(f"Gemini API error: {e}")
+            self.logger.error(f"❌ Gemini API error: {e}")
             return {
                 "raw_response": "",
                 "model_name": self.model_name,
