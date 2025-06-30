@@ -104,23 +104,8 @@ class AgentManager:
                 agent_type=agent_type,
             )
 
-            # フォローアップ質問生成
-            if agent_info.get("agent_id") not in ["sequential", "parallel"]:
-                # フォローアップランナー取得
-                followup_runner = None
-                if "followup_question_generator" in self._registry._runners:
-                    followup_runner = self._registry.get_runner("followup_question_generator")
-
-                followup_questions = await self._message_processor.generate_followup_questions(
-                    original_message=message,
-                    specialist_response=response,
-                    followup_runner=followup_runner,
-                    session_service=self._registry.get_session_service(),
-                )
-
-                if followup_questions:
-                    return f"{response}\n\n{followup_questions}"
-
+            # フォローアップ質問生成（route_query_async_with_infoで処理済みのため無効化）
+            # フォローアップクエスチョン生成は route_query_async_with_info で統一して実行
             return response
 
         except Exception as e:

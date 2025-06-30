@@ -135,8 +135,53 @@ def get_cors_origins():
     if frontend_port:
         origins.append(f"http://localhost:{frontend_port}")
 
-    return list(set(origins))  # 重複除去
+    # Cloud Run環境での動的フロントエンドURL検出
+    environment = os.getenv("ENVIRONMENT", "development")
+    project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
 
+    if environment != "development" and project_id:
+        # Cloud Run環境でのフロントエンドURL自動検出
+        try:
+            import subprocess
+            import json
+
+            # Cloud Run サービス一覧を取得してフロントエンドURLを検出
+            cmd = [
+                "gcloud",
+                "run",
+                "services",
+                "list",
+                "--region",
+                "asia-northeast1",
+                "--filter",
+                "metadata.name~genius-frontend",
+                "--format",
+                "json",
+            ]
+
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+
+            if result.returncode == 0:
+                services = json.loads(result.stdout)
+                for service in services:
+                    if "status" in service and "url" in service["status"]:
+                        frontend_url = service["status"]["url"]
+                        origins.append(frontend_url)
+                        print(f"🌐 Auto-detected frontend URL: {frontend_url}")
+
+        except Exception as e:
+            print(f"⚠️ Frontend URL auto-detection failed: {e}")
+            # フォールバック: 固定パターンの許可リスト
+            fallback_origins = [
+                f"https://genius-frontend-{environment}-280304291898.asia-northeast1.run.app",
+                f"https://genius-frontend-{environment}-h2hu4abaaa-an.a.run.app",
+            ]
+            origins.extend(fallback_origins)
+            print(f"🔧 Using fallback CORS origins for {environment}")
+
+    print(f"🛡️ Final CORS origins: {origins}")  # デバッグ用
+
+    return list(set(origins))  # 重複除去
 
 app.add_middleware(
     CORSMiddleware,

@@ -387,7 +387,7 @@ function SchedulePlanningPageContent() {
                   <FaCalendarAlt className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-800">予定を立てたこと</h1>
+                  <h1 className="text-3xl font-bold text-gray-800">立てた予定</h1>
                   <p className="text-gray-600">Genieと一緒に計画した大切なスケジュール</p>
                 </div>
               </div>

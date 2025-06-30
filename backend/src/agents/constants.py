@@ -840,6 +840,8 @@ AGENT_DISPLAY_NAMES = {
     "work_life_specialist": "社会復帰・仕事両立エージェント",
     "search_specialist": "検索エージェント",
     "followup_question_generator": "フォローアップクエスチョン生成エージェント",
+    "parallel": "パラレルエージェント",
+    "sequential": "シーケンシャルエージェント",
 }
 
 # ツール利用可能エージェント（基本エージェントのみ）

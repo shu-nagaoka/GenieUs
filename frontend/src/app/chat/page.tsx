@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef, lazy } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { API_BASE_URL } from '@/config/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -13,6 +13,16 @@ const ReactMarkdown = lazy(() => import('react-markdown'))
 const GenieStyleProgress = lazy(() =>
   import('@/components/features/chat/genie-style-progress').then(m => ({
     default: m.GenieStyleProgress,
+  }))
+)
+const WebSearchProgress = lazy(() =>
+  import('@/components/features/chat/web-search-progress').then(m => ({
+    default: m.WebSearchProgress,
+  }))
+)
+const MultiAgentProgress = lazy(() =>
+  import('@/components/features/chat/multi-agent-progress').then(m => ({
+    default: m.MultiAgentProgress,
   }))
 )
 const FollowupQuestions = lazy(() =>
@@ -30,9 +40,15 @@ const InteractiveConfirmation = lazy(() =>
     default: m.InteractiveConfirmation,
   }))
 )
+const AgentSelectorModal = lazy(() =>
+  import('@/components/features/chat/agent-selector-modal').then(m => ({
+    default: m.AgentSelectorModal,
+  }))
+)
 import { getFamilyInfo, formatFamilyInfoForChat } from '@/libs/api/family'
 import { uploadImage } from '@/libs/api/file-upload'
 import { parseInteractiveConfirmation, sendConfirmationResponse, type InteractiveConfirmationData } from '@/libs/api/interactive-confirmation'
+import { useParallelChat, useAvailableAgents } from '@/hooks/useParallelChat'
 import remarkGfm from 'remark-gfm'
 // アイコンをバランス良く設定 - 必要なアイコンは保持
 import {
@@ -46,6 +62,7 @@ import {
   Star,
   MessageCircle,
   Search,
+  Users,
 } from 'lucide-react'
 import { GiMagicLamp } from 'react-icons/gi'
 import { IoStop } from 'react-icons/io5'
@@ -104,7 +121,7 @@ function ChatPageContent() {
     {
       id: '1',
       content:
-        'こんにちは！**GenieUs**です\n\n話すだけで **家族管理・成長記録・努力見える化** すべてがつながる子育てアシスタント！\n\n**15人の専門GenieUs Agents**が連携してサポートします\n\n**こんなことができます：**\n• **「家族情報を登録」** → パパ・ママ・お子さんの情報をまとめて管理\n• **「今日どうだった？」** → 複数の専門エージェントがあなたの話を理解・記録\n• **「初めて歩いた！」** → 写真付きで大切な瞬間をメモリーズに保存\n• **「頑張ったことを教えて」** → あなたの愛情と努力をGenieが理解・認める\n• **「夜泣きがひどくて困っています」** → 専門エージェントが具体的にアドバイス\n• **「近くの病院を検索して」** → 最新情報を検索してお届け\n• **「子供向けイベントを探して」** → お出かけ先やイベントをご提案\n\n**専門分野：** 睡眠・栄養・夜泣き・離乳食・発達・遊び・しつけ・健康・行動・安全・心理・仕事両立・特別支援・検索・窓口申請・おでかけイベントなど\n\n何でもお気軽にお話しください！あなたに最適な専門エージェントが自動的にサポートします',
+        '🧞‍♂️ こんにちは！**GenieUs**です\n\n**あなたの家族に寄り添う15人の専門AIエージェントが、パーソナライズされたアドバイスをお届けします**\n\n🌟 **GenieUsの特徴**\n\n• **完全パーソナライズ** (📋): お子さんの年齢・性格・アレルギー・成長段階に合わせて、あなたの家族だけの専用アドバイスを提供します\n\n• **画像で瞬間分析** (📸): 写真を送るだけで、お子さんの表情・食事・発達の様子を分析。分析結果は栄養レポートや成長記録として自動保存。「この離乳食、栄養バランスはどう？」「今日の表情、どんな気持ちかな？」\n\n• **検索から予定まで一貫サポート** (🔍): 「近くの小児科を探して」→ 最新情報を検索。「来週予防接種の予約を取りたい」→ スケジュール管理まで自動化。病院情報から実際の予定立てまでトータルサポート\n\n• **成長の見える化** (📊): 日々の記録が自動で成長レポートに。栄養バランス・発達状況・頑張りポイントを可視化。「今月はこんなに成長しました」を実感できる\n\n• **専門エージェントが連携** (💬): 睡眠・栄養・発達・心理・安全・医療など15分野の専門エージェントが、あなたの話を理解して最適な回答をお届けします\n\n**何でもお気軽にお話しください！** 写真を添付するだけでも、詳しい分析とアドバイスが受けられます 📱✨',
       sender: 'genie',
       timestamp: new Date('2025-01-01T00:00:00.000Z'),
       type: 'text',
@@ -113,7 +130,6 @@ function ChatPageContent() {
   const [inputValue, setInputValue] = useState('')
   const [showHistory, setShowHistory] = useState(false)
   const [unsavedChanges, setUnsavedChanges] = useState(false)
-  const [isRecording, setIsRecording] = useState(false)
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [useStreamingProgress] = useState(true)
@@ -123,8 +139,15 @@ function ChatPageContent() {
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false)
   const [hasActiveConfirmation, setHasActiveConfirmation] = useState<boolean>(false)
   const [processingConfirmation, setProcessingConfirmation] = useState<boolean>(false)
+  const [isMultiAgentMode, setIsMultiAgentMode] = useState<boolean>(false)
+  const [selectedAgents, setSelectedAgents] = useState<string[]>([])
+  const [showAgentSelector, setShowAgentSelector] = useState<boolean>(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // パラレルチャット機能
+  const parallelChatMutation = useParallelChat()
+  const { data: availableAgentsData } = useAvailableAgents()
 
   // ローカルファイルパスを取得するヘルパー関数
   const getLocalFilePath = async (file: File): Promise<string | null> => {
@@ -210,8 +233,6 @@ function ChatPageContent() {
         imageDataSize: imagePreview ? `${Math.round(imagePreview.length / 1024)}KB` : 'なし',
         originalMessage: inputValue
       })
-    } else if (isRecording) {
-      messageType = 'audio'
     }
 
     const userMessage: Message = {
@@ -231,7 +252,7 @@ function ChatPageContent() {
     const currentImagePreview = imagePreview
     
     // 音声状態をリセット（画像は送信後にリセット）
-    setIsRecording(false)
+    // setIsRecording(false) // 音声機能削除済み
 
     // 会話履歴を準備（ストリーミング・従来共通）
     const conversationHistory = messages
@@ -255,8 +276,8 @@ function ChatPageContent() {
     // セッションIDを決定
     const sessionId = currentSession ? currentSession.id : 'default-session'
 
-    // ストリーミング進捗を使用する場合（現在はGenieスタイル固定）
-    if (useStreamingProgress) {
+    // マルチエージェントモードまたはストリーミング進捗を使用する場合
+    if ((isMultiAgentMode && selectedAgents.length > 0) || useStreamingProgress) {
       // ストリーミング用のプレースホルダーメッセージを追加
       const streamingMessageId = (Date.now() + 1).toString()
 
@@ -388,6 +409,9 @@ END_SYSTEM_INSTRUCTION`
       // 実際のAPIを呼び出し（バックエンドAPIエンドポイントに合わせて修正）
       // API_BASE_URL is imported from config
 
+      // マルチエージェントモードの場合は、MultiAgentProgressコンポーネントが処理する
+      // 一時的にプレースホルダーメッセージのみ追加
+
       // Web検索ON または 画像添付時の強力な指示を埋め込み
       let finalMessage = query
       
@@ -420,7 +444,7 @@ END_SYSTEM_INSTRUCTION`
         image_path: currentSelectedImage ? await getLocalFilePath(currentSelectedImage) : null,
         multimodal_context: {
           type: messageType,
-          voice_input: isRecording,
+          voice_input: false,
           image_description: currentSelectedImage ? 'ユーザーが画像をアップロードしました' : null,
         },
         web_search_enabled: webSearchEnabled,
@@ -781,7 +805,7 @@ END_SYSTEM_INSTRUCTION`
       {
         id: '1',
         content:
-          'こんにちは！**GenieUs**です\n\n話すだけで **家族管理・成長記録・努力見える化** すべてがつながる子育てアシスタント！\n\n**15人の専門GenieUs Agents**が連携してサポートします\n\n**こんなことができます：**\n• **「家族情報を登録」** → パパ・ママ・お子さんの情報をまとめて管理\n• **「今日どうだった？」** → 複数の専門エージェントがあなたの話を理解・記録\n• **「初めて歩いた！」** → 写真付きで大切な瞬間をメモリーズに保存\n• **「頑張ったことを教えて」** → あなたの愛情と努力をGenieが理解・認める\n• **「夜泣きがひどくて困っています」** → 専門エージェントが具体的にアドバイス\n• **「近くの病院を検索して」** → 最新情報を検索してお届け\n• **「子供向けイベントを探して」** → お出かけ先やイベントをご提案\n\n**専門分野：** 睡眠・栄養・夜泣き・離乳食・発達・遊び・しつけ・健康・行動・安全・心理・仕事両立・特別支援・検索・窓口申請・おでかけイベントなど\n\n何でもお気軽にお話しください！あなたに最適な専門エージェントが自動的にサポートします',
+          'こんにちは！**GenieUs**です\n\n話すだけで **家族管理・成長記録・努力見える化** すべてがつながる子育てアシスタント！\n\n**15人の専門GenieUs Agents**が連携してサポートします\n\n**こんなことができます：**\n• **「家族情報を登録」** → パパ・ママ・お子さんの情報をまとめて管理\n• **「今日どうだった？」** → 複数の専門エージェントがあなたの話を理解・記録\n• **「写真を分析してください」** → 画像分析で表情や発達の様子を確認\n• **「頑張ったことを教えて」** → あなたの愛情と努力をGenieが理解・認める\n• **「夜泣きがひどくて困っています」** → 専門エージェントが具体的にアドバイス\n• **「近くの病院を検索して」** → 最新情報を検索してお届け\n• **「食事記録をつけたい」** → 栄養バランスや食事パターンを管理\n• **「予定を立てたい」** → 健診や予防接種などスケジュール管理\n\n**専門分野：** 睡眠・栄養・夜泣き・離乳食・発達・遊び・しつけ・健康・行動・安全・心理・仕事両立・画像分析・検索など\n\n何でもお気軽にお話しください！あなたに最適な専門エージェントが自動的にサポートします',
         sender: 'genie',
         timestamp: new Date('2025-01-01T00:00:00.000Z'),
         type: 'text',
@@ -841,16 +865,125 @@ END_SYSTEM_INSTRUCTION`
     })
   }
 
-  // 音声録音開始/停止
-  const toggleRecording = async () => {
-    if (isRecording) {
-      // 録音停止（実装は簡略化）
-      setIsRecording(false)
-      setInputValue(inputValue + ' [音声入力完了]')
+  // マルチエージェントモード切り替え
+  const toggleMultiAgentMode = () => {
+    if (isMultiAgentMode) {
+      // マルチエージェントモード終了
+      setIsMultiAgentMode(false)
+      setSelectedAgents([])
+      // 検索・カメラ機能を再有効化
+      // （必要に応じて他の機能も再有効化）
     } else {
-      // 録音開始
-      setIsRecording(true)
-      // 実際の音声録音機能は FloatingVoiceButton を参考に実装
+      // マルチエージェントモード開始
+      setShowAgentSelector(true)
+    }
+  }
+
+  // エージェント選択完了
+  const onAgentsSelected = (agents: string[]) => {
+    setSelectedAgents(agents)
+    setIsMultiAgentMode(agents.length > 0)
+    setShowAgentSelector(false)
+    
+    if (agents.length > 0) {
+      // マルチエージェントモード時は検索・カメラを無効化
+      setWebSearchEnabled(false)
+      // 画像選択をクリア
+      if (selectedImage) {
+        setSelectedImage(null)
+        setImagePreview(null)
+      }
+    }
+  }
+
+  // パラレルチャット処理
+  const handleParallelChat = async (
+    query: string,
+    sessionId: string,
+    userMessage: Message
+  ) => {
+    try {
+      console.log('🎯 パラレルチャット実行開始:', { 
+        agents: selectedAgents, 
+        query: query.substring(0, 50) 
+      })
+
+      // ローディングメッセージ追加
+      const loadingMessage: Message = {
+        id: `loading-${Date.now()}`,
+        content: `${selectedAgents.length}人の専門家が分析中...`,
+        sender: 'genie',
+        timestamp: new Date(),
+        type: 'text',
+      }
+      setMessages(prev => [...prev, loadingMessage])
+
+      const result = await parallelChatMutation.mutateAsync({
+        message: query,
+        selectedAgents,
+        userId: 'frontend_user',
+        sessionId,
+        context: familyInfo ? { family_info: JSON.stringify(familyInfo) } : {},
+      })
+
+      // ローディングメッセージを削除
+      setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id))
+
+      if (result.success && result.data) {
+        console.log('✅ パラレルチャット成功:', result.data)
+
+        // 統合レスポンスをメッセージとして追加
+        const responseMessage: Message = {
+          id: `parallel-${Date.now()}`,
+          content: result.data.integrated_summary,
+          sender: 'genie',
+          timestamp: new Date(),
+          type: 'text',
+          debugInfo: {
+            workflow_used: 'parallel_agents',
+            agents_involved: selectedAgents,
+            processing_time: result.data.processing_time,
+          },
+        }
+
+        setMessages(prev => [...prev, responseMessage])
+
+        // セッション更新
+        if (currentSession) {
+          updateSession(currentSession.id, {
+            messages: [...currentSession.messages, userMessage, responseMessage],
+          })
+        }
+      } else {
+        console.error('❌ パラレルチャット失敗:', result.error)
+
+        // エラーメッセージを表示
+        const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          content: `申し訳ございません。マルチエージェント分析中にエラーが発生しました: ${result.error}`,
+          sender: 'genie',
+          timestamp: new Date(),
+          type: 'text',
+        }
+
+        setMessages(prev => [...prev, errorMessage])
+      }
+    } catch (error) {
+      console.error('❌ パラレルチャット例外:', error)
+
+      // ローディングメッセージがあれば削除
+      setMessages(prev => prev.filter(msg => !msg.id.startsWith('loading-')))
+
+      // エラーメッセージを表示
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: 'マルチエージェント分析中に予期しないエラーが発生しました。通常モードをお試しください。',
+        sender: 'genie',
+        timestamp: new Date(),
+        type: 'text',
+      }
+
+      setMessages(prev => [...prev, errorMessage])
     }
   }
 
@@ -1177,15 +1310,62 @@ END_SYSTEM_INSTRUCTION`
                   } ${message.sender === 'user' ? 'order-first' : ''}`}
                 >
                   {message.type === 'streaming' ? (
-                    // ストリーミング進捗表示（Genieスタイル固定）
-                    <GenieStyleProgress
-                      message={message.content}
-                      userId="frontend_user"
-                      sessionId={currentSession ? currentSession.id : 'default-session'}
-                      onComplete={handleStreamingComplete}
-                      onError={handleStreamingError}
-                      onFollowupQuestions={handleFollowupQuestions}
-                    />
+                    // モードに応じて専用UIを使用
+                    webSearchEnabled ? (
+                      <Suspense fallback={<div>Loading...</div>}>
+                        {/* Web検索専用プログレス */}
+                        <WebSearchProgress
+                          message={message.content}
+                          userId="frontend_user"
+                          sessionId={currentSession ? currentSession.id : 'default-session'}
+                          onComplete={handleStreamingComplete}
+                          onError={handleStreamingError}
+                          className="mb-4"
+                        />
+                      </Suspense>
+                    ) : isMultiAgentMode && selectedAgents.length > 0 ? (
+                      <Suspense fallback={<div>Loading...</div>}>
+                        {/* マルチエージェント専用プログレス */}
+                        <MultiAgentProgress
+                          message={message.content}
+                          selectedAgents={selectedAgents}
+                          userId="frontend_user"
+                          sessionId={currentSession ? currentSession.id : 'default-session'}
+                          onComplete={(response, agentData) => {
+                            console.log('🎯 マルチエージェント処理完了:', { response, agentData })
+                            // ストリーミングメッセージを最終レスポンスで更新
+                            setMessages(prev => prev.map(msg => 
+                              msg.id === message.id 
+                                ? { 
+                                    ...msg, 
+                                    content: response, 
+                                    type: 'text' as const,
+                                    debugInfo: {
+                                      workflow_used: 'parallel_agents',
+                                      agents_involved: agentData?.agent_details?.map((agent: any) => agent.agent_id) || [],
+                                      processing_time: agentData?.processing_time || 0,
+                                    }
+                                  }
+                                : msg
+                            ))
+                            setCurrentStreamingId(null)
+                          }}
+                          onError={(error) => {
+                            console.error('❌ マルチエージェントエラー:', error)
+                          }}
+                          className="mb-4"
+                        />
+                      </Suspense>
+                    ) : (
+                      <GenieStyleProgress
+                        message={message.content}
+                        userId="frontend_user"
+                        sessionId={currentSession ? currentSession.id : 'default-session'}
+                        onComplete={handleStreamingComplete}
+                        onError={handleStreamingError}
+                        onFollowupQuestions={handleFollowupQuestions}
+                      />
+                    )
                   ) : (
                     // 通常のメッセージ表示
                     <Card
@@ -1349,6 +1529,15 @@ END_SYSTEM_INSTRUCTION`
                 </div>
               )}
 
+              {/* マルチエージェントモード表示 */}
+              {isMultiAgentMode && selectedAgents.length > 0 && (
+                <div className="mb-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2">
+                  <Users className="h-4 w-4 text-amber-600" />
+                  <span className="text-sm font-medium text-amber-700">マルチエージェントモード有効</span>
+                  <span className="text-xs text-amber-600">{selectedAgents.length}人の専門家が協働分析します</span>
+                </div>
+              )}
+
               <div className="flex items-center gap-2">
                 <div className="flex-1">
                   <textarea
@@ -1359,6 +1548,8 @@ END_SYSTEM_INSTRUCTION`
                         ? '確認処理中です... 🤝'
                         : webSearchEnabled
                         ? 'Web検索で最新情報を調べます... 🔍'
+                        : isMultiAgentMode && selectedAgents.length > 0
+                        ? `${selectedAgents.length}人の専門家が分析します... 👥`
                         : '何でも相談してください... ✨'
                     }
                     disabled={hasActiveConfirmation || processingConfirmation}
@@ -1380,9 +1571,9 @@ END_SYSTEM_INSTRUCTION`
                 {/* Web検索ボタン */}
                 <Button
                   onClick={toggleWebSearch}
-                  disabled={!!selectedImage}
+                  disabled={!!selectedImage || isMultiAgentMode}
                   className={`h-12 rounded-lg border px-3 transition-all duration-200 ${
-                    selectedImage
+                    selectedImage || isMultiAgentMode
                       ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-50'
                       : webSearchEnabled
                         ? 'border-green-500 bg-green-500 text-white shadow-lg hover:bg-green-600'
@@ -1392,9 +1583,11 @@ END_SYSTEM_INSTRUCTION`
                   title={
                     selectedImage
                       ? '画像選択中は使用できません'
-                      : webSearchEnabled
-                        ? 'Web検索を無効にする'
-                        : 'Web検索を有効にする'
+                      : isMultiAgentMode
+                        ? 'マルチエージェントモード中は使用できません'
+                        : webSearchEnabled
+                          ? 'Web検索を無効にする'
+                          : 'Web検索を有効にする'
                   }
                 >
                   <Search className="h-4 w-4" />
@@ -1413,9 +1606,10 @@ END_SYSTEM_INSTRUCTION`
                     console.log('📷 カメラボタンがクリックされました:', {
                       timestamp: new Date().toISOString(),
                       webSearchEnabled,
+                      isMultiAgentMode,
                       fileInputExists: !!fileInputRef.current,
                       fileInputValue: fileInputRef.current?.value || '空',
-                      disabled: webSearchEnabled
+                      disabled: webSearchEnabled || isMultiAgentMode
                     })
                     
                     if (webSearchEnabled) {
@@ -1423,32 +1617,48 @@ END_SYSTEM_INSTRUCTION`
                       return
                     }
                     
+                    if (isMultiAgentMode) {
+                      console.log('⚠️ マルチエージェントモードが有効なためカメラ機能は無効です')
+                      return
+                    }
+                    
                     console.log('✅ ファイル選択ダイアログを開きます')
                     fileInputRef.current?.click()
                   }}
-                  disabled={webSearchEnabled}
+                  disabled={webSearchEnabled || isMultiAgentMode}
                   className={`h-12 rounded-lg border px-3 transition-all duration-200 ${
-                    webSearchEnabled
+                    webSearchEnabled || isMultiAgentMode
                       ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 opacity-50'
                       : 'border-blue-200 bg-blue-50 text-blue-700 hover:border-blue-300 hover:bg-blue-100'
                   }`}
                   type="button"
-                  title={webSearchEnabled ? 'Web検索中は使用できません' : '画像をアップロード'}
+                  title={
+                    webSearchEnabled ? 'Web検索中は使用できません' :
+                    isMultiAgentMode ? 'マルチエージェントモード中は使用できません' : 
+                    '画像をアップロード'
+                  }
                 >
                   <Camera className="h-4 w-4" />
                 </Button>
 
-                {/* 音声録音ボタン（将来の拡張用） */}
+                {/* マルチエージェントモードボタン */}
                 <Button
-                  onClick={toggleRecording}
+                  onClick={toggleMultiAgentMode}
                   className={`h-12 rounded-lg border px-3 transition-all duration-200 ${
-                    isRecording
-                      ? 'border-red-500 bg-red-500 text-white hover:bg-red-600'
-                      : 'border-green-200 bg-green-50 text-green-700 hover:border-green-300 hover:bg-green-100'
+                    isMultiAgentMode
+                      ? 'border-amber-500 bg-amber-500 text-white hover:bg-amber-600'
+                      : 'border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300 hover:bg-amber-100'
                   }`}
                   type="button"
+                  title={isMultiAgentMode ? 
+                    `マルチエージェントモード (${selectedAgents.length}人選択中)` : 
+                    'マルチエージェントモードに切り替え'
+                  }
                 >
-                  {isRecording ? <IoStop className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  <Users className="h-4 w-4" />
+                  {isMultiAgentMode && selectedAgents.length > 0 && (
+                    <span className="ml-1 text-xs">{selectedAgents.length}</span>
+                  )}
                 </Button>
 
                 <Button
@@ -1529,6 +1739,16 @@ END_SYSTEM_INSTRUCTION`
             </div>
           </div>
         )}
+
+        {/* エージェント選択モーダル */}
+        <Suspense fallback={<div>Loading...</div>}>
+          <AgentSelectorModal
+            isOpen={showAgentSelector}
+            onClose={() => setShowAgentSelector(false)}
+            onAgentsSelected={onAgentsSelected}
+            availableAgents={availableAgentsData?.success ? availableAgentsData.data?.agents : undefined}
+          />
+        </Suspense>
       </div>
     </AppLayout>
   )

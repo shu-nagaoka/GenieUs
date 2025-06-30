@@ -85,6 +85,11 @@
       "title": "⚙️ 技術詳細",
       "items": [
         {
+          "title": "⚙️ Stripe技術実装計画",
+          "file": "technical/stripe-implementation-plan.md",
+          "description": "```"
+        },
+        {
           "title": "📄 GenieUs ルーティングシステム移行完了報告",
           "file": "technical/routing-system-migration.md",
           "description": "```python"
@@ -151,9 +156,24 @@
           "description": "GenieUsプロジェクトの既存コードをComposition Root + FastAPI Depends統合に移行するための実践ガイド"
         },
         {
+          "title": "📖 トラブルシューティングガイド",
+          "file": "guides/troubleshooting.md",
+          "description": "GenieUs開発時によくある問題と解決策の完全ガイド"
+        },
+        {
           "title": "📖 ユーザー認証・パーソナライズ機能実装ガイド",
           "file": "guides/user-authentication-implementation.md",
           "description": "Google OAuth + JWT認証によるユーザー固有データ管理システムの完全実装ガイド"
+        },
+        {
+          "title": "📖 新UseCase実装ガイド",
+          "file": "guides/new-usecase-impl.md",
+          "description": "GenieUs Clean Architecture + Composition Rootでの新UseCase実装完全ガイド"
+        },
+        {
+          "title": "📖 新ツール開発ガイド",
+          "file": "guides/new-tool-development.md",
+          "description": "GenieUs Agent-Firstアーキテクチャでの新ツール開発完全ガイド"
         },
         {
           "title": "📖 認証システム実装ガイド - GenieUs",
@@ -180,6 +200,11 @@
           "title": "📖 Genius Cloud Run デプロイメントガイド",
           "file": "deployment/overview.md",
           "description": "GeniusアプリケーションをGoogle Cloud Runにデプロイするためのガイドです。"
+        },
+        {
+          "title": "📖 環境変数ベースデプロイメントガイド",
+          "file": "deployment/environment-based-deployment.md",
+          "description": "GenieUsは環境変数ファイルを使用して、一貫性のあるデプロイメントを実現します。"
         },
         {
           "title": "📖 初回デプロイメントガイド",
@@ -218,6 +243,11 @@
       "title": "📋 実装プラン",
       "items": [
         {
+          "title": "📄 GenieUs Stripe マネタイズ戦略",
+          "file": "plan/stripe-monetization-strategy.md",
+          "description": "```typescript"
+        },
+        {
           "title": "📋 並列エージェント協働レポート実装プラン",
           "file": "plan/parallel-agent-collaborative-reports.md",
           "description": "睡眠・栄養・しつけのジーニーが協働して1つのレポートをユーザーに返すためのADK ParallelAgent統合実装プラン。"
@@ -234,6 +264,11 @@
           "description": "食事画像をアップロードして解析した後、AIエージェントがユーザーに対してインタラクティブに「レシピを食事管理に登録しますか？」と確認し、ユーザーが「Yes」と回答した場合に自動的にmeal_planシ..."
         },
         {
+          "title": "🎫 Issue: パラレルエージェント機能実装",
+          "file": "issue/parallel-agent-implementation.md",
+          "description": "3つの専門エージェントが同時にパラレル処理で動作し、ユーザーの悩みに対して協働回答する「マルチエージェントモード」を実装する。"
+        },
+        {
           "title": "🎫 Issue: フロントエンド速度最適化実装",
           "file": "issue/frontend-performance-optimization.md",
           "description": "GenieUsフロントエンドアプリケーションにおいて、CSRアーキテクチャを維持しながら、ユーザー体験を大幅に改善するための速度最適化を実装する。"
@@ -247,6 +282,11 @@
           "title": "🎫 Issue: 画像添付時の自動プロンプト追加とUI排他制御実装",
           "file": "issue/image-auto-prompt-and-ui-exclusivity.md",
           "description": "画像添付時のユーザーエクスペリエンス向上のため、以下2つの機能を実装する："
+        },
+        {
+          "title": "🎫 Issue: 個別食事記録機能の実装",
+          "file": "issue/meal-record-feature-implementation.md",
+          "description": "Human-in-the-Loop機能と連携して、画像解析結果から個別の食事記録を作成・管理する機能を実装する。既存の食事プラン機能とは別に、実際に食べた食事の履歴・ログを管理する新機能として追加する..."
         },
         {
           "title": "📄 Frontend Performance Optimization - Phase 1 完了報告",

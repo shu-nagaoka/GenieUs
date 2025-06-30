@@ -1,7 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getEffortRecords,
   getEffortRecordsStats,
+  generateEffortReport,
+  deleteEffortRecord,
 } from '@/libs/api/effort-records'
 
 export const EFFORT_RECORDS_QUERY_KEY = ['effort-records'] as const
@@ -41,5 +43,41 @@ export function useEffortStats(userId: string, periodDays: number) {
       }
     },
     placeholderData: (previousData) => previousData,
+  })
+}
+
+export function useGenerateEffortReport() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ userId, periodDays }: { userId: string; periodDays: number }) =>
+      generateEffortReport(userId, periodDays),
+    onSuccess: (data, variables) => {
+      // 成功時にクエリを無効化して再取得
+      queryClient.invalidateQueries({
+        queryKey: [...EFFORT_RECORDS_QUERY_KEY, variables.userId],
+      })
+      queryClient.invalidateQueries({
+        queryKey: [...EFFORT_STATS_QUERY_KEY, variables.userId],
+      })
+    },
+  })
+}
+
+export function useDeleteEffortRecord() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ recordId, userId }: { recordId: string; userId: string }) =>
+      deleteEffortRecord(recordId, userId),
+    onSuccess: (data, variables) => {
+      // 成功時にクエリを無効化して再取得
+      queryClient.invalidateQueries({
+        queryKey: [...EFFORT_RECORDS_QUERY_KEY, variables.userId],
+      })
+      queryClient.invalidateQueries({
+        queryKey: [...EFFORT_STATS_QUERY_KEY, variables.userId],
+      })
+    },
   })
 }

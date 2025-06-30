@@ -5,6 +5,9 @@
 
 set -e
 
+# プロジェクトルート取得
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # カラー定義
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -33,54 +36,31 @@ show_menu() {
     echo -e "${CYAN}           GenieUs 開発メニュー${NC}"
     echo -e "${CYAN}═══════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${GREEN}🚀 開発環境 (よく使う)${NC}"
+    echo -e "${GREEN}🚀 開発環境${NC}"
     echo -e "  ${YELLOW}1${NC}) 開発環境起動 (フロント:3000+バック:8080)"
     echo -e "  ${YELLOW}2${NC}) テスト環境起動 (フロント:3001+バック:8001)"
-    echo -e "  ${YELLOW}3${NC}) インタラクティブ起動メニュー (環境選択)"
-    echo -e "  ${YELLOW}4${NC}) 開発環境停止 (全プロセス停止)"
+    echo -e "  ${YELLOW}3${NC}) 開発環境停止 (全プロセス停止)"
     echo ""
     echo -e "${CYAN}🔧 開発ツール${NC}"
-    echo -e "  ${YELLOW}5${NC}) FastAPI単体起動 (バックエンドのみ)"
-    echo -e "  ${YELLOW}6${NC}) ADK Web UI起動 (エージェントテスト)"
-    echo -e "  ${YELLOW}7${NC}) ADK + FastAPI 同時起動 (統合開発)"
-    echo -e "  ${YELLOW}8${NC}) API テスト (curl でエンドポイント確認)"
-    echo -e "  ${YELLOW}9${NC}) ログ確認"
+    echo -e "  ${YELLOW}4${NC}) FastAPI単体起動 (バックエンドのみ)"
+    echo -e "  ${YELLOW}5${NC}) API テスト (curl でエンドポイント確認)"
+    echo -e "  ${YELLOW}6${NC}) ログ確認"
     echo ""
-    echo -e "${GREEN}📚 ドキュメント${NC}"
-    echo -e "  ${YELLOW}10${NC}) ドキュメント自動更新 (ワンショット)"
-    echo -e "  ${YELLOW}11${NC}) ドキュメント監視モード (リアルタイム自動更新)"
-    echo -e "  ${YELLOW}12${NC}) ドキュメントサーバー起動 (Web版)"
-    echo -e "  ${YELLOW}13${NC}) ドキュメントサーバー停止"
+    echo -e "${BLUE}📚 ドキュメント・API管理${NC}"
+    echo -e "  ${YELLOW}7${NC}) ドキュメント自動更新"
+    echo -e "  ${YELLOW}8${NC}) API URL整合性チェック (フロント⇔バック)"
     echo ""
-    echo -e "${CYAN}🔗 API整合性管理${NC}"
-    echo -e "  ${YELLOW}14${NC}) API URL整合性チェック (フロント⇔バック)"
-    echo -e "  ${YELLOW}15${NC}) APIマッピング自動更新"
+    echo -e "${GREEN}☁️  デプロイメント${NC}"
+    echo -e "  ${YELLOW}10${NC}) 🏗️  Cloud Build デプロイ (インタラクティブ + Secret Manager)"
+    echo -e "  ${YELLOW}11${NC}) 🏗️  Cloud Build デプロイ (本番)"
+    echo -e "  ${YELLOW}12${NC}) 🐳 gcloud直接デプロイ (ステージング)"
+    echo -e "  ${YELLOW}13${NC}) 🐳 gcloud直接デプロイ (本番)"
     echo ""
-    echo -e "${BLUE}🐳 Docker環境${NC}"
-    echo -e "  ${YELLOW}16${NC}) Docker開発環境起動 (./run.sh dev)"
-    echo -e "  ${YELLOW}17${NC}) Docker本番環境起動 (./run.sh prod)"
-    echo -e "  ${YELLOW}18${NC}) Dockerサービス停止 (./run.sh stop)"
-    echo -e "  ${YELLOW}19${NC}) Dockerクリーンアップ (./run.sh clean)"
-    echo ""
-    echo -e "${GREEN}☁️  Cloud Run デプロイメント${NC}"
-    echo -e "  ${YELLOW}20${NC}) 🏗️  Cloud Build デプロイ (ステージング) - ローカルDockerなし"
-    echo -e "  ${YELLOW}21${NC}) 🏗️  Cloud Build デプロイ (本番) - ローカルDockerなし"
-    echo -e "  ${YELLOW}22${NC}) 🐳 従来型デプロイ (ステージング) - ローカルDockerあり"
-    echo -e "  ${YELLOW}23${NC}) 🐳 従来型デプロイ (本番) - ローカルDockerあり"
-    echo -e "  ${YELLOW}24${NC}) Cloud Run サービス状態確認"
-    echo -e "  ${YELLOW}25${NC}) Cloud Run ログ確認"
-    echo -e "  ${YELLOW}26${NC}) Cloud Run 設定・環境確認"
-    echo ""
-    echo -e "${GREEN}☁️  GCP管理${NC}"
-    echo -e "  ${YELLOW}27${NC}) GCPプロジェクト切り替え"
-    echo -e "  ${YELLOW}28${NC}) GCP認証・設定確認"
-    echo -e "  ${YELLOW}29${NC}) GCP権限・API詳細調査"
-    echo ""
-    echo -e "${GREEN}🔧 CI/CD セットアップ${NC}"
-    echo -e "  ${YELLOW}30${NC}) 🎯 GCP CI/CD環境自動構築 (インタラクティブ)"
-    echo -e "  ${YELLOW}31${NC}) 🔐 GitHub Secrets自動設定"
-    echo -e "  ${YELLOW}32${NC}) 🧪 CI/CDパイプライン動作テスト"
-    echo -e "  ${YELLOW}33${NC}) 🚀 インタラクティブデプロイメント"
+    echo -e "${CYAN}☁️  GCP管理・監視${NC}"
+    echo -e "  ${YELLOW}20${NC}) GCP認証・プロジェクト設定"
+    echo -e "  ${YELLOW}21${NC}) Cloud Run サービス状態確認"
+    echo -e "  ${YELLOW}22${NC}) Cloud Run ログ確認"
+    echo -e "  ${YELLOW}23${NC}) 古いリビジョンクリーンアップ"
     echo ""
     echo ""
     echo -e "${RED}🛑 その他${NC}"
@@ -151,29 +131,7 @@ stop_local_dev() {
     echo -e "${GREEN}停止処理完了${NC}"
 }
 
-# 3. Docker開発環境起動
-start_docker_dev() {
-    echo -e "${BLUE}🐳 Docker開発環境を起動します...${NC}"
-    ./run.sh dev
-}
-
-# 4. Docker本番環境起動
-start_docker_prod() {
-    echo -e "${BLUE}🐳 Docker本番環境を起動します...${NC}"
-    ./run.sh prod
-}
-
-# 5. Dockerサービス停止
-stop_docker() {
-    echo -e "${YELLOW}🐳 Dockerサービスを停止します...${NC}"
-    ./run.sh stop
-}
-
-# 6. Dockerクリーンアップ
-clean_docker() {
-    echo -e "${RED}🧹 Dockerクリーンアップを実行します...${NC}"
-    ./run.sh clean
-}
+# Docker関連機能は削除されました - Cloud Runに統一
 
 # 7. FastAPI単体起動
 start_fastapi_only() {
@@ -411,25 +369,32 @@ deploy_cloud_run_staging() {
     fi
 }
 
-# 14. Cloud Build デプロイ (ステージング) - ローカルDockerなし
+# 14. Cloud Build デプロイ (インタラクティブ環境選択)
 deploy_cloudbuild_staging() {
-    echo -e "${GREEN}🏗️  Cloud Build ステージング環境にデプロイします...${NC}"
+    echo -e "${GREEN}🏗️  Cloud Build デプロイを開始します...${NC}"
     echo -e "${CYAN}✨ ローカルDockerは不要です - すべてクラウドで処理${NC}"
     echo ""
+    
+    # 利用可能な環境ファイルを動的に検出
+    select_environment_file
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
     
     # 環境変数チェック
     if ! check_cloudbuild_prerequisites; then
         return 1
     fi
     
-    echo -e "${BLUE}📦 Cloud Build ステージング環境デプロイを開始します...${NC}"
+    echo -e "${BLUE}📦 Cloud Build デプロイを開始します...${NC}"
+    echo -e "${YELLOW}環境: ${SELECTED_ENVIRONMENT}${NC}"
     echo -e "${YELLOW}プロジェクト: ${GCP_PROJECT_ID:-'未設定'}${NC}"
     echo -e "${YELLOW}リージョン: ${GCP_REGION:-'asia-northeast1'}${NC}"
     echo -e "${YELLOW}方式: Cloud Build (No Local Docker)${NC}"
     echo ""
     
     chmod +x ./scripts/deploy-cloudbuild.sh
-    ./scripts/deploy-cloudbuild.sh staging "${GCP_PROJECT_ID}"
+    ./scripts/deploy-cloudbuild.sh "${SELECTED_ENVIRONMENT}" "${GCP_PROJECT_ID}"
 }
 
 # 15. Cloud Build デプロイ (本番) - ローカルDockerなし
@@ -438,6 +403,15 @@ deploy_cloudbuild_production() {
     echo -e "${RED}⚠️  本番環境への変更には十分注意してください！${NC}"
     echo -e "${CYAN}✨ ローカルDockerは不要です - すべてクラウドで処理${NC}"
     echo ""
+    
+    # 環境変数読み込み
+    if [ -f "environments/.env.staging" ]; then
+        source environments/.env.staging
+        echo -e "${GREEN}✅ 環境変数読み込み完了 (production用にstaging設定を使用)${NC}"
+    else
+        echo -e "${RED}❌ environments/.env.staging が見つかりません${NC}"
+        return 1
+    fi
     
     # 環境変数チェック
     if ! check_cloudbuild_prerequisites; then
@@ -667,7 +641,7 @@ check_cloud_run_config() {
     check_file_exists "scripts/deploy-cloud-run.sh" "デプロイスクリプト"
     check_file_exists "frontend/Dockerfile" "フロントエンドDockerfile"
     check_file_exists "backend/Dockerfile" "バックエンドDockerfile"
-    check_file_exists ".github/workflows/deploy-cloud-run.yml" "GitHub Actions設定"
+    # GitHub Actions removed - using only Cloud Build and gcloud direct deployment
     echo ""
     
     # 推奨設定表示
@@ -1839,49 +1813,42 @@ main() {
         print_logo
         show_menu
         
-        read -p "選択してください (0-33): " choice
+        read -p "選択してください (1-13, 20-23, 0): " choice
         echo ""
         
         case $choice in
+            # 開発環境
             1) start_local_dev ;;
             2) start_test_environment ;;
-            3) interactive_startup ;;
-            4) stop_local_dev ;;
-            5) start_fastapi_only ;;
-            6) start_adk_ui ;;
-            7) start_integrated_dev ;;
-            8) test_api ;;
-            9) show_logs ;;
-            10) update_docs_navigation ;;
-            11) watch_docs_changes ;;
-            12) start_docs_server_advanced ;;
-            13) stop_docs_server ;;
-            14) check_api_consistency ;;
-            15) update_api_mapping ;;
-            16) start_docker_dev ;;
-            17) start_docker_prod ;;
-            18) stop_docker ;;
-            19) clean_docker ;;
-            20) deploy_cloudbuild_staging ;;
-            21) deploy_cloudbuild_production ;;
-            22) deploy_traditional_staging ;;
-            23) deploy_traditional_production ;;
-            24) check_cloud_run_status ;;
-            25) show_cloud_run_logs ;;
-            26) check_cloud_run_config ;;
-            27) switch_gcp_project ;;
-            28) check_gcp_auth_config ;;
-            29) check_gcp_permissions_detailed ;;
-            30) setup_gcp_cicd ;;
-            31) setup_github_secrets ;;
-            32) test_cicd_pipeline ;;
-            33) interactive_deployment ;;
+            3) stop_local_dev ;;
+            
+            # 開発ツール
+            4) start_fastapi_only ;;
+            5) test_api ;;
+            6) show_logs ;;
+            
+            # ドキュメント・API管理
+            7) update_docs_navigation ;;
+            8) check_api_consistency ;;
+            
+            # デプロイメント
+            10) interactive_cloudbuild_deployment ;;
+            11) "$PROJECT_ROOT/deployment/cloud-build/production.sh" ;;
+            12) "$PROJECT_ROOT/deployment/gcloud-direct/staging.sh" ;;
+            13) "$PROJECT_ROOT/deployment/gcloud-direct/production.sh" ;;
+            
+            # GCP管理・監視
+            20) check_gcp_auth_config ;;
+            21) check_cloud_run_status ;;
+            22) show_cloud_run_logs ;;
+            23) cleanup_old_revisions ;;
+            
             0) 
                 echo -e "${GREEN}👋 お疲れ様でした！${NC}"
                 exit 0
                 ;;
             *)
-                echo -e "${RED}❌ 無効な選択です。0-33の数字を入力してください。${NC}"
+                echo -e "${RED}❌ 無効な選択です。1-13, 20-23, 0を入力してください。${NC}"
                 ;;
         esac
         
@@ -2675,6 +2642,266 @@ test_cicd_pipeline() {
     echo "   gh run view --repo shu-nagaoka/GenieUs   # 最新実行の詳細"
 }
 
+# 環境ファイル選択機能
+select_environment_file() {
+    echo -e "${BLUE}🌍 環境選択${NC}"
+    echo -e "${CYAN}═══════════════════════${NC}"
+    
+    # environments/ ディレクトリ内の .env ファイルを動的に検出
+    local env_files=()
+    local env_names=()
+    
+    if [ -d "environments" ]; then
+        echo -e "${CYAN}利用可能な環境:${NC}"
+        local counter=1
+        
+        for env_file in environments/.env.*; do
+            if [ -f "$env_file" ]; then
+                # ファイル名から環境名を抽出 (.env.staging → staging)
+                local env_name=$(basename "$env_file" | sed "s/^\.env\.//")
+                env_files+=("$env_file")
+                env_names+=("$env_name")
+                
+                # 環境ファイルの基本情報を表示
+                local project_id=$(grep "^GCP_PROJECT_ID=" "$env_file" 2>/dev/null | cut -d"=" -f2)
+                local region=$(grep "^GCP_REGION=" "$env_file" 2>/dev/null | cut -d"=" -f2)
+                
+                echo -e "  ${YELLOW}$counter${NC}) ${GREEN}$env_name${NC}"
+                echo -e "     📋 プロジェクト: ${CYAN}${project_id:-未設定}${NC}"
+                echo -e "     🌐 リージョン: ${CYAN}${region:-未設定}${NC}"
+                echo -e "     📄 ファイル: ${BLUE}$env_file${NC}"
+                echo ""
+                
+                ((counter++))
+            fi
+        done
+        
+        if [ ${#env_files[@]} -eq 0 ]; then
+            echo -e "${RED}❌ environments/ ディレクトリに .env ファイルが見つかりません${NC}"
+            echo -e "${YELLOW}💡 environments/.env.staging や environments/.env.production を作成してください${NC}"
+            return 1
+        fi
+        
+        echo -e "  ${YELLOW}0${NC}) キャンセル"
+        echo ""
+        
+        # 環境選択
+        read -p "デプロイする環境を選択してください (0-$((${#env_files[@]}))): " env_choice
+        echo ""
+        
+        # 選択検証
+        if [ "$env_choice" = "0" ]; then
+            echo -e "${YELLOW}⚠️ デプロイがキャンセルされました${NC}"
+            return 1
+        elif [ "$env_choice" -ge 1 ] && [ "$env_choice" -le "${#env_files[@]}" ]; then
+            local selected_file="${env_files[$((env_choice-1))]}"
+            local selected_name="${env_names[$((env_choice-1))]}"
+            
+            # 環境変数読み込み
+            echo -e "${BLUE}📂 環境設定を読み込み中...${NC}"
+            source "$selected_file"
+            
+            # グローバル変数に設定
+            export SELECTED_ENVIRONMENT="$selected_name"
+            export SELECTED_ENV_FILE="$selected_file"
+            
+            echo -e "${GREEN}✅ 環境変数読み込み完了${NC}"
+            echo -e "   環境: ${CYAN}$selected_name${NC}"
+            echo -e "   ファイル: ${BLUE}$selected_file${NC}"
+            echo -e "   プロジェクト: ${CYAN}${GCP_PROJECT_ID:-未設定}${NC}"
+            echo -e "   リージョン: ${CYAN}${GCP_REGION:-未設定}${NC}"
+            echo ""
+            
+            return 0
+        else
+            echo -e "${RED}❌ 無効な選択です: $env_choice${NC}"
+            return 1
+        fi
+    else
+        echo -e "${RED}❌ environments/ ディレクトリが見つかりません${NC}"
+        echo -e "${YELLOW}💡 プロジェクトルートから実行してください${NC}"
+        return 1
+    fi
+}
+
+# 20. インタラクティブCloud Buildデプロイメント (Secret Manager統合対応)
+interactive_cloudbuild_deployment() {
+    echo -e "${GREEN}🏗️ インタラクティブCloud Buildデプロイメント${NC}"
+    echo "================================================"
+    echo ""
+    
+    # 環境選択
+    echo -e "${BLUE}📋 デプロイ環境選択${NC}"
+    echo "=================="
+    echo ""
+    echo -e "  ${YELLOW}1${NC}) ステージング環境 (推奨)"
+    echo -e "  ${YELLOW}2${NC}) 本番環境 (注意が必要)"
+    echo -e "  ${YELLOW}0${NC}) キャンセル"
+    echo ""
+    
+    read -p "デプロイ環境を選択してください (0-2): " env_choice
+    
+    case $env_choice in
+        1)
+            DEPLOY_ENV="staging"
+            DEPLOY_ENV_NAME="ステージング"
+            DEPLOY_COLOR="${CYAN}"
+            ;;
+        2)
+            DEPLOY_ENV="production"
+            DEPLOY_ENV_NAME="本番"
+            DEPLOY_COLOR="${RED}"
+            ;;
+        0)
+            echo -e "${YELLOW}⚠️ デプロイがキャンセルされました${NC}"
+            return 0
+            ;;
+        *)
+            echo -e "${RED}❌ 無効な選択です${NC}"
+            return 1
+            ;;
+    esac
+    
+    # Secret Manager統合選択
+    echo ""
+    echo -e "${BLUE}🔐 Secret Manager統合オプション${NC}"
+    echo "=================================="
+    echo ""
+    echo -e "  ${YELLOW}1${NC}) 通常デプロイ (現在のSecret Manager値を使用)"
+    echo -e "  ${YELLOW}2${NC}) Secret Manager値更新 + デプロイ (environments/.env.${DEPLOY_ENV}から反映)"
+    echo -e "  ${YELLOW}0${NC}) キャンセル"
+    echo ""
+    
+    read -p "Secret Manager統合オプションを選択してください (0-2): " secret_choice
+    
+    # 設定確認
+    echo ""
+    echo -e "${BLUE}📋 デプロイ設定確認${NC}"
+    echo "========================"
+    echo -e "デプロイ環境: ${DEPLOY_COLOR}${DEPLOY_ENV_NAME}${NC}"
+    
+    case $secret_choice in
+        1)
+            echo -e "Secret Manager: ${CYAN}現在の値を使用${NC}"
+            USE_SECRET_UPDATE=false
+            ;;
+        2)
+            echo -e "Secret Manager: ${GREEN}environments/.env.${DEPLOY_ENV}から更新${NC}"
+            USE_SECRET_UPDATE=true
+            ;;
+        0)
+            echo -e "${YELLOW}⚠️ デプロイがキャンセルされました${NC}"
+            return 0
+            ;;
+        *)
+            echo -e "${RED}❌ 無効な選択です${NC}"
+            return 1
+            ;;
+    esac
+    
+    echo ""
+    echo -e "${YELLOW}💡 この設定でデプロイを実行しますか？ (y/N): ${NC}"
+    read -p "" confirm_deploy
+    
+    if [[ ! $confirm_deploy =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}⚠️ デプロイがキャンセルされました${NC}"
+        return 1
+    fi
+    
+    # デプロイ実行
+    echo -e "${CYAN}🚀 デプロイを開始します...${NC}"
+    echo ""
+    
+    if [ "$USE_SECRET_UPDATE" = true ]; then
+        # Secret Manager更新 + デプロイ
+        update_secret_manager_values "$DEPLOY_ENV"
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}❌ Secret Manager値の更新に失敗しました${NC}"
+            return 1
+        fi
+    fi
+    
+    # 環境に応じたデプロイ実行
+    if [ "$DEPLOY_ENV" = "staging" ]; then
+        "$PROJECT_ROOT/deployment/cloud-build/staging.sh"
+    else
+        "$PROJECT_ROOT/deployment/cloud-build/production.sh"
+    fi
+}
+
+# Secret Manager値更新関数
+update_secret_manager_values() {
+    local environment="$1"
+    local env_file="environments/.env.${environment}"
+    
+    echo -e "${BLUE}🔐 Secret Manager値更新${NC}"
+    echo "=============================="
+    echo ""
+    
+    # 環境ファイル存在確認
+    if [ ! -f "$env_file" ]; then
+        echo -e "${RED}❌ 環境ファイルが見つかりません: $env_file${NC}"
+        return 1
+    fi
+    
+    echo -e "${YELLOW}📋 環境ファイル: $env_file${NC}"
+    echo ""
+    
+    # 環境変数読み込み
+    source "$env_file"
+    
+    # Secret Manager更新確認
+    echo -e "${CYAN}🔄 以下の値をSecret Managerに反映しますか？${NC}"
+    echo ""
+    echo -e "NEXTAUTH_SECRET: ${YELLOW}${NEXTAUTH_SECRET:0:8}...${NC}"
+    echo -e "GOOGLE_CLIENT_ID: ${YELLOW}${GOOGLE_CLIENT_ID:0:15}...${NC}"
+    echo -e "GOOGLE_CLIENT_SECRET: ${YELLOW}${GOOGLE_CLIENT_SECRET:0:8}...${NC}"
+    echo ""
+    echo -e "${YELLOW}💡 Secret Managerの値を更新しますか？ (y/N): ${NC}"
+    read -p "" confirm_secrets
+    
+    if [[ ! $confirm_secrets =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}⚠️ Secret Manager更新をスキップしました${NC}"
+        echo -e "${CYAN}📄 現在のSecret Manager値を使用してデプロイを続行します${NC}"
+        return 0
+    fi
+    
+    echo -e "${CYAN}🔄 Secret Manager値を更新中...${NC}"
+    echo ""
+    
+    # Secret Manager更新実行
+    echo "  📝 nextauth-secret 更新中..."
+    if echo "$NEXTAUTH_SECRET" | gcloud secrets versions add nextauth-secret --data-file=-; then
+        echo -e "    ✅ ${GREEN}nextauth-secret 更新完了${NC}"
+    else
+        echo -e "    ❌ ${RED}nextauth-secret 更新失敗${NC}"
+        return 1
+    fi
+    
+    echo "  📝 google-oauth-client-id 更新中..."
+    if echo "$GOOGLE_CLIENT_ID" | gcloud secrets versions add google-oauth-client-id --data-file=-; then
+        echo -e "    ✅ ${GREEN}google-oauth-client-id 更新完了${NC}"
+    else
+        echo -e "    ❌ ${RED}google-oauth-client-id 更新失敗${NC}"
+        return 1
+    fi
+    
+    echo "  📝 google-oauth-client-secret 更新中..."
+    if echo "$GOOGLE_CLIENT_SECRET" | gcloud secrets versions add google-oauth-client-secret --data-file=-; then
+        echo -e "    ✅ ${GREEN}google-oauth-client-secret 更新完了${NC}"
+    else
+        echo -e "    ❌ ${RED}google-oauth-client-secret 更新失敗${NC}"
+        return 1
+    fi
+    
+    echo ""
+    echo -e "${GREEN}✅ Secret Manager値の更新が完了しました${NC}"
+    echo -e "${CYAN}🚀 デプロイを続行します...${NC}"
+    echo ""
+    
+    return 0
+}
+
 # 33. インタラクティブデプロイメント
 interactive_deployment() {
     echo -e "${GREEN}🚀 インタラクティブデプロイメント${NC}"
@@ -2708,11 +2935,15 @@ interactive_deployment() {
     echo -e "  ${YELLOW}2${NC}) Cloud Build デプロイ (本番)"
     echo -e "  ${YELLOW}3${NC}) 従来型デプロイ (ステージング) - ローカルDocker必要"
     echo -e "  ${YELLOW}4${NC}) 従来型デプロイ (本番) - ローカルDocker必要"
-    echo -e "  ${YELLOW}5${NC}) GitHub Actions経由デプロイ"
+    # GitHub Actions option removed
+    echo ""
+    echo -e "${CYAN}🔐 Secret Manager統合デプロイ${NC}"
+    echo -e "  ${YELLOW}6${NC}) Secret Manager値更新 + Cloud Build デプロイ (ステージング)"
+    echo -e "  ${YELLOW}7${NC}) Secret Manager値更新 + Cloud Build デプロイ (本番)"
     echo -e "  ${YELLOW}0${NC}) キャンセル"
     echo ""
     
-    read -p "デプロイ方式を選択してください (0-5): " deploy_choice
+    read -p "デプロイ方式を選択してください (0-4,6-7): " deploy_choice
     
     # Step 4: 設定確認
     echo ""
@@ -2739,8 +2970,17 @@ interactive_deployment() {
             echo -e "特徴: ${RED}本番環境、ローカルDocker必要${NC}"
             ;;
         5)
-            echo -e "デプロイ方式: ${BLUE}GitHub Actions${NC}"
-            echo -e "特徴: ${CYAN}CI/CDパイプライン経由${NC}"
+            echo -e "${RED}❌ オプション5（GitHub Actions）は削除されました${NC}"
+            echo -e "${YELLOW}Cloud Build（オプション1,2,6,7）または従来型（オプション3,4）を使用してください${NC}"
+            return 1
+            ;;
+        6)
+            echo -e "デプロイ方式: ${CYAN}Secret Manager統合 + Cloud Build (ステージング)${NC}"
+            echo -e "特徴: ${GREEN}env.stagingの値をSecret Managerに反映後デプロイ${NC}"
+            ;;
+        7)
+            echo -e "デプロイ方式: ${RED}Secret Manager統合 + Cloud Build (本番)${NC}"
+            echo -e "特徴: ${RED}env.productionの値をSecret Managerに反映後デプロイ${NC}"
             ;;
         0)
             echo -e "${YELLOW}⚠️ デプロイがキャンセルされました${NC}"
@@ -2787,21 +3027,31 @@ interactive_deployment() {
             deploy_traditional_production
             ;;
         5)
-            # GitHub Actions経由
-            echo -e "${BLUE}🔄 GitHub Actions経由デプロイ${NC}"
-            echo ""
-            echo -e "${YELLOW}💡 GitHub ActionsでデプロイするにはGitにプッシュしてください${NC}"
-            echo "1. git add ."
-            echo "2. git commit -m \"deploy: [メッセージ]\""
-            echo "3. git push origin main  # 本番デプロイ"
-            echo "   または"
-            echo "   git push origin develop  # ステージングデプロイ"
-            echo ""
-            echo -e "${CYAN}📊 GitHub Actions実行状況:${NC}"
-            if command -v gh &> /dev/null && gh auth status &>/dev/null; then
-                gh run list --repo shu-nagaoka/GenieUs --limit 5
+            # GitHub Actions機能削除
+            echo -e "${RED}❌ GitHub Actions機能は削除されました${NC}"
+            echo -e "${YELLOW}Cloud Build または gcloud直接デプロイを使用してください${NC}"
+            return 1
+            ;;
+        6)
+            # Secret Manager統合 + Cloud Build ステージング
+            export GCP_PROJECT_ID="$SELECTED_PROJECT"
+            update_secret_manager_values "staging"
+            if [ $? -eq 0 ]; then
+                "$PROJECT_ROOT/deployment/cloud-build/staging.sh"
             else
-                echo -e "${YELLOW}⚠️ GitHub CLI未設定。ブラウザでGitHub Actionsを確認してください${NC}"
+                echo -e "${RED}❌ Secret Manager値の更新に失敗しました${NC}"
+                return 1
+            fi
+            ;;
+        7)
+            # Secret Manager統合 + Cloud Build 本番
+            export GCP_PROJECT_ID="$SELECTED_PROJECT"
+            update_secret_manager_values "production"
+            if [ $? -eq 0 ]; then
+                "$PROJECT_ROOT/deployment/cloud-build/production.sh"
+            else
+                echo -e "${RED}❌ Secret Manager値の更新に失敗しました${NC}"
+                return 1
             fi
             ;;
     esac
@@ -2809,3 +3059,248 @@ interactive_deployment() {
 
 # スクリプト実行
 main "$@"
+
+# 34. GCSバケット管理
+manage_gcs_buckets() {
+    echo -e "${CYAN}📦 Cloud Storage バケット管理${NC}"
+    echo -e "${CYAN}══════════════════════════════${NC}"
+    echo ""
+    
+    # 環境選択
+    select_environment_file
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    
+    echo ""
+    echo -e "${BLUE}🗄️ バケット管理メニュー${NC}"
+    echo -e "  ${YELLOW}1${NC}) 📋 既存バケット一覧表示"
+    echo -e "  ${YELLOW}2${NC}) 🏗️  バケット作成 (現在の環境: ${SELECTED_ENVIRONMENT:-未選択})"
+    echo -e "  ${YELLOW}3${NC}) 🏗️  カスタムバケット作成"
+    echo -e "  ${YELLOW}4${NC}) 🔍 バケット詳細確認"
+    echo -e "  ${YELLOW}5${NC}) 🗑️  バケット削除"
+    echo -e "  ${YELLOW}0${NC}) 戻る"
+    echo ""
+    
+    read -p "選択してください (0-5): " bucket_choice
+    echo ""
+    
+    case $bucket_choice in
+        1)
+            echo -e "${BLUE}📋 既存バケット一覧${NC}"
+            gcloud storage buckets list --project=$GCP_PROJECT_ID
+            ;;
+        2)
+            echo -e "${BLUE}🏗️ ステージング用バケット作成${NC}"
+            echo "バケット名: genius-staging-data"
+            if gcloud storage buckets create gs://genius-staging-data \
+                --project=$GCP_PROJECT_ID \
+                --location=asia-northeast1; then
+                echo -e "${GREEN}✅ ステージング用バケット作成完了${NC}"
+            else
+                echo -e "${YELLOW}⚠️ バケットは既に存在するか、エラーが発生しました${NC}"
+            fi
+            ;;
+        3)
+            echo -e "${RED}🏗️ 本番用バケット作成${NC}"
+            echo "バケット名: genius-production-data"
+            echo -e "${RED}本当に本番用バケットを作成しますか？${NC}"
+            read -p "作成する場合は production と入力してください: " confirm
+            if [ "$confirm" = "production" ]; then
+                if gcloud storage buckets create gs://genius-production-data \
+                    --project=$GCP_PROJECT_ID \
+                    --location=asia-northeast1; then
+                    echo -e "${GREEN}✅ 本番用バケット作成完了${NC}"
+                else
+                    echo -e "${YELLOW}⚠️ バケットは既に存在するか、エラーが発生しました${NC}"
+                fi
+            else
+                echo -e "${YELLOW}⚠️ 本番用バケット作成がキャンセルされました${NC}"
+            fi
+            ;;
+        4)
+            echo -e "${BLUE}🔍 バケット詳細確認${NC}"
+            echo "確認したいバケット名を入力してください:"
+            echo "例: genius-staging-data, genius-production-data"
+            read -p "バケット名: " bucket_name
+            if [ \! -z "$bucket_name" ]; then
+                gcloud storage buckets describe gs://$bucket_name --project=$GCP_PROJECT_ID
+                echo ""
+                echo -e "${CYAN}📁 バケット内容一覧:${NC}"
+                gcloud storage ls gs://$bucket_name/ || echo "バケットが空か、アクセスできません"
+            fi
+            ;;
+        5)
+            echo -e "${RED}🗑️ バケット削除${NC}"
+            echo -e "${RED}⚠️ 警告: バケット削除は永続的です${NC}"
+            read -p "削除するバケット名を入力してください: " bucket_name
+            if [ \! -z "$bucket_name" ]; then
+                echo -e "${RED}本当に $bucket_name を削除しますか？${NC}"
+                read -p "削除する場合は DELETE と入力してください: " confirm
+                if [ "$confirm" = "DELETE" ]; then
+                    gcloud storage rm -r gs://$bucket_name --project=$GCP_PROJECT_ID
+                    echo -e "${GREEN}✅ バケット削除完了${NC}"
+                else
+                    echo -e "${YELLOW}⚠️ バケット削除がキャンセルされました${NC}"
+                fi
+            fi
+            ;;
+        0)
+            return
+            ;;
+        *)
+            echo -e "${RED}❌ 無効な選択です${NC}"
+            ;;
+    esac
+    
+    echo ""
+    read -p "Enterキーを押して続行..."
+}
+
+# 35. SQLiteデータベース確認
+check_sqlite_database() {
+    echo -e "${CYAN}🔍 SQLite データベース確認${NC}"
+    echo -e "${CYAN}═════════════════════════════${NC}"
+    echo ""
+    
+    echo -e "${BLUE}📊 データベース状態確認メニュー${NC}"
+    echo -e "  ${YELLOW}1${NC}) 🏠 ローカルデータベース確認"
+    echo -e "  ${YELLOW}2${NC}) ☁️  Cloud Run SQLite確認 (ステージング)"
+    echo -e "  ${YELLOW}3${NC}) 📦 GCS上のSQLiteファイル確認"
+    echo -e "  ${YELLOW}4${NC}) 🧪 SQLiteテーブル構造テスト"
+    echo -e "  ${YELLOW}0${NC}) 戻る"
+    echo ""
+    
+    read -p "選択してください (0-4): " db_choice
+    echo ""
+    
+    case $db_choice in
+        1)
+            echo -e "${BLUE}🏠 ローカルデータベース確認${NC}"
+            if [ -f "backend/data/genieus.db" ]; then
+                echo -e "${GREEN}✅ ローカルSQLiteファイルが存在します${NC}"
+                echo "ファイルサイズ: $(du -h backend/data/genieus.db  < /dev/null |  cut -f1)"
+                echo "最終更新: $(stat -f %Sm backend/data/genieus.db)"
+                echo ""
+                echo -e "${CYAN}📋 テーブル一覧:${NC}"
+                sqlite3 backend/data/genieus.db ".tables"
+            else
+                echo -e "${YELLOW}⚠️ ローカルSQLiteファイルが見つかりません${NC}"
+                echo "場所: backend/data/genieus.db"
+            fi
+            ;;
+        2)
+            echo -e "${BLUE}☁️ Cloud Run SQLite確認 (ステージング)${NC}"
+            echo "staging環境のバックエンドログを確認..."
+            gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=genius-backend-staging" \
+                --limit=50 --format="value(textPayload)" --project=$GCP_PROJECT_ID | grep -i sqlite
+            ;;
+        3)
+            echo -e "${BLUE}📦 GCS上のSQLiteファイル確認${NC}"
+            echo -e "${CYAN}ステージング環境 (genius-staging-data):${NC}"
+            gcloud storage ls gs://genius-staging-data/ || echo "バケットが空か、アクセスできません"
+            echo ""
+            echo -e "${CYAN}本番環境 (genius-production-data):${NC}"
+            gcloud storage ls gs://genius-production-data/ 2>/dev/null || echo "バケットが存在しないか、アクセスできません"
+            ;;
+        4)
+            echo -e "${BLUE}🧪 SQLiteテーブル構造テスト${NC}"
+            echo "バックエンドディレクトリでSQLiteテストを実行..."
+            cd backend || return
+            if [ -f "test_schedule_sqlite.py" ]; then
+                echo -e "${CYAN}テスト実行中...${NC}"
+                python test_schedule_sqlite.py
+            else
+                echo -e "${YELLOW}⚠️ test_schedule_sqlite.py が見つかりません${NC}"
+            fi
+            cd .. || return
+            ;;
+        0)
+            return
+            ;;
+        *)
+            echo -e "${RED}❌ 無効な選択です${NC}"
+            ;;
+    esac
+    
+    echo ""
+    read -p "Enterキーを押して続行..."
+}
+
+
+
+# 36. 古いCloud Runリビジョンクリーンアップ
+cleanup_old_revisions() {
+    echo -e "${GREEN}🧹 古いCloud Runリビジョンクリーンアップ${NC}"
+    echo ""
+    
+    # 環境選択
+    if \! select_environment_file; then
+        echo -e "${RED}❌ 環境選択がキャンセルされました${NC}"
+        return 1
+    fi
+    
+    echo -e "${BLUE}📊 現在のリビジョン状況を確認中...${NC}"
+    echo ""
+    
+    # geniusサービス一覧を取得
+    local services=$(gcloud run services list --region="$GCP_REGION" --format="value(metadata.name)" --filter="metadata.name~genius" 2>/dev/null)
+    
+    if [ -z "$services" ]; then
+        echo -e "${YELLOW}⚠️ geniusサービスが見つかりませんでした${NC}"
+        return 1
+    fi
+    
+    echo -e "${GREEN}対象サービス:${NC}"
+    for service in $services; do
+        local revision_count=$(gcloud run revisions list \
+            --service="$service" \
+            --region="$GCP_REGION" \
+            --format="value(metadata.name)" 2>/dev/null  < /dev/null |  wc -l)
+        echo "  - $service (リビジョン数: $revision_count)"
+    done
+    echo ""
+    
+    echo -e "${YELLOW}最新3つのリビジョンを保持し、それ以外を削除します${NC}"
+    read -p "続行しますか？ [y/N]: " confirm
+    echo ""
+    
+    if [ "$confirm" \!= "y" ] && [ "$confirm" \!= "Y" ]; then
+        echo -e "${YELLOW}キャンセルされました${NC}"
+        return 0
+    fi
+    
+    # クリーンアップスクリプトを実行
+    echo -e "${BLUE}🚀 クリーンアップ実行中...${NC}"
+    echo ""
+    
+    export GCP_PROJECT_ID="$GCP_PROJECT_ID"
+    export GCP_REGION="$GCP_REGION"
+    
+    if [ -f "./scripts/cleanup-old-revisions.sh" ]; then
+        ./scripts/cleanup-old-revisions.sh
+    else
+        echo -e "${RED}❌ クリーンアップスクリプトが見つかりません: ./scripts/cleanup-old-revisions.sh${NC}"
+        return 1
+    fi
+    
+    echo ""
+    echo -e "${GREEN}✅ 古いリビジョンクリーンアップ完了${NC}"
+}
+
+
+# 37. クイックデプロイ
+quick_deploy() {
+    echo -e "${GREEN}🎯 クイックデプロイ${NC}"
+    echo ""
+    
+    if [ -f "./deploy.sh" ]; then
+        ./deploy.sh
+    else
+        echo -e "${RED}❌ deploy.sh が見つかりません${NC}"
+        return 1
+    fi
+    
+    echo ""
+    echo -e "${GREEN}✅ クイックデプロイ完了${NC}"
+}
