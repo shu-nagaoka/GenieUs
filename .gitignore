@@ -71,3 +71,4 @@ temp_backup/
 .env.*
 !.env.example
 !.env.*.example
+environments/.env.dev
