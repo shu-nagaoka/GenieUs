@@ -28,7 +28,7 @@ class AgentManager:
         settings,
         routing_strategy: RoutingStrategy | None = None,
         agent_registry: AgentRegistry | None = None,
-        composition_root = None,
+        composition_root=None,
     ):
         """AgentManager初期化
 

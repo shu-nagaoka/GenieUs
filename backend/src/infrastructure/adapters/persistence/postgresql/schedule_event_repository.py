@@ -13,11 +13,12 @@ from datetime import datetime
 from typing import Any
 from uuid import uuid4
 
+from src.application.interface.protocols.schedule_event_repository import ScheduleEventRepositoryProtocol
 from src.domain.entities import ScheduleEvent
 from src.infrastructure.database.postgres_manager import PostgreSQLManager
 
 
-class ScheduleEventRepository:
+class ScheduleEventRepository(ScheduleEventRepositoryProtocol):
     """PostgreSQL予定イベントリポジトリ
 
     責務:
@@ -50,7 +51,9 @@ class ScheduleEventRepository:
             Exception: 保存に失敗した場合
         """
         try:
-            self.logger.info(f"🗄️ PostgreSQL予定イベント保存: user_id={schedule_event.user_id}, title={schedule_event.title}")
+            self.logger.info(
+                f"🗄️ PostgreSQL予定イベント保存: user_id={schedule_event.user_id}, title={schedule_event.title}"
+            )
 
             # 新規イベントの場合はIDを生成
             if not schedule_event.event_id:
@@ -127,7 +130,7 @@ class ScheduleEventRepository:
 
             query = f"""
             SELECT * FROM {self._table_name}
-            WHERE {' AND '.join(where_conditions)}
+            WHERE {" AND ".join(where_conditions)}
             ORDER BY start_time ASC
             """
 

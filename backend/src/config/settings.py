@@ -60,12 +60,12 @@ class AppSettings(BaseSettings):
     ROUTING_LOG_LEVEL: str = Field(default="INFO")  # デバッグ用のみ保持
 
     model_config = SettingsConfigDict(
-        env_file=".env.dev", 
-        env_file_encoding="utf-8", 
+        env_file=".env.dev",
+        env_file_encoding="utf-8",
         extra="ignore",
         env_prefix="",
         case_sensitive=False,
-        env_file_has_priority=False  # 環境変数を優先
+        env_file_has_priority=False,  # 環境変数を優先
     )
 
     @field_validator("ROOT_DIR", mode="before")
@@ -74,7 +74,7 @@ class AppSettings(BaseSettings):
         if v is not None:
             return v
         return normpath(join(dirname(abspath(__file__)), "..", ".."))
-    
+
     @field_validator("DATABASE_TYPE", mode="before")
     @classmethod
     def set_database_type(cls, v):

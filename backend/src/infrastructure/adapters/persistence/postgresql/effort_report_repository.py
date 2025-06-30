@@ -12,9 +12,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from src.application.interface.protocols.effort_report_repository import (
-    EffortReportRepositoryProtocol,
-)
+from src.application.interface.protocols.effort_report_repository import EffortReportRepositoryProtocol
 from src.domain.entities import EffortReportRecord
 from src.infrastructure.database.postgres_manager import PostgreSQLManager
 
@@ -52,7 +50,9 @@ class EffortReportRepository(EffortReportRepositoryProtocol):
             Exception: 作成に失敗した場合
         """
         try:
-            self.logger.info(f"🐘 PostgreSQL努力レポートDB作成: user_id={effort_report.user_id}, score={effort_report.score}")
+            self.logger.info(
+                f"🐘 PostgreSQL努力レポートDB作成: user_id={effort_report.user_id}, score={effort_report.score}"
+            )
 
             # 現在時刻をセット
             now = datetime.now()

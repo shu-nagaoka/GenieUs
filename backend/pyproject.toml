@@ -41,6 +41,8 @@ dependencies = [
     "google-adk>=1.1.1",
     "pillow>=11.2.1",
     "pytz>=2025.2",
+    "psycopg2-binary>=2.9.10",
+    "cloud-sql-python-connector[pg8000]>=1.18.2",
 ]
 
 [project.urls]

@@ -336,9 +336,7 @@ class ScheduleRecordRepository(ScheduleRecordRepositoryProtocol):
         start_date = datetime.now()
         end_date = start_date + timedelta(days=days)
 
-        return self.search(
-            user_id=user_id, start_date=start_date, end_date=end_date, status="upcoming", limit=limit
-        )
+        return self.search(user_id=user_id, start_date=start_date, end_date=end_date, status="upcoming", limit=limit)
 
     def get_events_by_date(self, user_id: str, target_date: datetime) -> list[ScheduleEvent]:
         """指定日のイベント取得

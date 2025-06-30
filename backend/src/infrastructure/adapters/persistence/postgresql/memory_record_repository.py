@@ -12,11 +12,12 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from src.application.interface.protocols.memory_record_repository import MemoryRecordRepositoryProtocol
 from src.domain.entities import MemoryRecord
 from src.infrastructure.database.postgres_manager import PostgreSQLManager
 
 
-class MemoryRecordRepository:
+class MemoryRecordRepository(MemoryRecordRepositoryProtocol):
     """PostgreSQLメモリー記録リポジトリ
 
     責務:
@@ -49,7 +50,9 @@ class MemoryRecordRepository:
             Exception: 保存に失敗した場合
         """
         try:
-            self.logger.info(f"🗄️ PostgreSQLメモリー記録保存: user_id={memory_record.user_id}, title={memory_record.title}")
+            self.logger.info(
+                f"🗄️ PostgreSQLメモリー記録保存: user_id={memory_record.user_id}, title={memory_record.title}"
+            )
 
             # 現在時刻をセット
             now = datetime.now()

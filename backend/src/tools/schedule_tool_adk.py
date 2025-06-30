@@ -27,10 +27,10 @@ def create_schedule_tool(schedule_usecase: ScheduleEventUseCase, logger: logging
         schedule_id: str = None,
         start_date: str = None,
         end_date: str = None,
-        **kwargs
+        **kwargs,
     ) -> dict[str, Any]:
         """スケジュール管理機能の統合エントリーポイント
-        
+
         Args:
             action: 実行するアクション ("create", "get", "update", "delete", "get_today")
             user_id: ユーザーID
@@ -47,45 +47,49 @@ def create_schedule_tool(schedule_usecase: ScheduleEventUseCase, logger: logging
         """
         try:
             logger.info(f"🗓️ スケジュール管理ツール実行: {action} (user_id: {user_id})")
-            
+
             if action == "create":
                 return await _create_schedule(
-                    schedule_usecase, logger, user_id, title, description,
-                    start_datetime, end_datetime, event_type, location, notes
+                    schedule_usecase,
+                    logger,
+                    user_id,
+                    title,
+                    description,
+                    start_datetime,
+                    end_datetime,
+                    event_type,
+                    location,
+                    notes,
                 )
             elif action == "get":
-                return await _get_schedules(
-                    schedule_usecase, logger, user_id, start_date, end_date
-                )
+                return await _get_schedules(schedule_usecase, logger, user_id, start_date, end_date)
             elif action == "update":
                 return await _update_schedule(
-                    schedule_usecase, logger, user_id, schedule_id, title, 
-                    description, start_datetime, end_datetime, location, notes
+                    schedule_usecase,
+                    logger,
+                    user_id,
+                    schedule_id,
+                    title,
+                    description,
+                    start_datetime,
+                    end_datetime,
+                    location,
+                    notes,
                 )
             elif action == "delete":
-                return await _delete_schedule(
-                    schedule_usecase, logger, user_id, schedule_id
-                )
+                return await _delete_schedule(schedule_usecase, logger, user_id, schedule_id)
             elif action == "get_today":
-                return await _get_today_schedules(
-                    schedule_usecase, logger, user_id
-                )
+                return await _get_today_schedules(schedule_usecase, logger, user_id)
             else:
                 raise ValueError(f"未対応のアクション: {action}")
-                
+
         except Exception as e:
             error_msg = f"スケジュール管理エラー ({action}): {e}"
             logger.error(error_msg)
-            return {
-                "success": False,
-                "error": error_msg,
-                "details": str(e)
-            }
+            return {"success": False, "error": error_msg, "details": str(e)}
 
     # FunctionToolとして返す
-    return FunctionTool(
-        func=manage_schedules
-    )
+    return FunctionTool(func=manage_schedules)
 
 
 async def _create_schedule(
@@ -98,15 +102,12 @@ async def _create_schedule(
     end_datetime: str,
     event_type: str,
     location: str,
-    notes: str
+    notes: str,
 ) -> dict[str, Any]:
     """予定作成"""
     if not title or not start_datetime:
-        return {
-            "success": False,
-            "error": "タイトルと開始日時は必須です"
-        }
-    
+        return {"success": False, "error": "タイトルと開始日時は必須です"}
+
     event_data = {
         "title": title,
         "description": description or "",
@@ -116,29 +117,22 @@ async def _create_schedule(
         "location": location or "",
         "notes": notes or "",
     }
-    
+
     response = await schedule_usecase.create_schedule_event(user_id, event_data)
-    
+
     if response.get("success"):
         return {
             "success": True,
             "message": "予定を作成しました",
             "schedule_id": response.get("id"),
-            "schedule": response.get("data")
+            "schedule": response.get("data"),
         }
     else:
-        return {
-            "success": False,
-            "error": response.get("message", "予定の作成に失敗しました")
-        }
+        return {"success": False, "error": response.get("message", "予定の作成に失敗しました")}
 
 
 async def _get_schedules(
-    schedule_usecase: ScheduleEventUseCase,
-    logger: logging.Logger,
-    user_id: str,
-    start_date: str,
-    end_date: str
+    schedule_usecase: ScheduleEventUseCase, logger: logging.Logger, user_id: str, start_date: str, end_date: str
 ) -> dict[str, Any]:
     """予定一覧取得"""
     # デフォルト期間設定
@@ -146,29 +140,23 @@ async def _get_schedules(
         start_date = datetime.now().strftime("%Y-%m-%d")
     if not end_date:
         end_date = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
-    
+
     # フィルター設定（日付範囲）
-    filters = {
-        "start_date": start_date,
-        "end_date": end_date
-    }
-    
+    filters = {"start_date": start_date, "end_date": end_date}
+
     response = await schedule_usecase.get_schedule_events(user_id, filters)
-    
+
     if response.get("success"):
         schedules_data = response.get("data", [])
-        
+
         return {
             "success": True,
             "schedules": schedules_data,
             "total_count": len(schedules_data),
-            "period": f"{start_date} から {end_date}"
+            "period": f"{start_date} から {end_date}",
         }
     else:
-        return {
-            "success": False,
-            "error": response.get("message", "予定一覧の取得に失敗しました")
-        }
+        return {"success": False, "error": response.get("message", "予定一覧の取得に失敗しました")}
 
 
 async def _update_schedule(
@@ -181,15 +169,12 @@ async def _update_schedule(
     start_datetime: str,
     end_datetime: str,
     location: str,
-    notes: str
+    notes: str,
 ) -> dict[str, Any]:
     """予定更新"""
     if not schedule_id:
-        return {
-            "success": False,
-            "error": "スケジュールIDは必須です"
-        }
-    
+        return {"success": False, "error": "スケジュールIDは必須です"}
+
     update_data = {}
     if title is not None:
         update_data["title"] = title
@@ -203,80 +188,53 @@ async def _update_schedule(
         update_data["location"] = location
     if notes is not None:
         update_data["notes"] = notes
-    
+
     response = await schedule_usecase.update_schedule_event(user_id, schedule_id, update_data)
-    
+
     if response.get("success"):
-        return {
-            "success": True,
-            "message": "予定を更新しました",
-            "schedule": response.get("data")
-        }
+        return {"success": True, "message": "予定を更新しました", "schedule": response.get("data")}
     else:
-        return {
-            "success": False,
-            "error": response.get("message", "予定の更新に失敗しました")
-        }
+        return {"success": False, "error": response.get("message", "予定の更新に失敗しました")}
 
 
 async def _delete_schedule(
-    schedule_usecase: ScheduleEventUseCase,
-    logger: logging.Logger,
-    user_id: str,
-    schedule_id: str
+    schedule_usecase: ScheduleEventUseCase, logger: logging.Logger, user_id: str, schedule_id: str
 ) -> dict[str, Any]:
     """予定削除"""
     if not schedule_id:
-        return {
-            "success": False,
-            "error": "スケジュールIDは必須です"
-        }
-    
+        return {"success": False, "error": "スケジュールIDは必須です"}
+
     response = await schedule_usecase.delete_schedule_event(user_id, schedule_id)
-    
+
     if response.get("success"):
-        return {
-            "success": True,
-            "message": "予定を削除しました"
-        }
+        return {"success": True, "message": "予定を削除しました"}
     else:
-        return {
-            "success": False,
-            "error": response.get("message", "予定の削除に失敗しました")
-        }
+        return {"success": False, "error": response.get("message", "予定の削除に失敗しました")}
 
 
 async def _get_today_schedules(
-    schedule_usecase: ScheduleEventUseCase,
-    logger: logging.Logger,
-    user_id: str
+    schedule_usecase: ScheduleEventUseCase, logger: logging.Logger, user_id: str
 ) -> dict[str, Any]:
     """今日の予定取得"""
     today = datetime.now().strftime("%Y-%m-%d")
-    
+
     # 今日の日付でフィルター
-    filters = {
-        "start_date": today,
-        "end_date": today
-    }
-    
+    filters = {"start_date": today, "end_date": today}
+
     response = await schedule_usecase.get_schedule_events(user_id, filters)
-    
+
     if response.get("success"):
         schedules_data = response.get("data", [])
-        
+
         # 時間順にソート
         schedules_data.sort(key=lambda x: x.get("start_datetime", ""))
-        
+
         return {
             "success": True,
             "today_schedules": schedules_data,
             "count": len(schedules_data),
             "date": today,
-            "message": f"今日は{len(schedules_data)}件の予定があります"
+            "message": f"今日は{len(schedules_data)}件の予定があります",
         }
     else:
-        return {
-            "success": False,
-            "error": response.get("message", "今日の予定取得に失敗しました")
-        }
+        return {"success": False, "error": response.get("message", "今日の予定取得に失敗しました")}
