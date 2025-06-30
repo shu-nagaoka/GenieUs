@@ -65,3 +65,8 @@ environments/.env.local
 environments/.env.staging
 environments/.env.productioncloud_sql_proxy
 temp_backup/
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.*.example
