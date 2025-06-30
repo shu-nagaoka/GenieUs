@@ -78,7 +78,7 @@ async def upload_image(file: UploadFile = File(...), user_id: str = Form(default
 
 
 @router.get("/images/{filename}")
-async def get_image(filename: str):
+async def get_image(filename: str) -> FileResponse:
     """アップロードされた画像を取得"""
     try:
         file_path = IMAGES_DIR / filename
@@ -111,7 +111,7 @@ async def get_image(filename: str):
 
 
 @router.delete("/images/{filename}")
-async def delete_image(filename: str, user_id: str = "frontend_user"):
+async def delete_image(filename: str, user_id: str = "frontend_user") -> dict[str, str | bool]:
     """アップロードされた画像を削除"""
     try:
         file_path = IMAGES_DIR / filename

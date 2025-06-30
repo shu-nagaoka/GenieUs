@@ -8,10 +8,11 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from src.application.interface.protocols.growth_record_repository import GrowthRecordRepositoryProtocol
 from src.domain.entities import GrowthRecord
 
 
-class GrowthRecordRepository:
+class GrowthRecordRepository(GrowthRecordRepositoryProtocol):
     """成長記録JSON永続化リポジトリ"""
 
     def __init__(self, logger: logging.Logger, data_dir: str = "data"):

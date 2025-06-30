@@ -7,6 +7,7 @@ import base64
 import io
 import logging
 import os
+from datetime import datetime
 from typing import Any
 
 import PIL.Image
@@ -109,6 +110,4 @@ class GeminiImageAnalyzer(ImageAnalyzerProtocol):
 
     def _get_current_timestamp(self) -> str:
         """現在のタイムスタンプを取得"""
-        from datetime import datetime
-
         return datetime.now().isoformat()

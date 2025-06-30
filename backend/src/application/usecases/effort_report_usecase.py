@@ -3,13 +3,14 @@
 import logging
 from typing import Any
 
+from src.application.interface.protocols.effort_report_repository import EffortReportRepositoryProtocol
 from src.domain.entities import EffortReportRecord
 
 
 class EffortReportUseCase:
     """努力レポート管理のビジネスロジック"""
 
-    def __init__(self, effort_report_repository, logger: logging.Logger):
+    def __init__(self, effort_report_repository: EffortReportRepositoryProtocol, logger: logging.Logger):
         """Args:
         effort_report_repository: 努力レポートリポジトリ
         logger: ロガー（DIコンテナから注入）
