@@ -234,8 +234,8 @@ class CompositionRoot:
             data_migrator = DataMigrator(settings=self.settings, sqlite_manager=sqlite_manager, logger=self.logger)
             self._infrastructure.register("data_migrator", data_migrator)
 
-            # Meal Record Repository (SQLite版) - 暫定的にJSONフォールバック
-            meal_record_repository = JSONMealRecordRepository(logger=self.logger)
+            # Meal Record Repository (SQLite版)
+            meal_record_repository = JSONMealRecordRepository(sqlite_manager=sqlite_manager, logger=self.logger)
             self._infrastructure.register("meal_record_repository", meal_record_repository)
 
             # Schedule Record Repository (SQLite版)
