@@ -104,7 +104,19 @@ npm run dev
 
 ## 📄 ライセンス
 
-MIT License - 詳細は [LICENSE](LICENSE) ファイルをご確認ください。
+[![CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](http://creativecommons.org/licenses/by-nc-sa/4.0/)
+
+このプロジェクトは **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)** の下で提供されています。
+
+### 🔓 利用について
+
+- **✅ 学習・研究目的のみ利用可能**（完全非営利限定）
+- **🚫 商用利用・企業利用は完全禁止**（フリーランス・副業含む）
+- **🚫 営利に結びつく一切の活動を禁止**（間接的収益も含む）
+- **📋 改変版は同じライセンスで公開が必要**
+- **🏷️ 原著作者表示が必要**
+
+詳細は [LICENSE](LICENSE) ファイルをご確認ください。
 
 ## 🙏 謝辞
 
