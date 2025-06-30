@@ -21,11 +21,11 @@ class UserManagementUseCase:
         self.jwt_authenticator = jwt_authenticator
         self.logger = logger
 
-    def login_with_google_oauth(self, google_user_info: dict[str, Any]) -> dict[str, Any]:
+    async def login_with_google_oauth(self, google_user_info: dict[str, Any]) -> dict[str, Any]:
         """Google OAuth情報でログイン処理"""
         try:
             self.logger.info(
-                "Google OAuthログイン開始",
+                f"Google OAuthログイン開始 - 受信データ: {google_user_info}",
                 extra={
                     "email": google_user_info.get("email"),
                     "google_id": google_user_info.get("sub"),
@@ -36,10 +36,10 @@ class UserManagementUseCase:
             user = User.from_google_oauth(google_user_info)
 
             # ユーザー作成または更新（upsert）
-            stored_user = self.user_repository.create_or_update_user(user)
+            stored_user = await self.user_repository.create_or_update_user(user)
 
             # 最終ログイン時刻を更新
-            self.user_repository.update_last_login(stored_user.google_id)
+            await self.user_repository.update_last_login(stored_user.google_id)
 
             # JWTトークン生成
             access_token = self.jwt_authenticator.create_access_token(stored_user)
@@ -73,7 +73,7 @@ class UserManagementUseCase:
                 "detail": str(e),
             }
 
-    def get_user_profile(self, google_id: str) -> dict[str, Any]:
+    async def get_user_profile(self, google_id: str) -> dict[str, Any]:
         """ユーザープロフィール取得"""
         try:
             self.logger.debug(
@@ -83,7 +83,7 @@ class UserManagementUseCase:
                 },
             )
 
-            user = self.user_repository.get_user_by_google_id(google_id)
+            user = await self.user_repository.get_user_by_google_id(google_id)
 
             if not user:
                 self.logger.warning(
@@ -123,7 +123,7 @@ class UserManagementUseCase:
                 "detail": str(e),
             }
 
-    def update_user_profile(self, google_id: str, profile_data: dict[str, Any]) -> dict[str, Any]:
+    async def update_user_profile(self, google_id: str, profile_data: dict[str, Any]) -> dict[str, Any]:
         """ユーザープロフィール更新"""
         try:
             self.logger.info(
@@ -134,7 +134,7 @@ class UserManagementUseCase:
             )
 
             # 既存ユーザー取得
-            user = self.user_repository.get_user_by_google_id(google_id)
+            user = await self.user_repository.get_user_by_google_id(google_id)
 
             if not user:
                 self.logger.warning(
@@ -157,7 +157,7 @@ class UserManagementUseCase:
                 user.locale = profile_data["locale"]
 
             # ユーザー更新
-            updated_user = self.user_repository.update_user(user)
+            updated_user = await self.user_repository.update_user(user)
 
             self.logger.info(
                 "ユーザープロフィール更新完了",
@@ -185,7 +185,7 @@ class UserManagementUseCase:
                 "detail": str(e),
             }
 
-    def delete_user_account(self, google_id: str) -> dict[str, Any]:
+    async def delete_user_account(self, google_id: str) -> dict[str, Any]:
         """ユーザーアカウント削除"""
         try:
             self.logger.info(
@@ -196,7 +196,7 @@ class UserManagementUseCase:
             )
 
             # ユーザー存在確認
-            user = self.user_repository.get_user_by_google_id(google_id)
+            user = await self.user_repository.get_user_by_google_id(google_id)
 
             if not user:
                 self.logger.warning(
@@ -211,7 +211,7 @@ class UserManagementUseCase:
                 }
 
             # ユーザー削除（関連データはCASCADE削除）
-            deleted = self.user_repository.delete_user(google_id)
+            deleted = await self.user_repository.delete_user(google_id)
 
             if not deleted:
                 return {
@@ -246,7 +246,7 @@ class UserManagementUseCase:
                 "detail": str(e),
             }
 
-    def verify_user_token(self, token: str) -> dict[str, Any]:
+    async def verify_user_token(self, token: str) -> dict[str, Any]:
         """JWTトークン検証"""
         try:
             self.logger.debug("トークン検証開始")
@@ -262,7 +262,7 @@ class UserManagementUseCase:
                 }
 
             # ユーザー存在確認
-            user = self.user_repository.get_user_by_google_id(google_id)
+            user = await self.user_repository.get_user_by_google_id(google_id)
 
             if not user:
                 self.logger.warning(
@@ -302,7 +302,7 @@ class UserManagementUseCase:
                 "detail": str(e),
             }
 
-    def refresh_token(self, google_id: str) -> dict[str, Any]:
+    async def refresh_token(self, google_id: str) -> dict[str, Any]:
         """トークンリフレッシュ"""
         try:
             self.logger.debug(
@@ -313,7 +313,7 @@ class UserManagementUseCase:
             )
 
             # ユーザー取得
-            user = self.user_repository.get_user_by_google_id(google_id)
+            user = await self.user_repository.get_user_by_google_id(google_id)
 
             if not user:
                 return {
@@ -322,7 +322,7 @@ class UserManagementUseCase:
                 }
 
             # 最終ログイン時刻を更新
-            self.user_repository.update_last_login(google_id)
+            await self.user_repository.update_last_login(google_id)
 
             # 新しいJWTトークン生成
             access_token = self.jwt_authenticator.create_access_token(user)
