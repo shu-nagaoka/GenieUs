@@ -5,10 +5,11 @@ import logging
 import os
 from pathlib import Path
 
+from src.application.interface.protocols.family_repository import FamilyRepositoryProtocol
 from src.domain.entities import FamilyInfo
 
 
-class FamilyRepository:
+class FamilyRepository(FamilyRepositoryProtocol):
     """家族情報JSON永続化リポジトリ"""
 
     def __init__(self, logger: logging.Logger, data_dir: str = "data"):
@@ -38,7 +39,7 @@ class FamilyRepository:
             if os.getenv("ENVIRONMENT") in ["production", "staging"]:
                 self.logger.info(f"Cloud Run環境: 家族情報保存をスキップ - {family_info.user_id}")
                 return {"family_id": family_info.family_id, "status": "skipped_cloud_run"}
-            
+
             file_path = self.data_dir / f"{family_info.user_id}_family.json"
 
             # JSONファイルに保存
@@ -67,7 +68,7 @@ class FamilyRepository:
             if os.getenv("ENVIRONMENT") in ["production", "staging"]:
                 self.logger.info(f"Cloud Run環境: 家族情報取得をスキップ - {user_id}")
                 return None
-            
+
             file_path = self.data_dir / f"{user_id}_family.json"
 
             if not file_path.exists():
@@ -111,7 +112,7 @@ class FamilyRepository:
             if os.getenv("ENVIRONMENT") in ["production", "staging"]:
                 self.logger.info(f"Cloud Run環境: 家族情報削除をスキップ - {user_id}")
                 return True
-            
+
             file_path = self.data_dir / f"{user_id}_family.json"
 
             if file_path.exists():

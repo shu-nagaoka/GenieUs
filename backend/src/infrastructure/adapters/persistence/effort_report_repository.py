@@ -8,10 +8,11 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from src.application.interface.protocols.effort_report_repository import EffortReportRepositoryProtocol
 from src.domain.entities import EffortReportRecord
 
 
-class EffortReportRepository:
+class EffortReportRepository(EffortReportRepositoryProtocol):
     """努力レポートJSON永続化リポジトリ"""
 
     def __init__(self, logger: logging.Logger, data_dir: str = "data"):

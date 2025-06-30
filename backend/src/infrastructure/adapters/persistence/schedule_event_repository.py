@@ -8,10 +8,11 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from src.application.interface.protocols.schedule_event_repository import ScheduleEventRepositoryProtocol
 from src.domain.entities import ScheduleEvent
 
 
-class ScheduleEventRepository:
+class ScheduleEventRepository(ScheduleEventRepositoryProtocol):
     """予定イベントJSON永続化リポジトリ"""
 
     def __init__(self, logger: logging.Logger, data_dir: str = "data"):

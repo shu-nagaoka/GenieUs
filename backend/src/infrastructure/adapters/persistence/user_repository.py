@@ -4,11 +4,12 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from src.application.interface.protocols.user_repository import UserRepositoryProtocol
 from src.domain.entities import User
 from src.infrastructure.database.sqlite_manager import SQLiteManager
 
 
-class UserRepository:
+class UserRepository(UserRepositoryProtocol):
     """ユーザーデータ永続化Repository（SQLite版）"""
 
     def __init__(self, sqlite_manager: SQLiteManager, logger: logging.Logger):

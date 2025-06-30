@@ -3,6 +3,7 @@
 エージェントがユーザーに対してインタラクティブに確認質問を行うためのツール
 """
 
+import json
 import logging
 from datetime import datetime
 from typing import Dict
@@ -55,7 +56,6 @@ class InteractiveConfirmationTool:
                 options = ["確認"]
 
             # コンテキストデータを設定（JSON文字列をパース）
-            import json
 
             parsed_context_data = {}
             if context_data and context_data.strip():
@@ -122,7 +122,6 @@ class InteractiveConfirmationTool:
             normalized_response = self._normalize_user_response(user_response)
 
             # 応答メタデータを解析（JSON文字列をパース）
-            import json
 
             parsed_metadata = {}
             if response_metadata and response_metadata.strip():
