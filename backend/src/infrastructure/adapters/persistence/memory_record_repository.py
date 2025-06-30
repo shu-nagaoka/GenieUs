@@ -8,10 +8,11 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from src.application.interface.protocols.memory_record_repository import MemoryRecordRepositoryProtocol
 from src.domain.entities import MemoryRecord
 
 
-class MemoryRecordRepository:
+class MemoryRecordRepository(MemoryRecordRepositoryProtocol):
     """メモリー記録JSON永続化リポジトリ"""
 
     def __init__(self, logger: logging.Logger, data_dir: str = "data"):

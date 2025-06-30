@@ -34,7 +34,7 @@ router = APIRouter()
 
 
 @router.get("/migration/status", response_model=MigrationStatusResponse)
-async def get_migration_status(request: Request):
+async def get_migration_status(request: Request) -> MigrationStatusResponse:
     """データ移行状況確認"""
     try:
         composition_root = request.app.composition_root
