@@ -54,6 +54,7 @@ export function useMealRecordsByChild(childId: string, limit: number = 50) {
   return useQuery({
     queryKey: [...MEAL_RECORDS_QUERY_KEY, 'by-child', childId, limit],
     queryFn: () => getMealRecordsByChild(childId, limit),
+    enabled: !!childId && childId.trim() !== '', // childIdが有効な場合のみAPIを呼び出す
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     select: (response) => {
@@ -73,6 +74,7 @@ export function useTodayMealRecords(childId: string) {
   return useQuery({
     queryKey: [...MEAL_RECORDS_QUERY_KEY, 'today', childId],
     queryFn: () => getTodayMealRecords(childId),
+    enabled: !!childId && childId.trim() !== '', // childIdが有効な場合のみAPIを呼び出す
     staleTime: 2 * 60 * 1000, // 2 minutes (今日の記録は頻繁に確認する)
     gcTime: 10 * 60 * 1000, // 10 minutes
     select: (response) => {
@@ -115,6 +117,7 @@ export function useNutritionSummary(
   return useQuery({
     queryKey: [...NUTRITION_SUMMARY_QUERY_KEY, childId, startDate, endDate],
     queryFn: () => getNutritionSummary(childId, startDate, endDate),
+    enabled: !!childId && childId.trim() !== '', // childIdが有効な場合のみAPIを呼び出す
     staleTime: 10 * 60 * 1000, // 10 minutes (栄養サマリーは時間をかけて変化する)
     gcTime: 60 * 60 * 1000, // 1 hour
     select: (response) => {
@@ -134,6 +137,7 @@ export function useWeeklyNutritionSummary(childId: string) {
   return useQuery({
     queryKey: [...NUTRITION_SUMMARY_QUERY_KEY, 'weekly', childId],
     queryFn: () => getWeeklyNutritionSummary(childId),
+    enabled: !!childId && childId.trim() !== '', // childIdが有効な場合のみAPIを呼び出す
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 60 * 60 * 1000, // 1 hour
     select: (response) => {

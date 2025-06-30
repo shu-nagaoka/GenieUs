@@ -38,13 +38,16 @@ class SQLiteManager:
     @contextmanager
     def get_connection(self):
         """データベース接続取得（コンテキストマネージャー）"""
-        # Cloud Run環境ではメモリ内SQLiteを使用
+        # Cloud Run環境では一時ファイルSQLiteを使用（データ永続化）
         if os.getenv("ENVIRONMENT") in ["production", "staging"]:
             connection = None
             try:
-                connection = sqlite3.connect(":memory:")
+                # Cloud Runの永続ディスクにデータベースファイル作成
+                data_dir = "/app/data" if os.path.exists("/app/data") else "/tmp"
+                temp_db_path = f"{data_dir}/genius_app.db"
+                connection = sqlite3.connect(temp_db_path, check_same_thread=False)
                 connection.row_factory = sqlite3.Row
-                self.logger.info("Cloud Run環境: メモリ内SQLiteデータベースを使用")
+                self.logger.info(f"Cloud Run環境: 一時ファイルSQLiteデータベースを使用 ({temp_db_path})")
                 yield connection
             except Exception as e:
                 if connection:
@@ -121,12 +124,17 @@ class DatabaseMigrator:
         self.logger.info("データベース初期化開始")
 
         try:
-            # Cloud Run環境では簡易初期化のみ
+            # Cloud Run環境では一時ファイルが存在する場合のみテーブル作成をスキップ
             if os.getenv("ENVIRONMENT") in ["production", "staging"]:
-                self.logger.info("Cloud Run環境: インメモリSQLiteのため初期化をスキップ")
-                return
+                data_dir = "/app/data" if os.path.exists("/app/data") else "/tmp"
+                temp_db_path = f"{data_dir}/genius_app.db"
+                if os.path.exists(temp_db_path):
+                    self.logger.info("Cloud Run環境: 一時データベースが既に存在するため初期化をスキップ")
+                    return
+                else:
+                    self.logger.info("Cloud Run環境: 一時データベース初回作成のためテーブル作成実行")
 
-            # ローカル環境のみテーブル作成
+            # 全環境でテーブル作成
             self._create_users_table()
             self._create_family_info_table()
             self._create_child_records_table()
@@ -141,9 +149,10 @@ class DatabaseMigrator:
 
         except Exception as e:
             self.logger.error(f"データベース初期化エラー: {e}")
-            # Cloud Run環境では初期化エラーを無視
+            # Cloud Run環境でも一時ファイル使用時は初期化エラーを報告
             if os.getenv("ENVIRONMENT") in ["production", "staging"]:
-                self.logger.warning("Cloud Run環境: 初期化エラーを無視して続行")
+                self.logger.error("Cloud Run環境: 一時ファイルSQLite初期化エラー - アプリケーション動作に影響あり")
+                # エラーを投げずに続行（部分的動作は可能）
                 return
             raise
 
@@ -267,7 +276,7 @@ class DatabaseMigrator:
     def _create_schedule_events_table(self) -> None:
         """予定イベントテーブル作成"""
         query = """
-        CREATE TABLE IF NOT EXISTS schedule_events (
+        CREATE TABLE IF NOT EXISTS schedule_records (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
             child_id TEXT,

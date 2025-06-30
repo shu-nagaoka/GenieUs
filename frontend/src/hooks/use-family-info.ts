@@ -43,7 +43,7 @@ export function usePrimaryChildId(userId: string = 'frontend_user') {
   const { data: familyInfo, isLoading, error } = useFamilyInfo(userId)
   
   const primaryChild = familyInfo?.children?.[0]
-  const primaryChildId = primaryChild?.name || null
+  const primaryChildId = primaryChild?.id || null
   
   return {
     childId: primaryChildId,
@@ -70,14 +70,16 @@ export function useChildInfo(childName: string, userId: string = 'frontend_user'
 
 /**
  * 子供選択用のオプション配列を取得するフック
+ * NOTE: valueには子供の名前を使用（UIでの選択用）
+ * 実際のAPIコール時にはchild.idを使用する
  */
 export function useChildrenOptions(userId: string = 'frontend_user') {
   const { data: children, isLoading, error } = useChildren(userId)
   
   const options = children.map(child => ({
-    value: child.name,
+    value: child.name, // UI選択用は名前を使用
     label: `${child.name} (${child.age})`,
-    child,
+    child, // child.idはここに含まれる
   }))
   
   return {

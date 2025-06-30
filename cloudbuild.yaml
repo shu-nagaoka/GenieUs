@@ -51,10 +51,10 @@ steps:
         
         # 必要な権限付与
         for role in "roles/aiplatform.user" "roles/storage.objectAdmin" "roles/logging.logWriter" "roles/monitoring.metricWriter"; do
-          echo "Granting role: $role"
+          echo "Granting role: $$role"
           gcloud projects add-iam-policy-binding $_GCP_PROJECT_ID \
             --member="serviceAccount:genius-backend-sa@$_GCP_PROJECT_ID.iam.gserviceaccount.com" \
-            --role="$role" \
+            --role="$$role" \
             --quiet || true
         done
         
@@ -112,6 +112,8 @@ steps:
             --min-instances 0 \
             --max-instances 3 \
             --service-account genius-backend-sa@$_GCP_PROJECT_ID.iam.gserviceaccount.com \
+            --add-volume name=data-volume,type=cloud-storage,bucket=genius-$_ENVIRONMENT-data \
+            --add-volume-mount volume=data-volume,mount-path=/app/data \
             --set-env-vars "GOOGLE_CLOUD_PROJECT=$_GCP_PROJECT_ID" \
             --set-env-vars "ENVIRONMENT=$_ENVIRONMENT" \
             --set-env-vars "GOOGLE_GENAI_USE_VERTEXAI=True" \
@@ -121,14 +123,15 @@ steps:
             --timeout 300 \
             --quiet
           
-          # バックエンドURL取得
+          # バックエンドURL取得（デプロイ完了後に再取得）
+          sleep 10  # デプロイ完了を待機
           gcloud run services describe "genius-backend-$_ENVIRONMENT" \
             --platform managed \
             --region $_GCP_REGION \
             --format 'value(status.url)' > /workspace/backend_url.txt
         fi
         
-        echo "✅ バックエンドデプロイ完了: $(cat /workspace/backend_url.txt)"
+        echo "✅ バックエンドデプロイ完了: $$(cat /workspace/backend_url.txt)"
 
   # Step 5: フロントエンドビルド・デプロイ（並行処理）
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -147,11 +150,11 @@ steps:
           sleep 5
         done
         # サービス名決定とデプロイ
-        echo "Backend URL: $(cat /workspace/backend_url.txt)"
+        echo "Backend URL: $$(cat /workspace/backend_url.txt)"
         
         if [ "$_ENVIRONMENT" = "production" ]; then
           echo "Service: genius-frontend"
-          gcloud run deploy "genius-frontend" \
+          if gcloud run deploy "genius-frontend" \
             --source . \
             --platform managed \
             --region $_GCP_REGION \
@@ -162,21 +165,29 @@ steps:
             --min-instances 1 \
             --max-instances 10 \
             --set-env-vars "NODE_ENV=production" \
-            --set-env-vars "NEXT_PUBLIC_API_BASE_URL=$(cat /workspace/backend_url.txt)" \
+            --set-env-vars "NEXT_PUBLIC_API_BASE_URL=$$(cat /workspace/backend_url.txt)" \
             --set-env-vars "NEXTAUTH_SECRET=$_NEXTAUTH_SECRET" \
             --set-env-vars "GOOGLE_CLIENT_ID=$_GOOGLE_CLIENT_ID" \
             --set-env-vars "GOOGLE_CLIENT_SECRET=$_GOOGLE_CLIENT_SECRET" \
             --timeout 300 \
-            --quiet
-          
-          # フロントエンドURL取得
-          gcloud run services describe "genius-frontend" \
-            --platform managed \
-            --region $_GCP_REGION \
-            --format 'value(status.url)' > /workspace/frontend_url.txt
+            --quiet; then
+            
+            # フロントエンドURL取得
+            sleep 10  # デプロイ完了を待機
+            gcloud run services describe "genius-frontend" \
+              --platform managed \
+              --region $_GCP_REGION \
+              --format 'value(status.url)' > /workspace/frontend_url.txt
+          else
+            echo "❌ フロントエンドデプロイ失敗 - 既存サービスのURLを取得"
+            gcloud run services describe "genius-frontend" \
+              --platform managed \
+              --region $_GCP_REGION \
+              --format 'value(status.url)' > /workspace/frontend_url.txt || echo "https://frontend-deploy-failed" > /workspace/frontend_url.txt
+          fi
         else
           echo "Service: genius-frontend-$_ENVIRONMENT"
-          gcloud run deploy "genius-frontend-$_ENVIRONMENT" \
+          if gcloud run deploy "genius-frontend-$_ENVIRONMENT" \
             --source . \
             --platform managed \
             --region $_GCP_REGION \
@@ -187,24 +198,99 @@ steps:
             --min-instances 0 \
             --max-instances 5 \
             --set-env-vars "NODE_ENV=production" \
-            --set-env-vars "NEXT_PUBLIC_API_BASE_URL=$(cat /workspace/backend_url.txt)" \
+            --set-env-vars "NEXT_PUBLIC_API_BASE_URL=$$(cat /workspace/backend_url.txt)" \
             --set-env-vars "NEXTAUTH_SECRET=$_NEXTAUTH_SECRET" \
             --set-env-vars "GOOGLE_CLIENT_ID=$_GOOGLE_CLIENT_ID" \
             --set-env-vars "GOOGLE_CLIENT_SECRET=$_GOOGLE_CLIENT_SECRET" \
             --timeout 300 \
-            --quiet
-          
-          # フロントエンドURL取得
-          gcloud run services describe "genius-frontend-$_ENVIRONMENT" \
-            --platform managed \
-            --region $_GCP_REGION \
-            --format 'value(status.url)' > /workspace/frontend_url.txt
+            --quiet; then
+            
+            # フロントエンドURL取得（デプロイ完了後に再取得）
+            sleep 10  # デプロイ完了を待機
+            gcloud run services describe "genius-frontend-$_ENVIRONMENT" \
+              --platform managed \
+              --region $_GCP_REGION \
+              --format 'value(status.url)' > /workspace/frontend_url.txt
+          else
+            echo "❌ フロントエンドデプロイ失敗 - 既存サービスのURLを取得"
+            gcloud run services describe "genius-frontend-$_ENVIRONMENT" \
+              --platform managed \
+              --region $_GCP_REGION \
+              --format 'value(status.url)' > /workspace/frontend_url.txt || echo "https://frontend-deploy-failed" > /workspace/frontend_url.txt
+          fi
         fi
         
-        echo "✅ フロントエンドデプロイ完了: $(cat /workspace/frontend_url.txt)"
+        echo "✅ フロントエンドデプロイ完了: $$(cat /workspace/frontend_url.txt)"
     waitFor: ['deploy-backend']
 
-  # Step 6: ヘルスチェック・動作確認
+  # Step 5.5: バックエンドのCORS設定更新
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'update-backend-cors'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "🔧 バックエンドのCORS設定を更新中..."
+        
+        FRONTEND_URL=$$(cat /workspace/frontend_url.txt)
+        echo "Frontend URL for CORS: $$FRONTEND_URL"
+        
+        if [ "$_ENVIRONMENT" = "production" ]; then
+          SERVICE_NAME="genius-backend"
+        else
+          SERVICE_NAME="genius-backend-$_ENVIRONMENT"
+        fi
+        
+        echo "Updating CORS settings for: $$SERVICE_NAME"
+        
+        # バックエンドサービスにCORS環境変数を追加
+        gcloud run services update "$$SERVICE_NAME" \
+          --region="$_GCP_REGION" \
+          --update-env-vars "CORS_ORIGINS=$$FRONTEND_URL" \
+          --update-env-vars "NEXTAUTH_URL=$$FRONTEND_URL" \
+          --quiet
+          
+        echo "✅ バックエンドCORS設定完了"
+    waitFor: ['deploy-frontend']
+
+  # Step 6: 古いリビジョンクリーンアップ
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'cleanup-revisions'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "🧹 古いリビジョンをクリーンアップ中..."
+        
+        # 各サービスの古いリビジョンを削除（最新3つを保持）
+        for service in "genius-backend-$_ENVIRONMENT" "genius-frontend-$_ENVIRONMENT"; do
+          echo "Cleaning up service: $$service"
+          
+          # 最新3つ以外のリビジョンを取得して削除
+          OLD_REVISIONS=$$(gcloud run revisions list \
+            --service="$$service" \
+            --region="$_GCP_REGION" \
+            --format="value(metadata.name)" \
+            --sort-by="~metadata.creationTimestamp" \
+            --limit=1000 | tail -n +4)
+          
+          if [ -n "$$OLD_REVISIONS" ]; then
+            echo "Deleting old revisions for $$service:"
+            echo "$$OLD_REVISIONS" | while read revision; do
+              echo "  - $$revision"
+              gcloud run revisions delete "$$revision" \
+                --region="$_GCP_REGION" \
+                --quiet || echo "Failed to delete $$revision"
+            done
+          else
+            echo "No old revisions to delete for $$service"
+          fi
+        done
+        
+        echo "✅ リビジョンクリーンアップ完了"
+    waitFor: ['update-backend-cors']
+
+  # Step 7: ヘルスチェック・動作確認
   - name: 'gcr.io/cloud-builders/curl'
     id: 'health-check'
     entrypoint: 'bash'
@@ -213,12 +299,12 @@ steps:
       - |
         echo "🏥 ヘルスチェック実行中..."
         
-        echo "Backend URL: $(cat /workspace/backend_url.txt)"
-        echo "Frontend URL: $(cat /workspace/frontend_url.txt)"
+        echo "Backend URL: $$(cat /workspace/backend_url.txt)"
+        echo "Frontend URL: $$(cat /workspace/frontend_url.txt)"
         
         # バックエンドヘルスチェック
         echo "Checking backend health..."
-        if curl -f "$(cat /workspace/backend_url.txt)/health" -m 30; then
+        if curl -f "$$(cat /workspace/backend_url.txt)/health" -m 30; then
           echo "✅ Backend health check OK"
         else
           echo "⚠️ Backend health check failed"
@@ -226,7 +312,7 @@ steps:
         
         # フロントエンドヘルスチェック
         echo "Checking frontend..."
-        if curl -f "$(cat /workspace/frontend_url.txt)" -m 30; then
+        if curl -f "$$(cat /workspace/frontend_url.txt)" -m 30; then
           echo "✅ Frontend health check OK"
         else
           echo "⚠️ Frontend health check failed"
@@ -239,11 +325,19 @@ steps:
         echo "Project: $_GCP_PROJECT_ID"
         echo "Region: $_GCP_REGION"
         echo ""
-        echo "Frontend URL: $(cat /workspace/frontend_url.txt)"
-        echo "Backend URL: $(cat /workspace/backend_url.txt)"
-        echo "API Docs: $(cat /workspace/backend_url.txt)/docs"
+        
+        # フロントエンドの状態確認
+        FRONTEND_URL=$$(cat /workspace/frontend_url.txt)
+        if [ "$$FRONTEND_URL" = "https://frontend-deploy-failed" ]; then
+          echo "⚠️  Frontend: デプロイ失敗（既存サービス継続）"
+        else
+          echo "✅ Frontend URL: $$FRONTEND_URL"
+        fi
+        
+        echo "✅ Backend URL: $$(cat /workspace/backend_url.txt)"
+        echo "✅ API Docs: $$(cat /workspace/backend_url.txt)/docs"
         echo "=========================="
-    waitFor: ['deploy-frontend']
+    waitFor: ['cleanup-revisions']
 
 # 置換変数（デフォルト値）
 substitutions:

@@ -5,6 +5,7 @@
 import { API_BASE_URL } from '@/config/api'
 
 export interface Child {
+  id: string // 子供の識別ID
   name: string
   age: string
   gender: string

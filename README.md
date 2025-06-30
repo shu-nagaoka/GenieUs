@@ -13,23 +13,41 @@ Google ADK × Gemini 2.5 Flash powered AI子育て支援システム
 
 GenieUsは、**Google Agent Development Kit (ADK)**とGemini 2.5 Flashを活用したADKファースト設計の子育て支援システムです。Agent中心のアーキテクチャにより、専門的で温かみのある育児サポートを24時間提供します。
 
-### 🎯 MVP実装完了機能
+### ✅ 実装完了機能（Production Ready）
 
-- **🤖 ADK統合マルチエージェントシステム**: Gemini-powered childcareエージェント
-- **💬 リアルタイムチャット相談**: `/api/v1/multiagent/chat`エンドポイント
-- **📱 Next.js レスポンシブUI**: shadcn/ui + Tailwind CSS設計
-- **📝 会話履歴管理**: アプリケーション側実装による文脈保持
-- **🔄 段階的エラーハンドリング**: フォールバック機構付き安定稼働
-- **🏗️ 統合DIアーキテクチャ**: Composition Root パターン採用
-- **📊 構造化ログ**: ADKイベント詳細ログ + 運用監視対応
+#### 🤖 AI・エージェント基盤
+- **ADK統合マルチエージェントシステム**: Google ADK + Gemini 2.5 Flash
+- **並列エージェント調整**: 複数専門エージェントの同時実行
+- **インテント認識ルーティング**: 自動的な専門エージェント振り分け
+- **ストリーミングチャット**: リアルタイム応答 `/api/v1/streaming/chat`
+- **対話確認システム**: ユーザー確認を伴う重要操作
 
-### 🚧 準備済み拡張機能（基盤実装済み）
+#### 📊 データ管理・記録機能
+- **家族管理**: 家族構成・子ども情報の管理
+- **成長記録**: 身長・体重・発達マイルストーン記録
+- **努力報告**: 育児努力の記録・可視化
+- **食事記録**: 離乳食・食事履歴管理
+- **スケジュール管理**: 予防接種・健診・イベント管理
+- **思い出記録**: 写真付き育児記録
+- **音声解析**: 音声入力による記録作成
+- **画像解析**: 写真からの自動情報抽出
 
-- **🔧 マルチモーダルツール**: 画像解析・ファイル管理・音声解析
-- **📈 トリアージ＋専門家パイプライン**: 緊急度判定→専門分野ルーティング
-- **📊 ダッシュボード**: 子どもの状況サマリー、今日のタスク  
-- **📝 成長記録**: 授乳、睡眠、発達マイルストーン記録
-- **📅 スケジュール管理**: 予防接種、健診管理
+#### 🏗️ 技術基盤
+- **統合DIアーキテクチャ**: Composition Root パターン
+- **SQLiteデータベース**: 完全なCRUD操作
+- **ファイルアップロード**: 画像・音声ファイル管理
+- **RESTful API**: 20+エンドポイント実装済み
+- **Next.js 15 UI**: App Router + shadcn/ui
+- **認証システム**: NextAuth.js統合準備済み
+
+### 🎯 高度な実装済み機能
+
+- **マルチモーダル対応**: テキスト・音声・画像の統合処理
+- **並列処理**: 複数タスクの同時実行・進捗表示
+- **データマイグレーション**: 既存データの自動移行
+- **Cloud Run対応**: 本番環境デプロイ最適化
+- **段階的エラーハンドリング**: プライマリ→セカンダリ→フォールバック
+- **構造化ログ**: 運用監視・デバッグ対応
 
 ## 🚀 クイックスタート
 
@@ -119,28 +137,33 @@ graph TD
 
 ### 技術スタック
 
-#### バックエンド
-- **Google ADK 1.2.1** - Agent Development Kit
+#### バックエンド (Python)
+- **Google ADK 1.2.1** - Agent Development Kit (Gemini統合)
 - **Gemini 2.5 Flash Preview** - 基盤大規模言語モデル
-- **FastAPI 0.115.12** - 高速Python Webフレームワーク
+- **FastAPI 0.115+** - 高速非同期Webフレームワーク
 - **Python 3.12+** - メイン開発言語
-- **dependency-injector** - DIコンテナライブラリ
-- **Pydantic 2.0+** - データバリデーション・設定管理
-- **uvicorn** - ASGIサーバー
-- **uv** - 高速Pythonパッケージマネージャー
+- **SQLite** - 軽量データベース（Cloud Run最適化）
+- **Pydantic 2.0+** - データバリデーション・型安全性
+- **uvicorn** - ASGI高性能サーバー
+- **uv** - 高速パッケージマネージャー（Rust製）
 
-#### フロントエンド
-- **Next.js 15.3.3** - React フルスタックフレームワーク
-- **React 19.0.0** - UIライブラリ
-- **TypeScript 5.8.3** - 型安全性
-- **Tailwind CSS 3.4.1** - ユーティリティファーストCSS
-- **shadcn/ui** - 高品質UIコンポーネントライブラリ
-- **React Markdown** - Markdown レンダリング
+#### フロントエンド (TypeScript)
+- **Next.js 15** - React App Router フレームワーク
+- **React 19** - 最新UIライブラリ
+- **TypeScript 5.8+** - 型安全性・開発体験向上
+- **Tailwind CSS 3.4+** - ユーティリティファーストCSS
+- **shadcn/ui** - Radix UI + Tailwind統合コンポーネント
+- **React Markdown** - リッチテキストレンダリング
+- **NextAuth.js** - 認証システム（準備済み）
+- **React Query** - サーバー状態管理（準備済み）
 
 #### 開発・インフラ
-- **Docker & Docker Compose** - コンテナ化・オーケストレーション
-- **ESLint & Prettier** - コード品質・フォーマット管理
-- **Jest & Playwright** - テスティングフレームワーク
+- **Docker & Docker Compose** - コンテナ化・開発環境
+- **Google Cloud Run** - サーバーレス本番環境
+- **Cloud Build** - CI/CDパイプライン
+- **ESLint & Prettier** - コード品質・フォーマット
+- **Jest & Playwright** - 単体・E2Eテスト
+- **Husky & lint-staged** - Git hooks・品質保証
 
 ## 📋 開発コマンド
 
@@ -178,30 +201,53 @@ GenieUs/
 ├── backend/                           # Python バックエンド
 │   ├── src/
 │   │   ├── agents/                    # Google ADK エージェント
-│   │   │   └── childcare/
-│   │   │       ├── childcare.py      # メインエージェント
-│   │   │       └── router_agent.py   # マルチエージェント実装
-│   │   ├── presentation/api/routes/   # FastAPI エンドポイント
-│   │   │   ├── chat.py               # チャットAPI
-│   │   │   ├── chat_history.py       # 履歴管理API
-│   │   │   └── health.py             # ヘルスチェック
-│   │   ├── application/               # ビジネスロジック層
-│   │   ├── infrastructure/            # インフラストラクチャ層
+│   │   │   ├── agent_manager.py      # エージェント統一管理
+│   │   │   ├── parallel_agent_coordinator.py  # 並列実行調整
+│   │   │   ├── intent_based_routing_strategy.py  # 自動ルーティング
+│   │   │   └── routing_executor.py   # 実行エンジン
+│   │   ├── presentation/api/routes/   # FastAPI エンドポイント（20+）
+│   │   │   ├── streaming_chat.py     # リアルタイムチャット
+│   │   │   ├── family.py             # 家族管理
+│   │   │   ├── growth_records.py     # 成長記録
+│   │   │   ├── meal_records.py       # 食事記録
+│   │   │   ├── effort_reports.py     # 努力報告
+│   │   │   ├── schedules.py          # スケジュール
+│   │   │   ├── voice_analysis.py     # 音声解析
+│   │   │   ├── image_analysis.py     # 画像解析
+│   │   │   └── interactive_confirmation.py  # 対話確認
+│   │   ├── application/usecases/      # ビジネスロジック層
+│   │   ├── infrastructure/adapters/   # 外部システム統合
+│   │   ├── infrastructure/database/   # SQLiteデータベース
+│   │   ├── tools/                     # ADKツール実装
+│   │   ├── di_provider/               # DI統合（Composition Root）
 │   │   └── main.py                   # FastAPIアプリケーション
 │   └── pyproject.toml                # Python依存関係・設定
 ├── frontend/                          # Next.js フロントエンド
 │   ├── src/
-│   │   ├── app/                      # App Router
-│   │   │   ├── chat/                 # チャットページ
-│   │   │   ├── dashboard/            # ダッシュボード
-│   │   │   ├── records/              # 記録ページ
-│   │   │   ├── schedule/             # スケジュール
-│   │   │   └── tracking/             # 成長記録
+│   │   ├── app/                      # App Router（12+ページ）
+│   │   │   ├── chat/                 # AIチャットページ
+│   │   │   ├── dashboard/            # メインダッシュボード
+│   │   │   ├── family/               # 家族管理
+│   │   │   ├── records/              # 成長記録一覧
+│   │   │   ├── effort-report/        # 努力報告
+│   │   │   ├── meal-records/         # 食事記録
+│   │   │   ├── schedule/             # スケジュール管理
+│   │   │   ├── agents/               # エージェント管理
+│   │   │   └── api/auth/             # NextAuth.js認証
 │   │   ├── components/               # UIコンポーネント
-│   │   │   ├── ui/                   # shadcn/ui プリミティブ
+│   │   │   ├── ui/                   # shadcn/ui プリミティブ（30+）
 │   │   │   ├── features/             # 機能別コンポーネント
-│   │   │   └── layout/               # レイアウトコンポーネント
-│   │   └── hooks/                    # カスタムReactフック
+│   │   │   │   ├── chat/             # チャット機能
+│   │   │   │   ├── family/           # 家族管理
+│   │   │   │   ├── growth/           # 成長記録
+│   │   │   │   ├── effort/           # 努力報告
+│   │   │   │   └── meal/             # 食事管理
+│   │   │   ├── layout/               # レイアウト・サイドバー
+│   │   │   └── providers/            # React Contextプロバイダー
+│   │   ├── hooks/                    # カスタムReactフック
+│   │   ├── libs/                     # ユーティリティ・API
+│   │   └── __tests__/                # Jest単体テスト
+│   ├── test/e2e/                     # Playwright E2Eテスト
 │   └── package.json                  # Node.js依存関係
 ├── scripts/                          # 開発スクリプト
 │   ├── start-dev.sh                  # 開発環境起動
@@ -215,38 +261,72 @@ GenieUs/
 
 ### 主要エンドポイント
 
-#### マルチエージェントチャットAPI
+#### ストリーミングチャットAPI
 ```bash
-# ADK統合マルチエージェントチャット
-POST /api/v1/multiagent/chat
+# リアルタイムストリーミングチャット
+POST /api/v1/streaming/chat
 Content-Type: application/json
 
 {
   "message": "2歳の夜泣きで困っています",
-  "user_id": "anonymous", 
-  "session_id": "default",
+  "user_id": "user123",
+  "session_id": "session_abc",
   "conversation_history": [
-    {"sender": "user", "content": "前回の相談"},
-    {"sender": "ai", "content": "前回の回答"}
-  ]
+    {"sender": "user", "content": "前回の相談内容"},
+    {"sender": "ai", "content": "前回のAI回答"}
+  ],
+  "selected_agent": "parallel_childcare"
 }
 ```
 
 #### レスポンス例
 ```json
 {
-  "response": "2歳の夜泣きについて、年齢に応じたアドバイスをお伝えします...",
+  "response": "2歳の夜泣きについて、年齢と発達段階を考慮したアドバイスをお伝えします...",
   "status": "success",
-  "session_id": "default",
-  "agent_used": "childcare_agent",
-  "routing_info": {"agent": "childcare", "direct_mode": true},
-  "follow_up_questions": ["睡眠環境について", "日中の過ごし方は"]
+  "session_id": "session_abc",
+  "agent_used": "parallel_childcare",
+  "routing_info": {
+    "primary_agent": "childcare",
+    "parallel_agents": ["sleep_specialist", "development_advisor"],
+    "execution_mode": "parallel"
+  },
+  "follow_up_questions": [
+    "睡眠環境について詳しく教えてください",
+    "日中の活動パターンはいかがですか"
+  ],
+  "metadata": {
+    "processing_time": 1.25,
+    "agents_executed": 3,
+    "confidence_score": 0.92
+  }
 }
 ```
 
-#### その他API
-- `GET /api/v1/health` - ヘルスチェック
-- `GET /` - システム情報・利用可能エンドポイント一覧
+#### 主要APIエンドポイント
+```bash
+# コアAPI
+POST /api/v1/streaming/chat          # リアルタイムチャット
+POST /api/v1/interactive/confirm     # 対話確認システム
+GET  /api/v1/agents/info            # エージェント情報
+
+# データ管理
+GET|POST|PUT|DELETE /api/v1/family              # 家族管理
+GET|POST|PUT|DELETE /api/v1/growth-records      # 成長記録
+GET|POST|PUT|DELETE /api/v1/effort-reports      # 努力報告
+GET|POST|PUT|DELETE /api/v1/meal-records        # 食事記録
+GET|POST|PUT|DELETE /api/v1/schedules           # スケジュール
+GET|POST|PUT|DELETE /api/v1/memories            # 思い出記録
+
+# マルチメディア
+POST /api/v1/file/upload             # ファイルアップロード
+POST /api/v1/voice/analyze           # 音声解析
+POST /api/v1/image/analyze           # 画像解析
+
+# システム
+GET  /api/v1/health                  # ヘルスチェック
+GET  /docs                           # API仕様書 (Swagger)
+```
 
 詳細なAPI仕様書: http://localhost:8000/docs
 
@@ -342,32 +422,70 @@ tail -f backend/adk.log
 
 ## 📈 ロードマップ
 
-### Phase 1 - MVP基盤完了 ✅
-- [x] ADK統合マルチエージェントシステム実装
-- [x] Gemini 2.5 Flash powered childcareエージェント
-- [x] Next.js + FastAPI フルスタック構成
-- [x] 統合DIアーキテクチャ（Composition Root）
-- [x] 会話履歴管理・段階的エラーハンドリング
-- [x] 構造化ログ・ADKイベント詳細ログ
+### ✅ Phase 1 - 基盤システム（完了）
+- [x] **ADK統合マルチエージェントシステム**: Google ADK + Gemini 2.5
+- [x] **フルスタック基盤**: Next.js 15 + FastAPI
+- [x] **統合DIアーキテクチャ**: Composition Root パターン
+- [x] **リアルタイムチャット**: ストリーミング応答
+- [x] **段階的エラーハンドリング**: 安定稼働基盤
 
-### Phase 2 - マルチモーダル拡張 🚧  
-- [ ] ツール統合（画像解析・ファイル管理・音声解析）
-- [ ] トリアージ＋専門家パイプライン実装
-- [ ] データベース統合（PostgreSQL/Redis）
-- [ ] 認証システム完全実装
+### ✅ Phase 2 - コア機能（完了）
+- [x] **マルチモーダル統合**: 音声・画像・テキスト解析
+- [x] **並列エージェント**: 複数専門家の同時実行
+- [x] **データ管理**: 家族・成長・食事・スケジュール記録
+- [x] **SQLiteデータベース**: Cloud Run最適化
+- [x] **ファイル管理**: アップロード・ダウンロード
 
-### Phase 3 - 高度機能 📋
-- [ ] 予測インサイト・努力肯定システム
-- [ ] IoTデバイス連携（体重計・体温計）
-- [ ] 多言語対応（英語・中国語等）
-- [ ] 専門医との連携機能
+### ✅ Phase 3 - 高度機能（完了）
+- [x] **対話確認システム**: 重要操作の確認プロセス
+- [x] **データマイグレーション**: 既存データ移行
+- [x] **本番環境対応**: Cloud Run デプロイ最適化
+- [x] **認証基盤**: NextAuth.js統合準備
+- [x] **品質保証**: テスト・リント・フォーマット
 
+### 🔄 Phase 4 - 運用・拡張（進行中）
+- [ ] **Stripe決済統合**: サブスクリプション課金
+- [ ] **パフォーマンス最適化**: キャッシュ・CDN
+- [ ] **多言語対応**: 国際化（i18n）
+- [ ] **IoTデバイス連携**: ヘルスケアデバイス
+- [ ] **専門医連携**: 外部システム統合
+- [ ] **AI予測分析**: 成長パターン予測
+
+
+## 📄 ライセンス
+
+[![CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](http://creativecommons.org/licenses/by-nc-sa/4.0/)
+
+このプロジェクトは**Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)**の下で提供されています。
+
+### 🔓 利用について
+
+- **✅ 学習・研究目的のみ利用可能**（完全非営利限定）
+- **🚫 商用利用・企業利用は完全禁止**（フリーランス・副業含む）
+- **🚫 営利に結びつく一切の活動を禁止**（間接的収益も含む）
+- **📋 改変版は同じライセンスで公開が必要**
+- **🏷️ 原著作者表示が必要**
+- **⚖️ 詳細は**: [docs/legal/cc-license-guide.md](docs/legal/cc-license-guide.md)
+
+### 🚫 商用利用について
+
+このプロジェクトは**厳格な非商用利用専用**です。
+
+**禁止される利用**:
+- 企業・組織での業務利用
+- フリーランス・副業での利用  
+- 投資・資金調達での技術証明
+- 競合サービス開発の参考利用
+- キャリア向上目的での利用
+
+商用利用は**原則として許可しません**。どうしても必要な場合は高額な商用ライセンス契約が必要です。
 
 ## 🆘 サポート
 
 - **Issues**: [GitHub Issues](https://github.com/shu-nagaoka/GenieUs/issues)
 - **リポジトリ**: [GitHub Repository](https://github.com/shu-nagaoka/GenieUs)
 - **開発ガイド**: [CLAUDE.md](CLAUDE.md)
+- **ライセンス詳細**: [docs/legal/cc-license-guide.md](docs/legal/cc-license-guide.md)
 
 ---
 

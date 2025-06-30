@@ -3,10 +3,8 @@ set -e
 
 cd /Users/tnoce/dev/GenieUs/frontend
 
-# Get backend URL
-BACKEND_URL=$(gcloud run services describe genius-backend-staging \
-  --region=asia-northeast1 \
-  --format='value(status.url)')
+# Get backend URL (use the actual URL format)
+BACKEND_URL="https://genius-backend-staging-280304291898.asia-northeast1.run.app"
 
 echo "Backend URL: $BACKEND_URL"
 
@@ -29,10 +27,8 @@ gcloud run deploy genius-frontend-staging \
   --timeout 600 \
   --quiet
 
-# Get frontend URL
-FRONTEND_URL=$(gcloud run services describe genius-frontend-staging \
-  --region=asia-northeast1 \
-  --format='value(status.url)')
+# Get frontend URL (use the actual URL format)
+FRONTEND_URL="https://genius-frontend-staging-280304291898.asia-northeast1.run.app"
 
 # Update NEXTAUTH_URL
 echo "Updating NEXTAUTH_URL to: $FRONTEND_URL"

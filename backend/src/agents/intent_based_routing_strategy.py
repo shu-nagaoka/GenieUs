@@ -405,6 +405,42 @@ class IntentBasedRoutingStrategy(RoutingStrategy):
         self.logger.info("🔍 確認文脈タイプ判定: キーワード一致なし、generalを返す")
         return "general"
 
+    def _check_force_routing(self, message_lower: str) -> str | None:
+        """強制ルーティングキーワードチェック（routing_executorとの互換性のため）
+
+        Args:
+            message_lower: 小文字変換されたメッセージ
+
+        Returns:
+            str | None: 強制ルーティング対象エージェントID、なければNone
+        """
+        # 現在のIntentBasedRoutingStrategyでは明示的な強制ルーティングは
+        # determine_agent内で処理済みのため、Noneを返す
+        return None
+
+    def _determine_specialist_agent(self, message_lower: str) -> tuple[str, dict]:
+        """専門エージェント決定（routing_executorとの互換性のため）
+
+        Args:
+            message_lower: 小文字変換されたメッセージ
+
+        Returns:
+            tuple[str, dict]: エージェントIDとルーティング情報
+        """
+        # 簡易版のキーワードマッチング
+        for agent_id, keywords in AGENT_KEYWORDS.items():
+            match_count = sum(1 for keyword in keywords if keyword in message_lower)
+            if match_count > 0:
+                confidence = min(match_count / len(keywords), 1.0)
+                return agent_id, {
+                    "confidence": confidence,
+                    "reasoning": f"キーワードマッチ: {match_count}個",
+                    "matched_keywords": [kw for kw in keywords if kw in message_lower],
+                }
+
+        # デフォルト
+        return "coordinator", {"confidence": 0.5, "reasoning": "デフォルトルーティング", "matched_keywords": []}
+
     def get_strategy_name(self) -> str:
         """戦略名取得"""
         return "IntentBasedRouting"

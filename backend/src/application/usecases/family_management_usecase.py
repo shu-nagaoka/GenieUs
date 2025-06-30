@@ -1,18 +1,72 @@
-"""家族情報管理UseCase"""
+"""家族情報管理UseCase
+
+コーディング規約準拠:
+- Import文ファイル先頭配置
+- 型アノテーション完備
+- DI注入パターン
+- 段階的エラーハンドリング
+"""
 
 import logging
+from dataclasses import dataclass
+from typing import Any
 
+from src.application.interface.protocols.family_repository import FamilyRepositoryProtocol
 from src.domain.entities import FamilyInfo
 
 
+@dataclass
+class RegisterFamilyInfoRequest:
+    """家族情報登録リクエスト"""
+
+    user_id: str
+    parent_name: str
+    family_structure: str | None = None
+    concerns: str | None = None
+    living_area: str | None = None
+    children: list[dict] | None = None
+
+
+@dataclass
+class UpdateFamilyInfoRequest:
+    """家族情報更新リクエスト"""
+
+    user_id: str
+    parent_name: str | None = None
+    family_structure: str | None = None
+    concerns: str | None = None
+    living_area: str | None = None
+    children: list[dict] | None = None
+
+
+@dataclass
+class FamilyInfoResponse:
+    """家族情報レスポンス"""
+
+    success: bool
+    family_info: dict[str, Any] | None = None
+    error: str | None = None
+
+
 class FamilyManagementUseCase:
-    """家族情報管理のビジネスロジック"""
+    """家族情報管理UseCase
 
-    def __init__(self, family_repository, logger: logging.Logger):
-        """Args:
-        family_repository: 家族情報リポジトリ
-        logger: ロガー（DIコンテナから注入）
+    責務:
+    - 家族情報のCRUD操作
+    - ユーザー別の家族情報管理
+    - データ整合性の確保
+    """
 
+    def __init__(
+        self,
+        family_repository: FamilyRepositoryProtocol,
+        logger: logging.Logger,
+    ):
+        """FamilyManagementUseCase初期化
+
+        Args:
+            family_repository: 家族情報リポジトリ
+            logger: DIコンテナから注入されるロガー
         """
         self.family_repository = family_repository
         self.logger = logger
@@ -34,11 +88,11 @@ class FamilyManagementUseCase:
             # 家族情報エンティティ作成
             family_info = FamilyInfo.from_dict(user_id, family_data)
 
-            # リポジトリに保存
-            result = await self.family_repository.save_family_info(family_info)
+            # 新しいSQLiteリポジトリに保存
+            created_family = await self.family_repository.create(family_info)
 
             self.logger.info(f"家族情報登録完了: user_id={user_id}")
-            return {"success": True, "message": "家族情報を登録しました", "family_id": result.get("family_id")}
+            return {"success": True, "message": "家族情報を登録しました", "family_id": created_family.family_id}
 
         except Exception as e:
             self.logger.error(f"家族情報登録エラー: user_id={user_id}, error={e}")
@@ -57,7 +111,8 @@ class FamilyManagementUseCase:
         try:
             self.logger.info(f"家族情報取得開始: user_id={user_id}")
 
-            family_info = await self.family_repository.get_family_info(user_id)
+            # SQLiteリポジトリから取得
+            family_info = await self.family_repository.get_by_user_id(user_id)
 
             if family_info:
                 self.logger.info(f"家族情報取得成功: user_id={user_id}")
@@ -85,16 +140,17 @@ class FamilyManagementUseCase:
             self.logger.info(f"家族情報更新開始: user_id={user_id}")
 
             # 既存の家族情報を取得
-            existing_family = await self.family_repository.get_family_info(user_id)
+            existing_family = await self.family_repository.get_by_user_id(user_id)
             if not existing_family:
                 return {"success": False, "error": "更新対象の家族情報が見つかりません"}
 
             # 家族情報エンティティ更新
             updated_family = FamilyInfo.from_dict(user_id, family_data)
             updated_family.family_id = existing_family.family_id
+            updated_family.created_at = existing_family.created_at  # 作成日時は保持
 
-            # リポジトリに保存
-            await self.family_repository.save_family_info(updated_family)
+            # SQLiteリポジトリで更新
+            await self.family_repository.update(updated_family)
 
             self.logger.info(f"家族情報更新完了: user_id={user_id}")
             return {"success": True, "message": "家族情報を更新しました"}
@@ -116,8 +172,8 @@ class FamilyManagementUseCase:
         try:
             self.logger.info(f"家族情報削除開始: user_id={user_id}")
 
-            # リポジトリで削除実行
-            deleted = await self.family_repository.delete_family_info(user_id)
+            # SQLiteリポジトリで削除実行
+            deleted = await self.family_repository.delete_by_user_id(user_id)
 
             if deleted:
                 self.logger.info(f"家族情報削除完了: user_id={user_id}")

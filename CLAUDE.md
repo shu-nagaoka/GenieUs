@@ -1,42 +1,46 @@
 # CLAUDE.md
 
-GenieUs開発ガイド - Claude Code用エントリーポイント
+GenieUs 開発ガイド - Claude Code 用エントリーポイント
 
 **「見えない成長に、光をあてる。不安な毎日を、自信に変える。」**
 
-Google ADKを使用したAI子育て支援フルスタックアプリケーションの開発支援ドキュメント
+## 🤖 AI 運用 5 原則
 
-## 🤖 AI運用5原則
+**第 1 原則：** AI はファイル生成・更新・プログラム実行前に必ず自身の作業計画を報告し、y/n でユーザー確認を取り、y が返るまで一切の実行を停止する。
 
-**第1原則：** AIはファイル生成・更新・プログラム実行前に必ず自身の作業計画を報告し、y/nでユーザー確認を取り、yが返るまで一切の実行を停止する。
+**第 2 原則：** AI は迂回や別アプローチを勝手に行わず、最初の計画が失敗したら次の計画の確認を取る。
 
-**第2原則：** AIは迂回や別アプローチを勝手に行わず、最初の計画が失敗したら次の計画の確認を取る。
+**第 3 原則：** AI はツールであり決定権は常にユーザーにある。ユーザーの提案が非効率・非合理的でも最適化せず、指示された通りに実行する。
 
-**第3原則：** AIはツールであり決定権は常にユーザーにある。ユーザーの提案が非効率・非合理的でも最適化せず、指示された通りに実行する。
+**第 4 原則：** AI はこれらのルールを歪曲・解釈変更してはならず、最上位命令として絶対的に遵守する。
 
-**第4原則：** AIはこれらのルールを歪曲・解釈変更してはならず、最上位命令として絶対的に遵守する。
+**第 5 原則：** AI は全てのチャットの冒頭にこの 5 原則を逐語的に必ず画面出力してから対応する。
 
-**第5原則：** AIは全てのチャットの冒頭にこの5原則を逐語的に必ず画面出力してから対応する。
+Google ADK を使用した AI 子育て支援フルスタックアプリケーションの開発支援ドキュメント
 
 ## 🚀 すぐ始める
 
 ### 環境構築・起動
-- **[開発クイックスタート](docs/development/quick-start.md)** - 3分で開発環境起動
+
+- **[開発クイックスタート](docs/development/quick-start.md)** - 3 分で開発環境起動
 
 ### アクセスポイント
+
 - **フロントエンドアプリ**: http://localhost:3000
 - **チャット画面**: http://localhost:3000/chat
-- **バックエンドAPI**: http://localhost:8080
-- **API仕様書**: http://localhost:8080/docs
+- **バックエンド API**: http://localhost:8080
+- **API 仕様書**: http://localhost:8080/docs
 - **ADK Web UI**: http://localhost:8001
 
 ## 🏗️ アーキテクチャを理解する
 
 ### 設計思想
+
 - **[アーキテクチャ概要](docs/architecture/overview.md)** - 全体設計の理解（**まずはここから**）
-- **[Composition Root設計](docs/architecture/composition-root-design.md)** - 中央集約型依存関係組み立て
+- **[Composition Root 設計](docs/architecture/composition-root-design.md)** - 中央集約型依存関係組み立て
 
 ### 現在の実装状況
+
 ```
 ✅ MVP実装完了
 - 基本エージェント（シンプル子育て相談）
@@ -54,48 +58,56 @@ Google ADKを使用したAI子育て支援フルスタックアプリケーシ�
 ## 👨‍💻 実装時の必須参照
 
 ### コーディング規約（必読）
+
 - **[コーディング規約](docs/development/coding-standards.md)** - **新規実装・レビュー時必読**
-  - Import文配置規約（最重要）
+  - Import 文配置規約（最重要）
   - 型アノテーション・エラーハンドリング
-  - DI統合パターン
+  - DI 統合パターン
   - フロントエンド規約
 
 ### 技術詳細
-- **[ADK制約とベストプラクティス](docs/technical/adk-constraints-and-best-practices.md)** - ADK制約・パターン
-- **[FastAPI DI統合](docs/technical/fastapi-di-integration.md)** - Depends + DIコンテナ統合
-- **[UseCase設計ルール](docs/technical/usecase-design-rules.md)** - ビジネスロジック実装指針
+
+- **[ADK 制約とベストプラクティス](docs/technical/adk-constraints-and-best-practices.md)** - ADK 制約・パターン
+- **[FastAPI DI 統合](docs/technical/fastapi-di-integration.md)** - Depends + DI コンテナ統合
+- **[UseCase 設計ルール](docs/technical/usecase-design-rules.md)** - ビジネスロジック実装指針
 
 ## 📖 新機能実装ガイド
 
 ### ステップバイステップガイド
-- **[新エージェント作成](docs/guides/new-agent-creation.md)** - ADK統合エージェント実装
-- **[新ツール開発](docs/guides/new-tool-development.md)** - FunctionTool開発手順
-- **[新UseCase実装](docs/guides/new-usecase-impl.md)** - ビジネスロジック実装
-- **[DI統合マイグレーション](docs/guides/di-migration-guide.md)** - ロガーDI化 + FastAPI Depends統合
+
+- **[新エージェント作成](docs/guides/new-agent-creation.md)** - ADK 統合エージェント実装
+- **[新ツール開発](docs/guides/new-tool-development.md)** - FunctionTool 開発手順
+- **[新 UseCase 実装](docs/guides/new-usecase-impl.md)** - ビジネスロジック実装
+- **[DI 統合マイグレーション](docs/guides/di-migration-guide.md)** - ロガー DI 化 + FastAPI Depends 統合
 
 ### フロントエンド開発
-- **[コーディング規約](docs/development/coding-standards.md)** - TypeScript規約・shadcn/ui使用法
+
+- **[コーディング規約](docs/development/coding-standards.md)** - TypeScript 規約・shadcn/ui 使用法
 
 ## 🔧 困ったときは
 
 ### トラブルシューティング
+
 - **よくある質問**（下記参照） - 基本的な問題と解決策
 
 ### よくある質問
+
 - **ポート使用中エラー**: `./scripts/stop_dev.sh` → `./scripts/start-dev.sh`
 - **依存関係エラー**: バックエンド `uv sync`、フロントエンド `npm install`
-- **ADKエラー**: `.env.dev`の環境変数設定確認
+- **ADK エラー**: `.env.dev`の環境変数設定確認
 
 ## 📋 重要コマンド
 
 ### 開発サーバー起動
+
 ```bash
 # 🎯 推奨: ワンコマンド起動
 ./scripts/start-dev.sh        # 全サービス起動
 ./scripts/stop_dev.sh         # 全サービス停止
 ```
 
-### CI/CDセットアップ（新規）
+### CI/CD セットアップ（新規）
+
 ```bash
 # 🎯 推奨: 統合メニューから自動セットアップ
 ./entrypoint.sh               # メニュー選択肢29-31でCI/CD構築
@@ -106,6 +118,7 @@ Google ADKを使用したAI子育て支援フルスタックアプリケーシ�
 ```
 
 ### 品質管理
+
 ```bash
 # バックエンド
 cd backend
@@ -113,14 +126,15 @@ uv run ruff check           # リンター
 uv run ruff format          # フォーマット
 uv run pytest              # テスト
 
-# フロントエンド  
+# フロントエンド
 cd frontend
 npm run lint                # ESLint
 npm run format              # Prettier
 npm run test                # Jestテスト
 ```
 
-### API整合性管理
+### API 整合性管理
+
 ```bash
 # 🎯 推奨: シンプルコマンド（プロジェクトルートから）
 ./scripts/check-api.sh                   # API URL整合性チェック
@@ -136,7 +150,8 @@ node scripts/update-api-mapping.js       # エンドポイント変更時の自�
 # - 自動バックアップ&復元機能付き
 ```
 
-### ADK管理
+### ADK 管理
+
 ```bash
 # ADK Web UI単独起動
 cd backend && python -m src.main adk
@@ -145,6 +160,7 @@ cd backend && python -m src.main adk
 ## 🎯 アーキテクチャ要点
 
 ### レイヤー構成
+
 ```
 Agent Layer      ← ADK + Gemini（AI判断・ルーティング）
     ↓
@@ -155,7 +171,8 @@ Application Layer ← UseCase（ビジネスロジック）
 Infrastructure   ← 外部システム統合
 ```
 
-### DI統合（Composition Root）
+### DI 統合（Composition Root）
+
 ```python
 # main.py - 中央集約組み立て
 composition_root = CompositionRootFactory.create()
@@ -165,81 +182,91 @@ agent_manager.initialize_all_components()
 ```
 
 ### 重要原則
-1. **ADKファースト**: エージェント中心の設計
-2. **段階的複雑性**: シンプル→複雑へ段階的発展
-3. **Composition Root**: main.pyでの中央集約組み立て（DIContainer完全置換）
-4. **Import文先頭配置**: 依存関係の明確化（最重要）
-5. **段階的フォールバック**: プライマリ→セカンダリ→フォールバック
+
+1. **ADK ファースト**: エージェント中心の設計
+2. **段階的複雑性**: シンプル → 複雑へ段階的発展
+3. **Composition Root**: main.py での中央集約組み立て（DIContainer 完全置換）
+4. **Import 文先頭配置**: 依存関係の明確化（最重要）
+5. **段階的フォールバック**: プライマリ → セカンダリ → フォールバック
 6. **開発ポート分離**: 開発者ローカル用(3000/8080)、テスト用(30001/8001)の併用
 
 ## 📚 ドキュメント構成
 
-| ディレクトリ | 内容 | 用途 |
-|-------------|------|------|
-| **[docs/architecture/](docs/architecture/)** | 設計思想・アーキテクチャ | 設計理解・議論 |
-| **[docs/development/](docs/development/)** | 開発ワークフロー・規約 | 日常開発作業 |
-| **[docs/technical/](docs/technical/)** | 技術詳細・ベストプラクティス | 実装時参照 |
-| **[docs/guides/](docs/guides/)** | 実装チュートリアル | 新機能開発 |
-| **[docs/deployment/](docs/deployment/)** | デプロイメント手順・設定 | 本番環境構築 |
-| **[docs/plan/](docs/plan/)** | 実装プラン・リファクタリング計画 | 開発計画・設計書 |
-| **[docs/issue/](docs/issue/)** | Issue駆動開発タスク | 具体的実装タスク管理 |
+| ディレクトリ                                 | 内容                             | 用途                 |
+| -------------------------------------------- | -------------------------------- | -------------------- |
+| **[docs/architecture/](docs/architecture/)** | 設計思想・アーキテクチャ         | 設計理解・議論       |
+| **[docs/development/](docs/development/)**   | 開発ワークフロー・規約           | 日常開発作業         |
+| **[docs/technical/](docs/technical/)**       | 技術詳細・ベストプラクティス     | 実装時参照           |
+| **[docs/guides/](docs/guides/)**             | 実装チュートリアル               | 新機能開発           |
+| **[docs/deployment/](docs/deployment/)**     | デプロイメント手順・設定         | 本番環境構築         |
+| **[docs/plan/](docs/plan/)**                 | 実装プラン・リファクタリング計画 | 開発計画・設計書     |
+| **[docs/issue/](docs/issue/)**               | Issue 駆動開発タスク             | 具体的実装タスク管理 |
 
-### 📋 Issue駆動開発（必須ワークフロー）
+### 📋 Issue 駆動開発（必須ワークフロー）
 
-**🚨 重要**: すべての新機能開発・バグ修正・リファクタリングは**必ずIssue駆動**で実行してください。
+**🚨 重要**: すべての新機能開発・バグ修正・リファクタリングは**必ず Issue 駆動**で実行してください。
 
-### **Issue作成ルール**
+### **Issue 作成ルール**
 
-1. **Issue作成フェーズ**: `docs/issue/` 配下にマークダウンファイルを作成
+1. **Issue 作成フェーズ**: `docs/issue/` 配下にマークダウンファイルを作成
    - **ファイル名**: `{category}-{brief-description}.md`
    - **例**: `image-auto-prompt-and-ui-exclusivity.md`, `agent-routing-fix.md`
    - **必須項目**: Issue ID、優先度、概要、現状分析、実装プラン、テストプラン、成功指標
-   
-2. **Issue構造テンプレート**:
+2. **Issue 構造テンプレート**:
+
    ```markdown
    # Issue: [タイトル]
-   
+
    **Issue ID**: [CAT-XXX]
    **優先度**: High/Medium/Low
-   **カテゴリ**: [バックエンド/フロントエンド/UX改善/バグ修正]
-   
+   **カテゴリ**: [バックエンド/フロントエンド/UX 改善/バグ修正]
+
    ## 📋 概要
-   ## 🎯 目的  
+
+   ## 🎯 目的
+
    ## 🔍 現状分析
+
    ## 🚀 実装プラン
+
    ## 🧪 テストプラン
+
    ## 📊 成功指標
+
    ## ⚠️ リスク・注意事項
+
    ## 🔄 ロールバック計画
    ```
 
 ### **実装ワークフロー**
 
 1. **計画フェーズ** (必須)
-   - Issue作成 → レビュー → 承認
+
+   - Issue 作成 → レビュー → 承認
    - 技術的依存関係の確認
    - リスク評価と対策
 
 2. **実装フェーズ**
-   - **Phase毎の実装**（Issue内のプランに従う）
-   - **進捗チェック**（各Phase完了時）
-   - **設計変更時はIssue更新**
+
+   - **Phase 毎の実装**（Issue 内のプランに従う）
+   - **進捗チェック**（各 Phase 完了時）
+   - **設計変更時は Issue 更新**
 
 3. **完了フェーズ**
    - テストプラン実行
    - 成功指標達成確認
-   - Issue完了マーク
+   - Issue 完了マーク
    - **学習・改善点の記録**
 
-### **Issue管理のメリット**
+### **Issue 管理のメリット**
 
 - **品質保証**: 実装前の設計レビュー
-- **進捗可視化**: Phase毎の明確な進捗
+- **進捗可視化**: Phase 毎の明確な進捗
 - **知識ベース**: 設計判断の記録・蓄積
 - **チーム連携**: 実装意図と進捗の共有
 - **リスク軽減**: 事前のリスク評価とロールバック計画
 
-### **従来のdocs/plan/との使い分け**
+### **従来の docs/plan/との使い分け**
 
 - **`docs/issue/`**: 具体的な実装タスク（必須）
 - **`docs/plan/`**: 長期的・複雑なアーキテクチャ設計書（補助）
@@ -247,6 +274,7 @@ agent_manager.initialize_all_components()
 ## 🆘 サポート
 
 **問題解決の順序**:
+
 1. よくある質問（上記）で該当問題を確認
 2. [コーディング規約](docs/development/coding-standards.md)で実装方針を確認
 3. [アーキテクチャ概要](docs/architecture/overview.md)で設計思想を確認
@@ -254,9 +282,10 @@ agent_manager.initialize_all_components()
 
 ---
 
-## 🤖 AI開発支援ツール向け自律参照ガイド
+## 🤖 AI 開発支援ツール向け自律参照ガイド
 
 ### **🚨 重要**: 実装前必読ドキュメント
+
 **すべての実装タスクで以下を必ず参照してください**:
 
 1. **[コーディング規約](docs/development/coding-standards.md)** - 実装開始前に**必読**
@@ -264,51 +293,54 @@ agent_manager.initialize_all_components()
 
 ### **📋 タスクタイプ別必須参照マトリックス**
 
-| タスク | 必須参照ドキュメント | チェックポイント |
-|--------|---------------------|------------------|
-| **🎫 Issue駆動開発** | **[Issue駆動開発ルール](#-issue駆動開発必須ワークフロー)** + 該当タスクの技術ドキュメント | **Issue作成**、実装プラン策定、**Phase毎進捗確認** |
-| **🤖 新エージェント実装** | [新エージェント作成](docs/guides/new-agent-creation.md) + [コーディング規約](docs/development/coding-standards.md) | DI統合、ADK制約、型アノテーション、**ロガー注入** |
-| **🔧 新ツール開発** | [新ツール開発](docs/guides/new-tool-development.md) + [コーディング規約](docs/development/coding-standards.md) | Protocol定義、薄いアダプター、エラーハンドリング、**ロガー注入** |
-| **📋 UseCase実装** | [新UseCase実装](docs/guides/new-usecase-impl.md) + [アーキテクチャ概要](docs/architecture/overview.md) | レイヤー責務、依存関係の方向 |
-| **🌐 API実装** | [コーディング規約](docs/development/coding-standards.md) | **Composition Root + Depends統合**、エラーハンドリング、**request.app経由DI** |
-| **🎨 UI実装** | [コーディング規約](docs/development/coding-standards.md) | shadcn/ui、TypeScript規約、シンプルヘッダー設計 |
-| **🐛 バグ修正** | [コーディング規約](docs/development/coding-standards.md) | 段階的フォールバック、ログ確認 |
-| **🏗️ アーキテクチャ変更** | [アーキテクチャ概要](docs/architecture/overview.md) + [Composition Root設計](docs/architecture/composition-root-design.md) | 設計思想、影響範囲 |
-| **⚡ DI統合・マイグレーション** | [コーディング規約](docs/development/coding-standards.md) + [アーキテクチャ概要](docs/architecture/overview.md) | **ロガーDI化**、**Composition Root統合**、グローバル変数削除 |
+| タスク                           | 必須参照ドキュメント                                                                                                        | チェックポイント                                                                 |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **🎫 Issue 駆動開発**            | **[Issue 駆動開発ルール](#-issue駆動開発必須ワークフロー)** + 該当タスクの技術ドキュメント                                  | **Issue 作成**、実装プラン策定、**Phase 毎進捗確認**                             |
+| **🤖 新エージェント実装**        | [新エージェント作成](docs/guides/new-agent-creation.md) + [コーディング規約](docs/development/coding-standards.md)          | DI 統合、ADK 制約、型アノテーション、**ロガー注入**                              |
+| **🔧 新ツール開発**              | [新ツール開発](docs/guides/new-tool-development.md) + [コーディング規約](docs/development/coding-standards.md)              | Protocol 定義、薄いアダプター、エラーハンドリング、**ロガー注入**                |
+| **📋 UseCase 実装**              | [新 UseCase 実装](docs/guides/new-usecase-impl.md) + [アーキテクチャ概要](docs/architecture/overview.md)                    | レイヤー責務、依存関係の方向                                                     |
+| **🌐 API 実装**                  | [コーディング規約](docs/development/coding-standards.md)                                                                    | **Composition Root + Depends 統合**、エラーハンドリング、**request.app 経由 DI** |
+| **🎨 UI 実装**                   | [コーディング規約](docs/development/coding-standards.md)                                                                    | shadcn/ui、TypeScript 規約、シンプルヘッダー設計                                 |
+| **🐛 バグ修正**                  | [コーディング規約](docs/development/coding-standards.md)                                                                    | 段階的フォールバック、ログ確認                                                   |
+| **🏗️ アーキテクチャ変更**        | [アーキテクチャ概要](docs/architecture/overview.md) + [Composition Root 設計](docs/architecture/composition-root-design.md) | 設計思想、影響範囲                                                               |
+| **⚡ DI 統合・マイグレーション** | [コーディング規約](docs/development/coding-standards.md) + [アーキテクチャ概要](docs/architecture/overview.md)              | **ロガー DI 化**、**Composition Root 統合**、グローバル変数削除                  |
 
 ### **⚠️ 実装前チェックリスト**
 
 **実装開始前に以下を確認**:
-- [ ] **🎫 Issue作成完了**（`docs/issue/`配下に詳細プラン作成）
+
+- [ ] **🎫 Issue 作成完了**（`docs/issue/`配下に詳細プラン作成）
 - [ ] 該当タスクの必須ドキュメントを読了
-- [ ] Import文配置規約を理解（ファイル先頭配置）
+- [ ] Import 文配置規約を理解（ファイル先頭配置）
 - [ ] 型アノテーション規約を理解
 - [ ] エラーハンドリング戦略を理解
-- [ ] **ロガーDI注入パターンを理解**（個別初期化禁止）
-- [ ] **FastAPI Dependsパターンを理解**（Composition Root + request.app経由）
+- [ ] **ロガー DI 注入パターンを理解**（個別初期化禁止）
+- [ ] **FastAPI Depends パターンを理解**（Composition Root + request.app 経由）
 
 ### **🔄 実装中の継続的チェック**
 
 **コード実装中は以下を継続的に確認**:
-- [ ] **🎫 Issue内プランに従った実装**（Phase毎の進捗確認）
-- [ ] Import文がファイル先頭に配置されている
+
+- [ ] **🎫 Issue 内プランに従った実装**（Phase 毎の進捗確認）
+- [ ] Import 文がファイル先頭に配置されている
 - [ ] 型アノテーションが完備されている
 - [ ] エラーハンドリングが実装されている
-- [ ] **ロガーはDIコンテナから注入されている**（setup_logger個別呼び出し禁止）
-- [ ] **FastAPI Dependsパターンが使用されている**（グローバル変数禁止）
+- [ ] **ロガーは DI コンテナから注入されている**（setup_logger 個別呼び出し禁止）
+- [ ] **FastAPI Depends パターンが使用されている**（グローバル変数禁止）
 - [ ] レイヤー責務が守られている
 
 ### **❌ 絶対回避事項**
 
 以下は**絶対に実装してはいけません**:
-- [ ] **🎫 Issue未作成での実装開始**（必ずdocs/issue/配下にプラン作成）
-- [ ] 関数内でのimport文
+
+- [ ] **🎫 Issue 未作成での実装開始**（必ず docs/issue/配下にプラン作成）
+- [ ] 関数内での import 文
 - [ ] 型アノテーションなしの関数
-- [ ] エラーハンドリングなしの外部API呼び出し
-- [ ] **個別ロガー初期化**（setup_logger(__name__), logging.getLogger(__name__)）
-- [ ] **グローバル変数の使用**（_container, _agent等）
-- [ ] **setup_routes関数の使用**（非推奨パターン）
-- [ ] **@injectデコレータなしのDepends使用**
+- [ ] エラーハンドリングなしの外部 API 呼び出し
+- [ ] **個別ロガー初期化**（setup_logger(**name**), logging.getLogger(**name**)）
+- [ ] **グローバル変数の使用**（\_container, \_agent 等）
+- [ ] **setup_routes 関数の使用**（非推奨パターン）
+- [ ] **@inject デコレータなしの Depends 使用**
 - [ ] レイヤー責務を無視した実装
 - [ ] **ポート競合**: 開発者ローカル(3000/8080)とテスト(30001/8001)の混在使用
 
@@ -321,18 +353,21 @@ agent_manager.initialize_all_components()
 ## 🔗 関連ドキュメント
 
 ### 設計・アーキテクチャ
+
 - [アーキテクチャ概要](docs/architecture/overview.md) - 全体設計の理解
-- [Composition Root設計](docs/architecture/composition-root-design.md) - DI統合パターン
+- [Composition Root 設計](docs/architecture/composition-root-design.md) - DI 統合パターン
 
 ### 開発・実装
+
 - [コーディング規約](docs/development/coding-standards.md) - 実装規約・品質基準
 - [開発クイックスタート](docs/development/quick-start.md) - 環境構築・起動手順
 - [新エージェント作成](docs/guides/new-agent-creation.md) - エージェント開発ガイド
-- [新ツール開発](docs/guides/new-tool-development.md) - FunctionTool実装ガイド
-- [新UseCase実装](docs/guides/new-usecase-impl.md) - ビジネスロジック実装ガイド
+- [新ツール開発](docs/guides/new-tool-development.md) - FunctionTool 実装ガイド
+- [新 UseCase 実装](docs/guides/new-usecase-impl.md) - ビジネスロジック実装ガイド
 - [トラブルシューティング](docs/guides/troubleshooting.md) - よくある問題と解決策
 
 ### 技術詳細
-- [ADK制約とベストプラクティス](docs/technical/adk-constraints-and-best-practices.md) - ADK使用指針
-- [FastAPI DI統合](docs/technical/fastapi-di-integration.md) - FastAPI統合パターン
-- [UseCase設計ルール](docs/technical/usecase-design-rules.md) - ビジネスロジック実装
+
+- [ADK 制約とベストプラクティス](docs/technical/adk-constraints-and-best-practices.md) - ADK 使用指針
+- [FastAPI DI 統合](docs/technical/fastapi-di-integration.md) - FastAPI 統合パターン
+- [UseCase 設計ルール](docs/technical/usecase-design-rules.md) - ビジネスロジック実装

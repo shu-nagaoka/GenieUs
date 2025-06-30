@@ -137,8 +137,9 @@ class StreamingChatUseCase:
             yield {"type": "analysis_complete", "message": "✅ 専門分析が完了しました", "data": {}}
             await asyncio.sleep(0.3)
 
-            # ビジネスロジック: フォローアップ質問追加
-            enhanced_response = await self._enhance_response_with_followup(message, response)
+            # ビジネスロジック: フォローアップ質問追加（agent_managerで処理済みのため無効化）
+            # enhanced_response = await self._enhance_response_with_followup(message, response)
+            enhanced_response = response  # agent_managerで既にフォローアップクエスチョンが追加済み
 
             # ビジネスロジック: 検索系エージェント特別処理
             async for progress in self._handle_search_agent_completion(agent_info, progress_state):

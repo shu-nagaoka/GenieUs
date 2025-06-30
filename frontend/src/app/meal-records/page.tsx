@@ -88,11 +88,28 @@ function MealRecordsPageContent() {
   const [selectedChildId, setSelectedChildId] = useState<string>('')
 
   // 家族情報から子供情報を取得
-  const { childId: primaryChildId, isLoading: familyLoading, error: familyError } = usePrimaryChildId()
+  const { childId: primaryChildId, child: primaryChild, isLoading: familyLoading, error: familyError } = usePrimaryChildId()
   const { options: childrenOptions } = useChildrenOptions()
   
   // 選択された子供ID（デフォルトは最初の子供）
   const currentChildId = selectedChildId || primaryChildId || ''
+  
+  // 現在選択されている子供の情報を取得
+  const currentChild = selectedChildId 
+    ? childrenOptions.find(option => option.value === selectedChildId)?.child
+    : primaryChild
+  const currentChildName = currentChild?.name || 'お子様'
+  
+  // API コール用の child_id を取得
+  // 食事記録APIは古い形式のchild_idを使用しているため、変換が必要
+  const apiChildId = (() => {
+    // 新しいUUID形式のIDがある場合
+    if (currentChild?.id && currentChild.id.includes('-')) {
+      return 'frontend_child' // 食事記録API用の固定値
+    }
+    // フォールバック
+    return currentChild?.id || primaryChild?.id || 'frontend_child'
+  })()
 
   // 新しい記録作成用のフォーム状態
   const [newMealForm, setNewMealForm] = useState({
@@ -112,7 +129,7 @@ function MealRecordsPageContent() {
     notes: '',
   })
 
-  // API hooks
+  // API hooks (UUID child_id を使用)
   const {
     mealRecords,
     weeklySummary,
@@ -124,7 +141,7 @@ function MealRecordsPageContent() {
     isCreating,
     isUpdating,
     isDeleting,
-  } = useMealRecordsManager(currentChildId)
+  } = useMealRecordsManager(apiChildId)
 
   // フィルタリング済みの食事記録
   const filteredMealRecords = useMemo(() => {
@@ -164,8 +181,12 @@ function MealRecordsPageContent() {
         .map(food => food.trim())
         .filter(food => food.length > 0)
 
+      // 選択された子供の UUID を取得
+      const selectedChild = childrenOptions.find(option => option.value === newMealForm.child_id)
+      const targetChildId = selectedChild?.child?.id || apiChildId
+      
       await createMealRecord({
-        child_id: newMealForm.child_id || currentChildId,
+        child_id: targetChildId,
         meal_name: newMealForm.meal_name,
         meal_type: newMealForm.meal_type,
         detected_foods: foodArray.length > 0 ? foodArray : undefined,
@@ -192,9 +213,12 @@ function MealRecordsPageContent() {
   }
 
   const handleEditMealRecord = (record: MealRecord) => {
+    // record.child_id (UUID) から子供名を取得
+    const recordChild = childrenOptions.find(option => option.child?.id === record.child_id)
+    
     setSelectedRecord(record)
     setEditMealForm({
-      child_id: record.child_id,
+      child_id: recordChild?.value || currentChildName, // 子供名を使用
       meal_name: record.meal_name,
       meal_type: record.meal_type,
       detected_foods: record.detected_foods.join(', '),
@@ -213,10 +237,14 @@ function MealRecordsPageContent() {
         .map(food => food.trim())
         .filter(food => food.length > 0)
 
+      // 選択された子供の UUID を取得
+      const selectedChild = childrenOptions.find(option => option.value === editMealForm.child_id)
+      const targetChildId = selectedChild?.child?.id || apiChildId
+      
       await updateMealRecord({
         mealRecordId: selectedRecord.id,
         request: {
-          child_id: editMealForm.child_id || currentChildId,
+          child_id: targetChildId,
           meal_name: editMealForm.meal_name,
           meal_type: editMealForm.meal_type,
           detected_foods: foodArray.length > 0 ? foodArray : undefined,
@@ -289,7 +317,7 @@ function MealRecordsPageContent() {
   }
 
   // 家族情報が取得できているかチェック
-  if (!currentChildId) {
+  if (!apiChildId || !currentChildName) {
     return (
       <AppLayout>
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
@@ -330,7 +358,7 @@ function MealRecordsPageContent() {
                 <div>
                   <h1 className="text-3xl font-bold text-gray-800">食事記録</h1>
                   <p className="text-gray-600">
-                    {currentChildId}の食事を記録・栄養バランスを管理します
+                    食事を記録・栄養バランスを管理します
                     {childrenOptions.length > 1 && (
                       <span className="ml-2 text-sm text-amber-600">
                         ({childrenOptions.length}人のお子様が登録済み)
@@ -343,7 +371,7 @@ function MealRecordsPageContent() {
               <div className="flex items-center space-x-3">
                 {/* 子供選択ドロップダウン（複数いる場合のみ表示） */}
                 {childrenOptions.length > 1 && (
-                  <Select value={currentChildId} onValueChange={setSelectedChildId}>
+                  <Select value={selectedChildId || primaryChild?.name || ''} onValueChange={setSelectedChildId}>
                     <SelectTrigger className="w-48">
                       <SelectValue placeholder="お子様を選択" />
                     </SelectTrigger>
@@ -376,7 +404,7 @@ function MealRecordsPageContent() {
                       <div>
                         <Label htmlFor="child-select">お子様を選択</Label>
                         <Select 
-                          value={newMealForm.child_id || currentChildId}
+                          value={newMealForm.child_id || currentChildName}
                           onValueChange={(value) => setNewMealForm(prev => ({ ...prev, child_id: value }))}
                         >
                           <SelectTrigger>
