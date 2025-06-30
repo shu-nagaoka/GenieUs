@@ -135,7 +135,7 @@ class MealRecordRepository(MealRecordRepositoryProtocol):
             )
 
             affected_rows = self.postgres_manager.execute_update(query, params)
-            
+
             if affected_rows == 0:
                 raise Exception("更新対象の食事記録が見つかりません")
 
@@ -158,7 +158,7 @@ class MealRecordRepository(MealRecordRepositoryProtocol):
         try:
             query = f"DELETE FROM {self._table_name} WHERE id = %s"
             affected_rows = self.postgres_manager.execute_update(query, (record_id,))
-            
+
             success = affected_rows > 0
             self.logger.info(f"🗑️ PostgreSQL食事記録削除: id={record_id}, success={success}")
             return success
@@ -207,7 +207,7 @@ class MealRecordRepository(MealRecordRepositoryProtocol):
 
             query = f"""
             SELECT * FROM {self._table_name}
-            WHERE {' AND '.join(conditions)}
+            WHERE {" AND ".join(conditions)}
             ORDER BY date DESC, created_at DESC
             LIMIT %s OFFSET %s
             """
@@ -327,7 +327,7 @@ class MealRecordRepository(MealRecordRepositoryProtocol):
         """
         try:
             food_items = json.loads(row["food_items"]) if row["food_items"] else []
-            
+
             return MealRecord(
                 id=row["id"],
                 user_id=row["user_id"],

@@ -339,6 +339,16 @@ class UserRepository:
 
     def _row_to_user(self, row: dict[str, Any]) -> User:
         """PostgreSQL行データからUserエンティティを作成"""
+        def safe_datetime_parse(value) -> datetime:
+            """安全な日時パース（文字列またはdatetimeオブジェクトに対応）"""
+            if isinstance(value, str):
+                return datetime.fromisoformat(value)
+            elif isinstance(value, datetime):
+                return value
+            else:
+                # フォールバック: 現在時刻
+                return datetime.now()
+        
         return User(
             google_id=row["google_id"],
             email=row["email"],
@@ -346,14 +356,23 @@ class UserRepository:
             picture_url=row["picture_url"],
             locale=row["locale"],
             verified_email=bool(row["verified_email"]),
-            created_at=datetime.fromisoformat(row["created_at"]),
-            last_login=datetime.fromisoformat(row["last_login"]),
-            updated_at=datetime.fromisoformat(row["updated_at"]),
+            created_at=safe_datetime_parse(row["created_at"]),
+            last_login=safe_datetime_parse(row["last_login"]),
+            updated_at=safe_datetime_parse(row["updated_at"]),
         )
 
     def create_or_update_user(self, user: User) -> User:
         """ユーザー作成または更新（upsert）"""
         try:
+            self.logger.info(
+                "ユーザーupsert開始",
+                extra={
+                    "google_id": user.google_id,
+                    "email": user.email,
+                },
+            )
+
+            # Google IDでユーザー検索
             existing_user = self.get_user_by_google_id(user.google_id)
 
             if existing_user:
@@ -361,15 +380,40 @@ class UserRepository:
                 user.created_at = existing_user.created_at  # 作成日時を保持
                 return self.update_user(user)
             else:
-                # 新規ユーザー作成
-                return self.create_user(user)
+                # メールアドレスでも検索
+                email_user = self.get_user_by_email(user.email)
+                
+                if email_user:
+                    # 既存メールアドレスのユーザーが見つかった場合は、
+                    # Google IDが変更された可能性があるが、外部キー制約のため更新は避ける
+                    self.logger.warning(
+                        "メールアドレス重複: 既存ユーザーを返す",
+                        extra={
+                            "existing_google_id": email_user.google_id,
+                            "request_google_id": user.google_id,
+                            "email": user.email,
+                        },
+                    )
+                    # 既存ユーザーの情報を最新データで更新（Google ID以外）
+                    email_user.name = user.name
+                    email_user.picture_url = user.picture_url
+                    email_user.locale = user.locale
+                    email_user.verified_email = user.verified_email
+                    email_user.last_login = user.last_login
+                    email_user.updated_at = user.updated_at
+                    
+                    return self.update_user(email_user)
+                else:
+                    # 新規ユーザー作成
+                    return self.create_user(user)
 
         except Exception as e:
             self.logger.error(
-                "ユーザー作成/更新エラー",
+                "ユーザーupsert エラー",
                 extra={
                     "error": str(e),
                     "google_id": user.google_id,
+                    "email": user.email,
                 },
             )
             raise

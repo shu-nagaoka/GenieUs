@@ -125,7 +125,7 @@ class DatabaseMigrator:
             if os.getenv("ENVIRONMENT") in ["production", "staging"]:
                 self.logger.info("Cloud Run環境: インメモリSQLiteのため初期化をスキップ")
                 return
-            
+
             # ローカル環境のみテーブル作成
             self._create_users_table()
             self._create_family_info_table()

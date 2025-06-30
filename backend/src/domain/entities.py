@@ -383,16 +383,16 @@ class MealRecord:
     def from_dict(cls, meal_data: dict) -> "MealRecord":
         """辞書データからMealRecordエンティティを作成"""
         from datetime import datetime as dt
-        
+
         # timestampの処理 (meal_date, meal_timestamp, timestampのいずれかから取得)
         timestamp = None
         timestamp_str = meal_data.get("timestamp") or meal_data.get("meal_date") or meal_data.get("meal_timestamp")
-        
+
         if timestamp_str:
             try:
                 if isinstance(timestamp_str, str):
                     # ISO形式をパース
-                    timestamp = dt.fromisoformat(timestamp_str.replace('Z', ''))
+                    timestamp = dt.fromisoformat(timestamp_str.replace("Z", ""))
                 elif isinstance(timestamp_str, dt):
                     timestamp = timestamp_str
             except Exception:
@@ -400,7 +400,7 @@ class MealRecord:
                 timestamp = dt.now()
         else:
             timestamp = dt.now()
-        
+
         # detection_sourceの処理 (analysis_source, detection_source のマッピング)
         detection_source_str = meal_data.get("detection_source") or meal_data.get("analysis_source", "manual")
         try:
@@ -412,19 +412,19 @@ class MealRecord:
                 detection_source = FoodDetectionSource.MANUAL
         except Exception:
             detection_source = FoodDetectionSource.MANUAL
-        
+
         # meal_typeの処理
         meal_type_str = meal_data.get("meal_type", "snack")
         try:
             meal_type = MealType(meal_type_str)
         except Exception:
             meal_type = MealType.SNACK
-        
+
         # nutrition_infoの処理
         nutrition_info = meal_data.get("nutrition_info", {})
         if not isinstance(nutrition_info, dict):
             nutrition_info = {}
-        
+
         now = dt.now()
         return cls(
             id=meal_data.get("id", str(uuid.uuid4())),
@@ -803,28 +803,29 @@ class ScheduleEvent:
     def from_dict(cls, user_id: str, event_data: dict) -> "ScheduleEvent":
         """辞書データから予定イベントエンティティを作成"""
         now = datetime.now().isoformat()
-        
+
         # start_datetimeからdateとtimeを分離
         date = event_data.get("date", "")
         time = event_data.get("time", "")
-        
+
         # start_datetimeが提供されている場合は分割
         start_datetime = event_data.get("start_datetime")
         if start_datetime and not date and not time:
             try:
                 from datetime import datetime as dt
+
                 # ISO形式をパース (例: "2025-06-30T10:00:00")
-                if 'T' in start_datetime:
-                    dt_obj = dt.fromisoformat(start_datetime.replace('Z', ''))
-                    date = dt_obj.strftime('%Y-%m-%d')
-                    time = dt_obj.strftime('%H:%M')
+                if "T" in start_datetime:
+                    dt_obj = dt.fromisoformat(start_datetime.replace("Z", ""))
+                    date = dt_obj.strftime("%Y-%m-%d")
+                    time = dt_obj.strftime("%H:%M")
             except Exception as e:
                 # パースに失敗した場合はそのまま
                 pass
-        
+
         # event_typeからtypeにマッピング
         event_type = event_data.get("event_type") or event_data.get("type", "")
-        
+
         return cls(
             event_id=event_data.get("id", str(uuid.uuid4())),
             user_id=user_id,

@@ -31,10 +31,10 @@ def create_meal_plan_tool(meal_plan_usecase: MealPlanManagementUseCase, logger: 
         plan_id: str = None,
         start_date: str = None,
         end_date: str = None,
-        **kwargs
+        **kwargs,
     ) -> dict[str, Any]:
         """食事プラン管理機能の統合エントリーポイント
-        
+
         Args:
             action: 実行するアクション ("create", "get", "update", "delete", "search")
             user_id: ユーザーID
@@ -51,40 +51,37 @@ def create_meal_plan_tool(meal_plan_usecase: MealPlanManagementUseCase, logger: 
         """
         try:
             logger.info(f"🍽️ 食事プラン管理ツール実行: {action} (user_id: {user_id})")
-            
+
             if action == "create":
                 return await _create_meal_plan(
-                    meal_plan_usecase, logger, user_id, child_id, week_start,
-                    title, description, meals, nutrition_goals, notes
+                    meal_plan_usecase,
+                    logger,
+                    user_id,
+                    child_id,
+                    week_start,
+                    title,
+                    description,
+                    meals,
+                    nutrition_goals,
+                    notes,
                 )
             elif action == "get":
-                return await _get_meal_plan(
-                    meal_plan_usecase, logger, user_id, plan_id
-                )
+                return await _get_meal_plan(meal_plan_usecase, logger, user_id, plan_id)
             elif action == "update":
                 return await _update_meal_plan(
-                    meal_plan_usecase, logger, user_id, plan_id, title,
-                    description, meals, nutrition_goals, notes
+                    meal_plan_usecase, logger, user_id, plan_id, title, description, meals, nutrition_goals, notes
                 )
             elif action == "delete":
-                return await _delete_meal_plan(
-                    meal_plan_usecase, logger, user_id, plan_id
-                )
+                return await _delete_meal_plan(meal_plan_usecase, logger, user_id, plan_id)
             elif action == "search":
-                return await _search_meal_plans(
-                    meal_plan_usecase, logger, user_id, start_date, end_date
-                )
+                return await _search_meal_plans(meal_plan_usecase, logger, user_id, start_date, end_date)
             else:
                 raise ValueError(f"未対応のアクション: {action}")
-                
+
         except Exception as e:
             error_msg = f"食事プラン管理エラー ({action}): {e}"
             logger.error(error_msg)
-            return {
-                "success": False,
-                "error": error_msg,
-                "details": str(e)
-            }
+            return {"success": False, "error": error_msg, "details": str(e)}
 
     # FunctionToolとして返す
     return FunctionTool(
@@ -102,18 +99,15 @@ async def _create_meal_plan(
     description: str,
     meals: dict,
     nutrition_goals: dict,
-    notes: str
+    notes: str,
 ) -> dict[str, Any]:
     """食事プラン作成"""
     if not title or not week_start:
-        return {
-            "success": False,
-            "error": "タイトルと週開始日は必須です"
-        }
-    
+        return {"success": False, "error": "タイトルと週開始日は必須です"}
+
     if not meals:
         meals = {}
-    
+
     request = CreateMealPlanRequest(
         user_id=user_id,
         child_id=child_id,
@@ -123,50 +117,35 @@ async def _create_meal_plan(
         created_by="genie",  # AI作成として記録
         meals=meals,
         nutrition_goals=nutrition_goals,
-        notes=notes
+        notes=notes,
     )
-    
+
     response = await meal_plan_usecase.create_meal_plan(request)
-    
+
     if response.success:
         return {
             "success": True,
             "message": "食事プランを作成しました",
             "plan_id": response.meal_plan.id if response.meal_plan else None,
-            "plan": response.meal_plan.to_dict() if response.meal_plan else None
+            "plan": response.meal_plan.to_dict() if response.meal_plan else None,
         }
     else:
-        return {
-            "success": False,
-            "error": response.error_message or "食事プランの作成に失敗しました"
-        }
+        return {"success": False, "error": response.error_message or "食事プランの作成に失敗しました"}
 
 
 async def _get_meal_plan(
-    meal_plan_usecase: MealPlanManagementUseCase,
-    logger: logging.Logger,
-    user_id: str,
-    plan_id: str
+    meal_plan_usecase: MealPlanManagementUseCase, logger: logging.Logger, user_id: str, plan_id: str
 ) -> dict[str, Any]:
     """特定の食事プラン取得"""
     if not plan_id:
-        return {
-            "success": False,
-            "error": "プランIDは必須です"
-        }
-    
+        return {"success": False, "error": "プランIDは必須です"}
+
     response = await meal_plan_usecase.get_meal_plan(user_id, plan_id)
-    
+
     if response.success:
-        return {
-            "success": True,
-            "plan": response.meal_plan.to_dict() if response.meal_plan else None
-        }
+        return {"success": True, "plan": response.meal_plan.to_dict() if response.meal_plan else None}
     else:
-        return {
-            "success": False,
-            "error": response.error_message or "食事プランの取得に失敗しました"
-        }
+        return {"success": False, "error": response.error_message or "食事プランの取得に失敗しました"}
 
 
 async def _update_meal_plan(
@@ -178,15 +157,12 @@ async def _update_meal_plan(
     description: str,
     meals: dict,
     nutrition_goals: dict,
-    notes: str
+    notes: str,
 ) -> dict[str, Any]:
     """食事プラン更新"""
     if not plan_id:
-        return {
-            "success": False,
-            "error": "プランIDは必須です"
-        }
-    
+        return {"success": False, "error": "プランIDは必須です"}
+
     request = UpdateMealPlanRequest(
         user_id=user_id,
         plan_id=plan_id,
@@ -194,80 +170,54 @@ async def _update_meal_plan(
         description=description,
         meals=meals,
         nutrition_goals=nutrition_goals,
-        notes=notes
+        notes=notes,
     )
-    
+
     response = await meal_plan_usecase.update_meal_plan(request)
-    
+
     if response.success:
         return {
             "success": True,
             "message": "食事プランを更新しました",
-            "plan": response.meal_plan.to_dict() if response.meal_plan else None
+            "plan": response.meal_plan.to_dict() if response.meal_plan else None,
         }
     else:
-        return {
-            "success": False,
-            "error": response.error_message or "食事プランの更新に失敗しました"
-        }
+        return {"success": False, "error": response.error_message or "食事プランの更新に失敗しました"}
 
 
 async def _delete_meal_plan(
-    meal_plan_usecase: MealPlanManagementUseCase,
-    logger: logging.Logger,
-    user_id: str,
-    plan_id: str
+    meal_plan_usecase: MealPlanManagementUseCase, logger: logging.Logger, user_id: str, plan_id: str
 ) -> dict[str, Any]:
     """食事プラン削除"""
     if not plan_id:
-        return {
-            "success": False,
-            "error": "プランIDは必須です"
-        }
-    
+        return {"success": False, "error": "プランIDは必須です"}
+
     response = await meal_plan_usecase.delete_meal_plan(user_id, plan_id)
-    
+
     if response.success:
-        return {
-            "success": True,
-            "message": "食事プランを削除しました"
-        }
+        return {"success": True, "message": "食事プランを削除しました"}
     else:
-        return {
-            "success": False,
-            "error": response.error_message or "食事プランの削除に失敗しました"
-        }
+        return {"success": False, "error": response.error_message or "食事プランの削除に失敗しました"}
 
 
 async def _search_meal_plans(
-    meal_plan_usecase: MealPlanManagementUseCase,
-    logger: logging.Logger,
-    user_id: str,
-    start_date: str,
-    end_date: str
+    meal_plan_usecase: MealPlanManagementUseCase, logger: logging.Logger, user_id: str, start_date: str, end_date: str
 ) -> dict[str, Any]:
     """食事プラン検索"""
-    request = SearchMealPlansRequest(
-        user_id=user_id,
-        start_date=start_date,
-        end_date=end_date
-    )
-    
+    request = SearchMealPlansRequest(user_id=user_id, start_date=start_date, end_date=end_date)
+
     response = await meal_plan_usecase.search_meal_plans(request)
-    
+
     if response.success:
         plans_data = []
         for plan in response.meal_plans:
             plans_data.append(plan.to_dict())
-        
+
         return {
             "success": True,
             "plans": plans_data,
             "total_count": response.total_count,
-            "period": f"{start_date or '開始'} から {end_date or '終了'}"
+            "period": f"{start_date or '開始'} から {end_date or '終了'}",
         }
     else:
-        return {
-            "success": False,
-            "error": response.error_message or "食事プラン検索に失敗しました"
-        }
+        return {"success": False, "error": response.error_message or "食事プラン検索に失敗しました"}

@@ -289,7 +289,7 @@ class FamilyRepository(FamilyRepositoryProtocol):
         """
         try:
             children = json.loads(row["children"]) if row["children"] else []
-            
+
             return FamilyInfo(
                 family_id=row["family_id"],
                 user_id=row["user_id"],

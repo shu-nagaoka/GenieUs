@@ -219,11 +219,20 @@ END;
 $$ language 'plpgsql';
 
 -- 各テーブルに更新時刻自動更新トリガーを設定（TIMESTAMP列があるテーブルのみ）
-CREATE TRIGGER IF NOT EXISTS update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER IF NOT EXISTS update_family_info_updated_at BEFORE UPDATE ON family_info FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER IF NOT EXISTS update_growth_records_updated_at BEFORE UPDATE ON growth_records FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER IF NOT EXISTS update_memory_records_updated_at BEFORE UPDATE ON memory_records FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER IF NOT EXISTS update_child_records_updated_at BEFORE UPDATE ON child_records FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_family_info_updated_at ON family_info;
+CREATE TRIGGER update_family_info_updated_at BEFORE UPDATE ON family_info FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_growth_records_updated_at ON growth_records;
+CREATE TRIGGER update_growth_records_updated_at BEFORE UPDATE ON growth_records FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_memory_records_updated_at ON memory_records;
+CREATE TRIGGER update_memory_records_updated_at BEFORE UPDATE ON memory_records FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_child_records_updated_at ON child_records;
+CREATE TRIGGER update_child_records_updated_at BEFORE UPDATE ON child_records FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- デモ用初期データ挿入
 INSERT INTO users (google_id, email, name, picture_url, verified_email) VALUES 

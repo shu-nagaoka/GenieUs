@@ -25,7 +25,7 @@ def create_meal_record_tool(meal_record_usecase: MealRecordUseCase, logger: logg
 
     async def manage_meal_records(
         action: str = "create",
-        child_id: str = "default_child", 
+        child_id: str = "default_child",
         meal_name: str = "",
         meal_type: str = "snack",
         detected_foods: list[str] = None,
@@ -34,7 +34,7 @@ def create_meal_record_tool(meal_record_usecase: MealRecordUseCase, logger: logg
         confidence: float = 0.8,
         image_path: str = "",
         notes: str = "画像解析により自動検出された食事記録",
-        **kwargs: Any
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """食事記録の管理（作成・検索・更新・削除）
 
@@ -65,9 +65,17 @@ def create_meal_record_tool(meal_record_usecase: MealRecordUseCase, logger: logg
 
             if action == "create":
                 return await _create_meal_record(
-                    meal_record_usecase, logger,
-                    child_id, meal_name, meal_type, detected_foods, 
-                    nutrition_info, detection_source, confidence, image_path, notes
+                    meal_record_usecase,
+                    logger,
+                    child_id,
+                    meal_name,
+                    meal_type,
+                    detected_foods,
+                    nutrition_info,
+                    detection_source,
+                    confidence,
+                    image_path,
+                    notes,
                 )
             elif action == "search":
                 return await _search_meal_records(meal_record_usecase, logger, child_id, **kwargs)
@@ -100,7 +108,7 @@ async def _create_meal_record(
     detection_source: str,
     confidence: float,
     image_path: str,
-    notes: str
+    notes: str,
 ) -> dict[str, Any]:
     """食事記録作成"""
     try:
@@ -151,10 +159,7 @@ async def _create_meal_record(
 
 
 async def _search_meal_records(
-    meal_record_usecase: MealRecordUseCase, 
-    logger: logging.Logger, 
-    child_id: str, 
-    **kwargs
+    meal_record_usecase: MealRecordUseCase, logger: logging.Logger, child_id: str, **kwargs
 ) -> dict[str, Any]:
     """食事記録検索"""
     try:
@@ -212,9 +217,7 @@ async def _search_meal_records(
 
 
 async def _update_meal_record(
-    meal_record_usecase: MealRecordUseCase, 
-    logger: logging.Logger, 
-    **kwargs
+    meal_record_usecase: MealRecordUseCase, logger: logging.Logger, **kwargs
 ) -> dict[str, Any]:
     """食事記録更新"""
     try:
@@ -261,9 +264,7 @@ async def _update_meal_record(
 
 
 async def _delete_meal_record(
-    meal_record_usecase: MealRecordUseCase, 
-    logger: logging.Logger, 
-    **kwargs
+    meal_record_usecase: MealRecordUseCase, logger: logging.Logger, **kwargs
 ) -> dict[str, Any]:
     """食事記録削除"""
     try:

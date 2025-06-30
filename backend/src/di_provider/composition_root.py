@@ -152,25 +152,9 @@ class CompositionRoot:
         self._infrastructure.register("image_analyzer", image_analyzer)
         self._infrastructure.register("voice_analyzer", voice_analyzer)
 
-        # Family Repository
-        family_repository = FamilyRepository(logger=self.logger)
-        self._infrastructure.register("family_repository", family_repository)
-
-        # Growth Record Repository
-        growth_record_repository = GrowthRecordRepository(logger=self.logger)
-        self._infrastructure.register("growth_record_repository", growth_record_repository)
-
-        # Memory Record Repository
-        memory_record_repository = MemoryRecordRepository(logger=self.logger)
-        self._infrastructure.register("memory_record_repository", memory_record_repository)
-
-        # Schedule Event Repository
-        schedule_event_repository = ScheduleEventRepository(logger=self.logger)
-        self._infrastructure.register("schedule_event_repository", schedule_event_repository)
-
-        # Effort Report Repository
-        effort_report_repository = EffortReportRepository(logger=self.logger)
-        self._infrastructure.register("effort_report_repository", effort_report_repository)
+        # 以下のRepositoryはデータベースタイプに応じて後で設定される
+        # family_repository, growth_record_repository, memory_record_repository,
+        # schedule_event_repository, effort_report_repository
 
         # Meal Plan Manager
         meal_plan_manager = InMemoryMealPlanManager(logger=self.logger)
@@ -214,6 +198,102 @@ class CompositionRoot:
             # Meal Record Repository (SQLite版)
             meal_record_repository = MealRecordRepository(sqlite_manager=sqlite_manager, logger=self.logger)
             self._infrastructure.register("meal_record_repository", meal_record_repository)
+
+            # SQLite版の他のRepositoryも登録（JSON版から移行用）
+            from src.infrastructure.adapters.persistence.family_repository import FamilyRepository
+            from src.infrastructure.adapters.persistence.growth_record_repository import GrowthRecordRepository
+            from src.infrastructure.adapters.persistence.memory_record_repository import MemoryRecordRepository
+            from src.infrastructure.adapters.persistence.schedule_event_repository import ScheduleEventRepository
+            from src.infrastructure.adapters.persistence.effort_report_repository import EffortReportRepository
+
+            family_repository = FamilyRepository(logger=self.logger)
+            growth_record_repository = GrowthRecordRepository(logger=self.logger)
+            memory_record_repository = MemoryRecordRepository(logger=self.logger)
+            schedule_event_repository = ScheduleEventRepository(logger=self.logger)
+            effort_report_repository = EffortReportRepository(logger=self.logger)
+
+            self._infrastructure.register("family_repository", family_repository)
+            self._infrastructure.register("growth_record_repository", growth_record_repository)
+            self._infrastructure.register("memory_record_repository", memory_record_repository)
+            self._infrastructure.register("schedule_event_repository", schedule_event_repository)
+            self._infrastructure.register("effort_report_repository", effort_report_repository)
+        elif self.settings.DATABASE_TYPE == "postgresql":
+            # PostgreSQL components
+            from src.infrastructure.database.postgres_manager import PostgreSQLManager
+
+            postgres_manager = PostgreSQLManager(settings=self.settings, logger=self.logger)
+            self._infrastructure.register("postgres_manager", postgres_manager)
+
+            # データベース初期化（必要に応じて）
+            if not postgres_manager.is_database_initialized():
+                self.logger.info("PostgreSQLデータベース未初期化のため、初期化を実行")
+                postgres_manager.initialize_database()
+
+            # User Repository (PostgreSQL版)
+            from src.infrastructure.adapters.persistence.postgresql.user_repository import (
+                UserRepository as PostgreSQLUserRepository,
+            )
+
+            user_repository = PostgreSQLUserRepository(postgres_manager=postgres_manager, logger=self.logger)
+            self._infrastructure.register("user_repository", user_repository)
+
+            # Meal Record Repository (PostgreSQL版)
+            from src.infrastructure.adapters.persistence.postgresql.meal_record_repository import (
+                MealRecordRepository as PostgreSQLMealRecordRepository,
+            )
+
+            meal_record_repository = PostgreSQLMealRecordRepository(
+                postgres_manager=postgres_manager, logger=self.logger
+            )
+            self._infrastructure.register("meal_record_repository", meal_record_repository)
+
+            # Family Repository (PostgreSQL版)
+            from src.infrastructure.adapters.persistence.postgresql.family_repository import (
+                FamilyRepository as PostgreSQLFamilyRepository,
+            )
+
+            family_repository = PostgreSQLFamilyRepository(postgres_manager=postgres_manager, logger=self.logger)
+            self._infrastructure.register("family_repository", family_repository)
+
+            # Growth Record Repository (PostgreSQL版)
+            from src.infrastructure.adapters.persistence.postgresql.growth_record_repository import (
+                GrowthRecordRepository as PostgreSQLGrowthRecordRepository,
+            )
+
+            growth_record_repository = PostgreSQLGrowthRecordRepository(
+                postgres_manager=postgres_manager, logger=self.logger
+            )
+            self._infrastructure.register("growth_record_repository", growth_record_repository)
+
+            # Memory Record Repository (PostgreSQL版)
+            from src.infrastructure.adapters.persistence.postgresql.memory_record_repository import (
+                MemoryRecordRepository as PostgreSQLMemoryRecordRepository,
+            )
+
+            memory_record_repository = PostgreSQLMemoryRecordRepository(
+                postgres_manager=postgres_manager, logger=self.logger
+            )
+            self._infrastructure.register("memory_record_repository", memory_record_repository)
+
+            # Schedule Event Repository (PostgreSQL版)
+            from src.infrastructure.adapters.persistence.postgresql.schedule_event_repository import (
+                ScheduleEventRepository as PostgreSQLScheduleEventRepository,
+            )
+
+            schedule_event_repository = PostgreSQLScheduleEventRepository(
+                postgres_manager=postgres_manager, logger=self.logger
+            )
+            self._infrastructure.register("schedule_event_repository", schedule_event_repository)
+
+            # Effort Report Repository (PostgreSQL版)
+            from src.infrastructure.adapters.persistence.postgresql.effort_report_repository import (
+                EffortReportRepository as PostgreSQLEffortReportRepository,
+            )
+
+            effort_report_repository = PostgreSQLEffortReportRepository(
+                postgres_manager=postgres_manager, logger=self.logger
+            )
+            self._infrastructure.register("effort_report_repository", effort_report_repository)
         else:
             self.logger.warning(f"未サポートのデータベースタイプ: {self.settings.DATABASE_TYPE}")
 
@@ -298,7 +378,7 @@ class CompositionRoot:
         )
 
         # Meal Record UseCase (食事記録機能) - 先に作成
-        if self.settings.DATABASE_TYPE == "sqlite":
+        if self.settings.DATABASE_TYPE in ["sqlite", "postgresql"]:
             meal_record_repository = self._infrastructure.get("meal_record_repository")
             meal_record_usecase = MealRecordUseCase(
                 meal_record_repository=meal_record_repository,
@@ -334,7 +414,7 @@ class CompositionRoot:
             self._usecases.register("meal_record", meal_record_usecase)
 
         # User Management UseCase (認証統合)
-        if self.settings.DATABASE_TYPE == "sqlite":
+        if self.settings.DATABASE_TYPE in ["sqlite", "postgresql"]:
             user_repository = self._infrastructure.get("user_repository")
             jwt_authenticator = self._infrastructure.get("jwt_authenticator")
             user_management_usecase = UserManagementUseCase(
@@ -487,6 +567,7 @@ class CompositionRoot:
         if schedule_usecase is None:
             self.logger.warning("ScheduleEventUseCase が利用できません。")
             from google.adk.tools import FunctionTool
+
             return FunctionTool(func=lambda: {"error": "Schedule機能が利用できません"})
 
         return create_schedule_tool(schedule_usecase=schedule_usecase, logger=self.logger)
@@ -499,6 +580,7 @@ class CompositionRoot:
         if growth_record_usecase is None:
             self.logger.warning("GrowthRecordUseCase が利用できません。")
             from google.adk.tools import FunctionTool
+
             return FunctionTool(func=lambda: {"error": "GrowthRecord機能が利用できません"})
 
         return create_growth_record_tool(growth_record_usecase=growth_record_usecase, logger=self.logger)
@@ -511,6 +593,7 @@ class CompositionRoot:
         if meal_plan_usecase is None:
             self.logger.warning("MealPlanManagementUseCase が利用できません。")
             from google.adk.tools import FunctionTool
+
             return FunctionTool(func=lambda: {"error": "MealPlan機能が利用できません"})
 
         return create_meal_plan_tool(meal_plan_usecase=meal_plan_usecase, logger=self.logger)

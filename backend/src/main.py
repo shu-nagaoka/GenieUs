@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
         try:
             composition_root = CompositionRootFactory.create()
             temp_logger.info("✅ CompositionRootFactory.create() 完了")
-            
+
             logger = composition_root.logger
             logger.info("✅ CompositionRoot初期化完了")
 
@@ -56,15 +56,15 @@ async def lifespan(app: FastAPI):
             logger.info("ツール取得開始...")
             all_tools = composition_root.get_all_tools()
             logger.info(f"✅ ツール取得完了: {len(all_tools)}個")
-            
+
             logger.info("ルーティング戦略取得開始...")
             routing_strategy = composition_root.get_routing_strategy()
             logger.info("✅ ルーティング戦略取得完了")
-            
+
             logger.info("エージェントレジストリ取得開始...")
             agent_registry = composition_root.get_agent_registry()
             logger.info("✅ エージェントレジストリ取得完了")
-            
+
             logger.info("AgentManager初期化開始...")
             agent_manager = AgentManager(
                 tools=all_tools,
@@ -75,7 +75,7 @@ async def lifespan(app: FastAPI):
                 composition_root=composition_root,
             )
             logger.info("✅ AgentManagerインスタンス作成完了")
-            
+
             logger.info("AgentManagerコンポーネント初期化開始...")
             agent_manager.initialize_all_components()
             logger.info("✅ AgentManager初期化完了（Pure Composition Root + ルーティング戦略）")
@@ -85,10 +85,11 @@ async def lifespan(app: FastAPI):
             app.logger = logger
             app.composition_root = composition_root  # 家族管理UseCaseアクセス用
             logger.info("✅ FastAPIアプリ注入完了")
-            
+
         except Exception as init_error:
             temp_logger.error(f"❌ 初期化段階でエラー: {init_error}")
             import traceback
+
             temp_logger.error(f"❌ スタックトレース: {traceback.format_exc()}")
             raise
 
@@ -135,7 +136,6 @@ def get_cors_origins():
         origins.append(f"http://localhost:{frontend_port}")
 
     return list(set(origins))  # 重複除去
-
 
 
 app.add_middleware(
@@ -264,7 +264,7 @@ if __name__ == "__main__":
     print(f"  PORT: {os.getenv('PORT', 'not_set')}")
     print(f"  FAST_STARTUP: {os.getenv('FAST_STARTUP', 'not_set')}")
     print(f"  GOOGLE_CLOUD_PROJECT: {os.getenv('GOOGLE_CLOUD_PROJECT', 'not_set')}")
-    
+
     try:
         # 環境変数からポート設定を取得（デフォルト: 8080でCloud Runと統一）
         port = int(os.getenv("PORT", "8080"))
@@ -287,5 +287,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"❌ Critical startup error: {e}")
         import traceback
+
         traceback.print_exc()
         raise

@@ -12,11 +12,12 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from src.application.interface.protocols.growth_record_repository import GrowthRecordRepositoryProtocol
 from src.domain.entities import GrowthRecord
 from src.infrastructure.database.postgres_manager import PostgreSQLManager
 
 
-class GrowthRecordRepository:
+class GrowthRecordRepository(GrowthRecordRepositoryProtocol):
     """PostgreSQL成長記録リポジトリ
 
     責務:
