@@ -63,4 +63,5 @@ coverage/
 # Environment configuration files
 environments/.env.local
 environments/.env.staging
-environments/.env.production
+environments/.env.productioncloud_sql_proxy
+temp_backup/

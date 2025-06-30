@@ -1,0 +1,23 @@
+{
+  "frontend_user": {
+    "family_id": "d0283a80-8c9f-48d8-a755-f11de325d41b",
+    "user_id": "frontend_user",
+    "parent_name": "長岡　周",
+    "family_structure": "夫婦+子ども1人+おじいちゃん・おばあちゃん",
+    "concerns": "",
+    "living_area": "東京都-江戸川区-西葛西",
+    "children": [
+      {
+        "name": "日佳梨",
+        "age": "",
+        "gender": "female",
+        "birth_date": "2023-08-06",
+        "characteristics": "人見知りしない\n活発だけど穏やか",
+        "allergies": "特になし",
+        "medical_notes": ""
+      }
+    ],
+    "created_at": "2025-06-25T22:25:57.634037",
+    "updated_at": "2025-06-25T22:25:57.634038"
+  }
+}
